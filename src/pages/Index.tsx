@@ -10,11 +10,13 @@ import { MapPin } from "lucide-react";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { Capacitor } from "@capacitor/core";
 import { StepTracker } from "@/plugins/stepTracker";
+import { fetchNearbyCompanies } from "@/lib/companyApi";
 
 const Index = () => {
   const [selectedStock, setSelectedStock] = useState<StockPin | null>(null);
   const [showTrending, setShowTrending] = useState(false);
   const { center, accuracyM, status } = useUserLocation(DEFAULT_CENTER);
+  const [stocks, setStocks] = useState<StockPin[]>(MOCK_STOCKS);
   const [walk, setWalk] = useState(MOCK_USER_WALK);
   const prevCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const gravityRef = useRef(9.8);
@@ -37,6 +39,24 @@ const Index = () => {
       cashBalance: Math.round((prevWalk.cashBalance + addedSteps * prevWalk.cashPerStep) * 10) / 10,
     }));
   };
+
+  useEffect(() => {
+    let aborted = false;
+    const loadNearby = async () => {
+      try {
+        const data = await fetchNearbyCompanies(center, DEFAULT_RADIUS_M);
+        if (aborted) return;
+        // DB 조회 결과가 있을 때만 교체, 비어 있으면 기존 mock 유지
+        if (data.length > 0) setStocks(data);
+      } catch {
+        // API 장애 시 기존 mock 유지
+      }
+    };
+    void loadNearby();
+    return () => {
+      aborted = true;
+    };
+  }, [center.lat, center.lng]);
 
   useEffect(() => {
     // Android(Capacitor)에서는 네이티브 포그라운드 서비스로 걸음을 측정하고,
@@ -151,7 +171,7 @@ const Index = () => {
       <MapView
         center={center}
         radius={DEFAULT_RADIUS_M}
-        stocks={MOCK_STOCKS}
+        stocks={stocks}
         onSelectStock={setSelectedStock}
         showUserMarker={status === "ok"}
         userAccuracyM={accuracyM}
