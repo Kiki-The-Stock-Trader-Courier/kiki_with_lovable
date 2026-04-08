@@ -15,30 +15,36 @@ const HoldingsPage = () => {
       </div>
 
       <div className="px-4 pb-2 pt-3">
-        <div className="space-y-3">
-          {holdings.map((h) => {
-            const pnl = (h.currentPrice - h.avgPrice) * h.shares;
-            const pnlPercent = ((h.currentPrice - h.avgPrice) / h.avgPrice) * 100;
-            const isUp = pnl >= 0;
-            return (
-              <div
-                key={h.ticker}
-                className="flex items-center justify-between rounded-xl border border-border/60 bg-card p-4 shadow-sm"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{h.name}</p>
-                  <p className="text-xs text-muted-foreground">{h.shares}주 · 평균 {h.avgPrice.toLocaleString()}원</p>
+        {holdings.length === 0 ? (
+          <div className="rounded-xl border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground shadow-sm">
+            보유 종목이 없습니다. 내 계좌 데이터가 연동되면 여기에 개인 종목이 표시됩니다.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {holdings.map((h) => {
+              const pnl = (h.currentPrice - h.avgPrice) * h.shares;
+              const pnlPercent = ((h.currentPrice - h.avgPrice) / h.avgPrice) * 100;
+              const isUp = pnl >= 0;
+              return (
+                <div
+                  key={h.ticker}
+                  className="flex items-center justify-between rounded-xl border border-border/60 bg-card p-4 shadow-sm"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{h.name}</p>
+                    <p className="text-xs text-muted-foreground">{h.shares}주 · 평균 {h.avgPrice.toLocaleString()}원</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-foreground">{(h.currentPrice * h.shares).toLocaleString()}원</p>
+                    <p className={`text-xs font-medium ${isUp ? "text-destructive" : "text-accent"}`}>
+                      {isUp ? "+" : ""}{pnl.toLocaleString()}원 ({isUp ? "+" : ""}{pnlPercent.toFixed(1)}%)
+                    </p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-foreground">{(h.currentPrice * h.shares).toLocaleString()}원</p>
-                  <p className={`text-xs font-medium ${isUp ? "text-destructive" : "text-accent"}`}>
-                    {isUp ? "+" : ""}{pnl.toLocaleString()}원 ({isUp ? "+" : ""}{pnlPercent.toFixed(1)}%)
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="mt-6 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
           <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">

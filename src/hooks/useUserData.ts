@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MOCK_USER_WALK, MOCK_HOLDINGS } from "@/data/mockStocks";
+import { MOCK_USER_WALK } from "@/data/mockStocks";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/contexts/AuthContext";
 import type { HoldingStock, UserWalk } from "@/types/stock";
@@ -76,7 +76,7 @@ export function useUserData(): UseUserDataResult {
   const [walk, setWalk] = useState<UserWalk>(MOCK_USER_WALK);
   const [nickname, setNicknameState] = useState("투자자님");
   const [weeklySteps, setWeeklySteps] = useState<WeeklyStepPoint[]>(defaultWeekly);
-  const [holdings, setHoldings] = useState<HoldingStock[]>(MOCK_HOLDINGS);
+  const [holdings, setHoldings] = useState<HoldingStock[]>([]);
   const [isReady, setIsReady] = useState(false);
   const queueRef = useRef(Promise.resolve());
   const lastDateRef = useRef(dateKey());
@@ -170,27 +170,11 @@ export function useUserData(): UseUserDataResult {
       })),
     );
 
-    let { data: holdingRows } = await supabase
+    const { data: holdingRows } = await supabase
       .from("user_holdings")
       .select("user_id,ticker,name,shares,avg_price,current_price")
       .eq("user_id", userId)
       .order("ticker", { ascending: true });
-
-    if (!holdingRows || holdingRows.length === 0) {
-      const seed = MOCK_HOLDINGS.map((h) => ({
-        user_id: userId,
-        ticker: h.ticker,
-        name: h.name,
-        shares: h.shares,
-        avg_price: h.avgPrice,
-        current_price: h.currentPrice,
-      }));
-      const { data: insertedHoldings } = await supabase
-        .from("user_holdings")
-        .insert(seed)
-        .select("user_id,ticker,name,shares,avg_price,current_price");
-      holdingRows = insertedHoldings ?? [];
-    }
 
     setHoldings(
       (holdingRows ?? []).map((h: HoldingRow) => ({
@@ -210,7 +194,7 @@ export function useUserData(): UseUserDataResult {
     if (!isAuthenticated) {
       setWalk(MOCK_USER_WALK);
       setWeeklySteps(defaultWeekly().map((d, idx) => ({ ...d, steps: [4120, 5340, 4880, 6230, 5720, 7010, 3247][idx] })));
-      setHoldings(MOCK_HOLDINGS);
+      setHoldings([]);
       setNicknameState("투자자님");
       setIsReady(true);
       return;
