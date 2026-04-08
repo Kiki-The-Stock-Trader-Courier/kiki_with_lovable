@@ -70,7 +70,8 @@ function toCompany(stationName: "서울숲역" | "여의도역", el: OverpassEle
 async function crawlCompaniesAroundStations(): Promise<CrawledCompany[]> {
   const allResults = await Promise.all(
     STATIONS.map(async (station) => {
-      const query = `
+      try {
+        const query = `
 [out:json][timeout:30];
 (
   node(around:1000,${station.lat},${station.lng})["office"]["name"];
@@ -86,18 +87,23 @@ async function crawlCompaniesAroundStations(): Promise<CrawledCompany[]> {
 out center;
 `;
 
-      const response = await fetch("https://overpass-api.de/api/interpreter", {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=UTF-8" },
-        body: query,
-      });
-      if (!response.ok) throw new Error(`Overpass request failed (${station.name}): ${response.status}`);
+        const response = await fetch("https://overpass-api.de/api/interpreter", {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=UTF-8" },
+          body: query,
+        });
+        if (!response.ok) throw new Error(`Overpass request failed (${station.name}): ${response.status}`);
 
-      const json = (await response.json()) as { elements?: OverpassElement[] };
-      const elements = Array.isArray(json.elements) ? json.elements : [];
-      return elements
-        .map((el) => toCompany(station.name, el))
-        .filter((v): v is CrawledCompany => v != null);
+        const json = (await response.json()) as { elements?: OverpassElement[] };
+        const elements = Array.isArray(json.elements) ? json.elements : [];
+        return elements
+          .map((el) => toCompany(station.name, el))
+          .filter((v): v is CrawledCompany => v != null);
+      } catch (e) {
+        // 외부 크롤링 API가 일부 역에서 실패해도 전체 동기화는 계속 진행
+        console.warn("[sync] station crawl failed:", station.name, e);
+        return [];
+      }
     }),
   );
 
