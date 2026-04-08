@@ -192,7 +192,7 @@ const Index = () => {
         <button
           type="button"
           onClick={refreshLocation}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
           aria-label="내 위치 새로고침"
         >
           <Compass className="h-5 w-5" />
