@@ -6,7 +6,7 @@ import TrendingSection from "@/components/TrendingSection";
 import BottomNav from "@/components/BottomNav";
 import { MOCK_STOCKS, MOCK_USER_WALK, MOCK_TRENDING, DEFAULT_CENTER, DEFAULT_RADIUS_M } from "@/data/mockStocks";
 import type { StockPin } from "@/types/stock";
-import { MapPin } from "lucide-react";
+import { Compass, MapPin } from "lucide-react";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { Capacitor } from "@capacitor/core";
 import { StepTracker } from "@/plugins/stepTracker";
@@ -15,7 +15,7 @@ import { fetchNearbyCompanies } from "@/lib/companyApi";
 const Index = () => {
   const [selectedStock, setSelectedStock] = useState<StockPin | null>(null);
   const [showTrending, setShowTrending] = useState(false);
-  const { center, accuracyM, status } = useUserLocation(DEFAULT_CENTER);
+  const { center, accuracyM, status, refreshLocation } = useUserLocation(DEFAULT_CENTER);
   const [stocks, setStocks] = useState<StockPin[]>(MOCK_STOCKS);
   const [walk, setWalk] = useState(MOCK_USER_WALK);
   const prevCenterRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -186,9 +186,17 @@ const Index = () => {
 
       {/* Trending toggle (플로팅 FAB) — 지도/마커보다 위 + 터치 우선 */}
       <div
-        className="pointer-events-auto absolute bottom-[88px] right-[max(1rem,env(safe-area-inset-right))] z-[1200]"
+        className="pointer-events-auto absolute bottom-[88px] right-[max(1rem,env(safe-area-inset-right))] z-[1200] flex flex-col gap-2"
         style={{ touchAction: "manipulation" }}
       >
+        <button
+          type="button"
+          onClick={refreshLocation}
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
+          aria-label="내 위치 새로고침"
+        >
+          <Compass className="h-5 w-5" />
+        </button>
         <button
           type="button"
           onClick={() => setShowTrending(!showTrending)}
