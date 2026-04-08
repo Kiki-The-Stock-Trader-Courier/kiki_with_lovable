@@ -1,8 +1,9 @@
 import { BriefcaseBusiness, TrendingUp } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import { MOCK_HOLDINGS } from "@/data/mockStocks";
+import { useUserData } from "@/hooks/useUserData";
 
 const HoldingsPage = () => {
+  const { holdings } = useUserData();
   return (
     <div className="mx-auto min-h-[100dvh] w-full max-w-lg bg-background pb-24" data-testid="holdings-screen">
       <div className="bg-card px-5 pb-5 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl sm:shadow-sm">
@@ -15,7 +16,7 @@ const HoldingsPage = () => {
 
       <div className="px-4 pb-2 pt-3">
         <div className="space-y-3">
-          {MOCK_HOLDINGS.map((h) => {
+          {holdings.map((h) => {
             const pnl = (h.currentPrice - h.avgPrice) * h.shares;
             const pnlPercent = ((h.currentPrice - h.avgPrice) / h.avgPrice) * 100;
             const isUp = pnl >= 0;

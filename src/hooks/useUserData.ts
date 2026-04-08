@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { MOCK_USER_WALK } from "@/data/mockStocks";
+import { MOCK_USER_WALK, MOCK_HOLDINGS } from "@/data/mockStocks";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/contexts/AuthContext";
-import type { UserWalk } from "@/types/stock";
+import type { HoldingStock, UserWalk } from "@/types/stock";
 
 interface WeeklyStepPoint {
   day: string;
@@ -14,6 +14,7 @@ interface UseUserDataResult {
   walk: UserWalk;
   nickname: string;
   weeklySteps: WeeklyStepPoint[];
+  holdings: HoldingStock[];
   setGoalSteps: (goal: number) => void;
   setNickname: (nickname: string) => void;
   addSteps: (steps: number) => void;
@@ -33,6 +34,15 @@ interface DailyRow {
   walk_date: string;
   steps: number | null;
   goal_steps: number | null;
+}
+
+interface HoldingRow {
+  user_id: string;
+  ticker: string;
+  name: string;
+  shares: number | null;
+  avg_price: number | null;
+  current_price: number | null;
 }
 
 const KOR_DAY = ["일", "월", "화", "수", "목", "금", "토"] as const;
@@ -66,6 +76,7 @@ export function useUserData(): UseUserDataResult {
   const [walk, setWalk] = useState<UserWalk>(MOCK_USER_WALK);
   const [nickname, setNicknameState] = useState("투자자님");
   const [weeklySteps, setWeeklySteps] = useState<WeeklyStepPoint[]>(defaultWeekly);
+  const [holdings, setHoldings] = useState<HoldingStock[]>(MOCK_HOLDINGS);
   const [isReady, setIsReady] = useState(false);
   const queueRef = useRef(Promise.resolve());
   const lastDateRef = useRef(dateKey());
@@ -159,6 +170,38 @@ export function useUserData(): UseUserDataResult {
       })),
     );
 
+    let { data: holdingRows } = await supabase
+      .from("user_holdings")
+      .select("user_id,ticker,name,shares,avg_price,current_price")
+      .eq("user_id", userId)
+      .order("ticker", { ascending: true });
+
+    if (!holdingRows || holdingRows.length === 0) {
+      const seed = MOCK_HOLDINGS.map((h) => ({
+        user_id: userId,
+        ticker: h.ticker,
+        name: h.name,
+        shares: h.shares,
+        avg_price: h.avgPrice,
+        current_price: h.currentPrice,
+      }));
+      const { data: insertedHoldings } = await supabase
+        .from("user_holdings")
+        .insert(seed)
+        .select("user_id,ticker,name,shares,avg_price,current_price");
+      holdingRows = insertedHoldings ?? [];
+    }
+
+    setHoldings(
+      (holdingRows ?? []).map((h: HoldingRow) => ({
+        ticker: h.ticker,
+        name: h.name,
+        shares: Number(h.shares ?? 0),
+        avgPrice: Number(h.avg_price ?? 0),
+        currentPrice: Number(h.current_price ?? 0),
+      })),
+    );
+
     setIsReady(true);
   }, [session?.user?.id]);
 
@@ -167,6 +210,7 @@ export function useUserData(): UseUserDataResult {
     if (!isAuthenticated) {
       setWalk(MOCK_USER_WALK);
       setWeeklySteps(defaultWeekly().map((d, idx) => ({ ...d, steps: [4120, 5340, 4880, 6230, 5720, 7010, 3247][idx] })));
+      setHoldings(MOCK_HOLDINGS);
       setNicknameState("투자자님");
       setIsReady(true);
       return;
@@ -274,11 +318,12 @@ export function useUserData(): UseUserDataResult {
       walk,
       nickname,
       weeklySteps,
+      holdings,
       setGoalSteps,
       setNickname,
       addSteps,
       isReady,
     }),
-    [walk, nickname, weeklySteps, setGoalSteps, setNickname, addSteps, isReady],
+    [walk, nickname, weeklySteps, holdings, setGoalSteps, setNickname, addSteps, isReady],
   );
 }

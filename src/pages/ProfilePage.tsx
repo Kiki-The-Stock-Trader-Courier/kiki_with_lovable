@@ -1,13 +1,12 @@
 import { User, Wallet, Link2, Settings, ChevronRight, Shield } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
-import { MOCK_HOLDINGS } from "@/data/mockStocks";
 import { useUserData } from "@/hooks/useUserData";
 import { useState } from "react";
 
 const ProfilePage = () => {
-  const { walk, nickname, setNickname } = useUserData();
+  const { walk, nickname, setNickname, holdings } = useUserData();
   const [nicknameInput, setNicknameInput] = useState("");
-  const totalValue = MOCK_HOLDINGS.reduce((sum, h) => sum + h.currentPrice * h.shares, 0);
+  const totalValue = holdings.reduce((sum, h) => sum + h.currentPrice * h.shares, 0);
 
   return (
     <div className="mx-auto min-h-[100dvh] w-full max-w-lg bg-background pb-24" data-testid="profile-screen">
