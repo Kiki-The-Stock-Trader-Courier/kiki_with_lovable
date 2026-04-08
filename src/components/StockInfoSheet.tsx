@@ -14,6 +14,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
 
   const isUp = stock.changePercent >= 0;
   const canBuy = cashBalance >= stock.price;
+  const affordableShares = stock.price > 0 ? cashBalance / stock.price : 0;
 
   return (
     <div className="animate-fade-in fixed inset-0 z-[1400]" data-testid="stock-info-sheet">
@@ -51,7 +52,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
               aria-label={
                 canBuy
                   ? `${stock.name} 캐시로 매수 (${stock.price.toLocaleString()}원)`
-                  : `캐시 부족 (보유 ${cashBalance.toLocaleString()}원)`
+                  : `캐시 부족 (보유 ${cashBalance.toLocaleString()}원, 구매 가능 ${affordableShares.toFixed(4)}주)`
               }
             >
               <ShoppingCart className="mr-1 h-4 w-4 shrink-0 sm:mr-1.5 sm:h-4 sm:w-4" />
@@ -68,6 +69,9 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
                     <span>캐시 부족</span>
                     <span className="text-[10px] font-normal opacity-90 sm:text-xs">
                       보유 {cashBalance.toLocaleString()}원
+                    </span>
+                    <span className="text-[10px] font-normal opacity-90 sm:text-xs">
+                      구매 가능 {affordableShares.toFixed(4)}주
                     </span>
                   </>
                 )}

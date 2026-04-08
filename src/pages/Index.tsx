@@ -11,6 +11,7 @@ import { useUserLocation } from "@/hooks/useUserLocation";
 import { Capacitor } from "@capacitor/core";
 import { StepTracker } from "@/plugins/stepTracker";
 import { fetchNearbyCompanies } from "@/lib/companyApi";
+import { fetchYahooQuotes } from "@/lib/quoteApi";
 
 const Index = () => {
   const [selectedStock, setSelectedStock] = useState<StockPin | null>(null);
@@ -18,6 +19,7 @@ const Index = () => {
   const { center, accuracyM, status, refreshLocation } = useUserLocation(DEFAULT_CENTER);
   const [stocks, setStocks] = useState<StockPin[]>(MOCK_STOCKS);
   const [walk, setWalk] = useState(MOCK_USER_WALK);
+  const stocksRef = useRef<StockPin[]>(MOCK_STOCKS);
   const prevCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const gravityRef = useRef(9.8);
   const lastStepAtRef = useRef(0);
@@ -57,6 +59,56 @@ const Index = () => {
       aborted = true;
     };
   }, [center.lat, center.lng]);
+
+  useEffect(() => {
+    stocksRef.current = stocks;
+  }, [stocks]);
+
+  useEffect(() => {
+    let canceled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
+
+    const refreshQuotes = async () => {
+      try {
+        const targetTickers = stocksRef.current
+          .map((s) => s.ticker)
+          .filter((ticker) => /^\d{6}$/.test(ticker));
+        if (targetTickers.length === 0) return;
+
+        const quotes = await fetchYahooQuotes(targetTickers);
+        if (canceled || quotes.length === 0) return;
+
+        const quoteMap = new Map(quotes.map((q) => [q.ticker, q]));
+        setStocks((prev) =>
+          prev.map((stock) => {
+            const q = quoteMap.get(stock.ticker);
+            if (!q) return stock;
+            return {
+              ...stock,
+              price: Math.round(q.price),
+              changePercent: q.changePercent,
+            };
+          }),
+        );
+      } catch {
+        // 시세 API 일시 오류 시 이전 값 유지
+      }
+    };
+
+    void refreshQuotes();
+    timer = setInterval(refreshQuotes, 30000);
+
+    return () => {
+      canceled = true;
+      if (timer) clearInterval(timer);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedStock) return;
+    const refreshed = stocks.find((s) => s.id === selectedStock.id);
+    if (refreshed) setSelectedStock(refreshed);
+  }, [stocks, selectedStock]);
 
   useEffect(() => {
     // Android(Capacitor)에서는 네이티브 포그라운드 서비스로 걸음을 측정하고,
