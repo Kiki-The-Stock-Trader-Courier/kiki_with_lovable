@@ -42,7 +42,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isReady,
       signInWithGoogle: async () => {
         if (!supabase) throw new Error("Supabase is not configured");
-        const redirectTo = `${window.location.origin}/`;
+        const configuredRedirect = import.meta.env.VITE_AUTH_REDIRECT_URL?.trim();
+        const redirectTo = configuredRedirect
+          ? configuredRedirect
+          : `${window.location.origin}/`;
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: { redirectTo },
