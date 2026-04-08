@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
-import { crawlCompaniesAroundStations } from "../_lib/companyCrawler";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -34,6 +33,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const crawler = await import("../_lib/companyCrawler");
+    const crawlCompaniesAroundStations = crawler.crawlCompaniesAroundStations;
     const companies = await crawlCompaniesAroundStations();
     const supabase = createClient(supabaseUrl, serviceKey);
 
@@ -65,6 +66,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
-    res.status(500).json({ error: message });
+    res.status(500).json({ error: message, stage: "sync_handler" });
   }
 }
