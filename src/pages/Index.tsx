@@ -13,9 +13,11 @@ import { StepTracker } from "@/plugins/stepTracker";
 import { fetchNearbyCompanies } from "@/lib/companyApi";
 import { fetchYahooQuotes } from "@/lib/quoteApi";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const [selectedStock, setSelectedStock] = useState<StockPin | null>(null);
   const [showTrending, setShowTrending] = useState(false);
   const { center, accuracyM, status, refreshLocation } = useUserLocation(DEFAULT_CENTER);
@@ -246,7 +248,13 @@ const Index = () => {
         center={center}
         radius={DEFAULT_RADIUS_M}
         stocks={stocks}
-        onSelectStock={setSelectedStock}
+        onSelectStock={(stock) => {
+          if (!isAuthenticated) {
+            navigate("/login");
+            return;
+          }
+          setSelectedStock(stock);
+        }}
         showUserMarker={status === "ok"}
         userAccuracyM={accuracyM}
       />
@@ -254,7 +262,18 @@ const Index = () => {
       {/* Top overlay: Step counter — Leaflet 판 z-index(≤1000) 위로 */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[1200] p-4 pt-[calc(env(safe-area-inset-top,0px)+12px)]">
         <div className="pointer-events-auto mx-auto w-full max-w-lg">
-          <StepCounter walk={walk} />
+          {isAuthenticated ? (
+            <StepCounter walk={walk} />
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate("/login")}
+              className="flex w-full items-center justify-center rounded-2xl border border-border/60 bg-card/95 px-4 py-3 text-sm font-semibold text-foreground shadow-md backdrop-blur-sm supports-[backdrop-filter]:bg-card/90"
+              aria-label="로그인 페이지로 이동"
+            >
+              로그인 페이지로 이동
+            </button>
+          )}
         </div>
       </div>
 
@@ -265,7 +284,7 @@ const Index = () => {
       >
         <button
           type="button"
-          onClick={() => navigate("/chat")}
+          onClick={() => navigate(isAuthenticated ? "/chat" : "/login")}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
           aria-label="챗봇 열기"
         >
@@ -273,7 +292,13 @@ const Index = () => {
         </button>
         <button
           type="button"
-          onClick={refreshLocation}
+          onClick={() => {
+            if (!isAuthenticated) {
+              navigate("/login");
+              return;
+            }
+            refreshLocation();
+          }}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
           aria-label="내 위치 새로고침"
         >
@@ -281,7 +306,13 @@ const Index = () => {
         </button>
         <button
           type="button"
-          onClick={() => setShowTrending(!showTrending)}
+          onClick={() => {
+            if (!isAuthenticated) {
+              navigate("/login");
+              return;
+            }
+            setShowTrending(!showTrending);
+          }}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
           aria-label="근처 인기 종목 보기"
           aria-pressed={showTrending}
