@@ -33,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const crawler = await import("../_lib/companyCrawler");
+    const crawler = await import("./companyCrawler");
     const crawlCompaniesAroundStations = crawler.crawlCompaniesAroundStations;
     const companies = await crawlCompaniesAroundStations();
     const supabase = createClient(supabaseUrl, serviceKey);
