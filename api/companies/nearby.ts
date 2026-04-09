@@ -9,6 +9,8 @@ interface DbCompanyRow {
   sector: string | null;
   description: string | null;
   source_station: string | null;
+  ticker: string | null;
+  map_display_name: string | null;
 }
 
 function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
@@ -59,7 +61,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const { data, error } = await supabase
       .from("nearby_companies")
-      .select("source_place_id,name,lat,lng,sector,description,source_station")
+      .select("source_place_id,name,lat,lng,sector,description,source_station,ticker,map_display_name")
+      .not("ticker", "is", null)
       .gte("lat", lat - latPad)
       .lte("lat", lat + latPad)
       .gte("lng", lng - lngPad)
@@ -73,10 +76,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const rows = (data ?? []) as DbCompanyRow[];
     const filtered = rows
+      .filter((row) => row.ticker != null && /^\d{6}$/.test(String(row.ticker).trim()))
       .map((row) => ({
         id: row.source_place_id,
-        ticker: `OSM-${row.source_place_id.split(":").slice(-1)[0]}`,
-        name: row.name,
+        ticker: String(row.ticker).trim(),
+        name: (row.map_display_name ?? row.name).trim(),
         lat: row.lat,
         lng: row.lng,
         sector: row.sector ?? "기타",

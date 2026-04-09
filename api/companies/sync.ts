@@ -1,14 +1,20 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
+import { resolveListedKrx } from "./krxListedMatch";
 
 interface CrawledCompany {
   source_place_id: string;
+  /** OSM 원문 상호 */
   name: string;
   lat: number;
   lng: number;
   sector: string;
   description: string;
   source_station: "서울숲역" | "여의도역";
+  /** KRX 6자리 — 상장 종목으로 식별된 경우만 수집 */
+  ticker: string;
+  /** 지도 표시명 (예: CU BGF리테일) */
+  map_display_name: string;
 }
 
 interface OverpassElement {
@@ -52,6 +58,9 @@ function toCompany(stationName: "서울숲역" | "여의도역", el: OverpassEle
   const name = tags.name?.trim();
   if (!name) return null;
 
+  const listed = resolveListedKrx(name);
+  if (!listed) return null;
+
   const lat = el.lat ?? el.center?.lat;
   const lng = el.lon ?? el.center?.lon;
   if (lat == null || lng == null) return null;
@@ -61,9 +70,11 @@ function toCompany(stationName: "서울숲역" | "여의도역", el: OverpassEle
     name,
     lat,
     lng,
-    sector: inferSector(tags),
+    sector: listed.sector ?? inferSector(tags),
     description: toDescription(tags, stationName),
     source_station: stationName,
+    ticker: listed.ticker,
+    map_display_name: listed.mapDisplayName,
   };
 }
 
@@ -155,6 +166,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       sector: c.sector,
       description: c.description,
       source_station: c.source_station,
+      ticker: c.ticker,
+      map_display_name: c.map_display_name,
       updated_at: new Date().toISOString(),
     }));
 

@@ -8,6 +8,10 @@ create table if not exists public.nearby_companies (
   sector text,
   description text,
   source_station text,
+  -- KRX 6자리 (상장 종목으로 매칭된 경우만 sync 시 채움)
+  ticker text,
+  -- 지도 마커 표시명 (예: CU BGF리테일)
+  map_display_name text,
   updated_at timestamptz not null default now()
 );
 
