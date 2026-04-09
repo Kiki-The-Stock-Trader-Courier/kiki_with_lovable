@@ -3,8 +3,7 @@ import { TrendingUp, TrendingDown, X, ShoppingCart, Building2, Tag, RefreshCw } 
 import { Button } from "@/components/ui/button";
 import StockSheetChat from "@/components/StockSheetChat";
 import type { StockPin } from "@/types/stock";
-import { fetchYahooQuotes } from "@/lib/quoteApi";
-import { parseTickersQuery } from "../../api/yahooKrxQuotesCore";
+import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
 
 interface StockInfoSheetProps {
   stock: StockPin | null;
@@ -26,13 +25,12 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
       return;
     }
 
-    const codes = parseTickersQuery(String(stock.ticker));
-    if (codes.length === 0) {
+    const t = normalizeKrxTickerKey(String(stock.ticker));
+    if (!t) {
       setSheetQuote(null);
       setQuoteError(true);
       return;
     }
-    const t = codes[0];
 
     let cancelled = false;
     setSheetQuote(null);

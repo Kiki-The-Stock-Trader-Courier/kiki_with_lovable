@@ -11,7 +11,7 @@ import { useUserLocation } from "@/hooks/useUserLocation";
 import { Capacitor } from "@capacitor/core";
 import { StepTracker } from "@/plugins/stepTracker";
 import { fetchNearbyCompanies } from "@/lib/companyApi";
-import { fetchYahooQuotes } from "@/lib/quoteApi";
+import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
@@ -69,8 +69,8 @@ const Index = () => {
   const stockTickerKey = useMemo(
     () =>
       stocks
-        .map((s) => s.ticker)
-        .filter((t) => /^\d{6}$/.test(t))
+        .map((s) => normalizeKrxTickerKey(s.ticker))
+        .filter((t): t is string => t != null)
         .sort()
         .join(","),
     [stocks],
@@ -78,22 +78,26 @@ const Index = () => {
 
   useEffect(() => {
     let canceled = false;
-    let timer: ReturnType<typeof setInterval> | undefined;
 
     const refreshQuotes = async () => {
       try {
         const targetTickers = stocksRef.current
-          .map((s) => s.ticker)
-          .filter((ticker) => /^\d{6}$/.test(ticker));
+          .map((s) => normalizeKrxTickerKey(s.ticker))
+          .filter((ticker): ticker is string => ticker != null);
         if (targetTickers.length === 0) return;
 
         const quotes = await fetchYahooQuotes(targetTickers);
         if (canceled || quotes.length === 0) return;
 
-        const quoteMap = new Map(quotes.map((q) => [q.ticker, q]));
+        const quoteMap = new Map<string, (typeof quotes)[number]>();
+        for (const q of quotes) {
+          const k = normalizeKrxTickerKey(q.ticker);
+          if (k) quoteMap.set(k, q);
+        }
         setStocks((prev) =>
           prev.map((stock) => {
-            const q = quoteMap.get(stock.ticker);
+            const key = normalizeKrxTickerKey(stock.ticker);
+            const q = key ? quoteMap.get(key) : undefined;
             if (!q) return stock;
             return {
               ...stock,
@@ -109,11 +113,11 @@ const Index = () => {
 
     /** 지도 종목이 로드된 직후에도 바로 시세 요청 */
     void refreshQuotes();
-    timer = setInterval(refreshQuotes, 12_000);
+    const timer = setInterval(refreshQuotes, 12_000);
 
     return () => {
       canceled = true;
-      if (timer) clearInterval(timer);
+      clearInterval(timer);
     };
   }, [stockTickerKey]);
 

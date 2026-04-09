@@ -1,6 +1,8 @@
 import type { StockPin } from "@/types/stock";
 import { fetchNearbyCompaniesFromSupabase } from "@/lib/nearbyCompanies";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
+import { Capacitor } from "@capacitor/core";
+import { getPublicApiOrigin } from "@/lib/quoteApi";
 
 interface NearbyApiCompany extends StockPin {
   distanceM?: number;
@@ -11,9 +13,21 @@ interface NearbyApiResponse {
   companies: NearbyApiCompany[];
 }
 
+function nearbyUrls(query: string): string[] {
+  const path = `/api/companies/nearby?${query}`;
+  const origin = getPublicApiOrigin();
+  const dev = import.meta.env.VITE_DEV_API_PROXY?.replace(/\/$/, "");
+  const urls: string[] = [];
+  if (Capacitor.isNativePlatform() && origin) urls.push(`${origin}${path}`);
+  if (origin) urls.push(`${origin}${path}`);
+  urls.push(path);
+  if (dev && dev !== origin) urls.push(`${dev}${path}`);
+  return Array.from(new Set(urls));
+}
+
 /**
- * 주변 상장 매칭 POI. 우선 Vercel `/api/companies/nearby`, 실패 시 브라우저에서 Supabase 직접 조회.
- * (로컬 `vite`만 켜면 /api 가 없어 빈 지도가 되는 문제 완화)
+ * 주변 상장 매칭 POI. Vercel `/api/companies/nearby` → 실패 시 Supabase 직접.
+ * 배포 도메인은 `getPublicApiOrigin()` 으로 상대·절대 모두 시도.
  */
 export async function fetchNearbyCompanies(
   center: { lat: number; lng: number },
@@ -24,19 +38,20 @@ export async function fetchNearbyCompanies(
     lng: String(center.lng),
     radius: String(radius),
   });
+  const q = params.toString();
 
-  try {
-    const response = await fetch(`/api/companies/nearby?${params.toString()}`);
-    if (response.ok) {
+  for (const url of nearbyUrls(q)) {
+    try {
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) continue;
       const json = (await response.json()) as NearbyApiResponse;
       const list = Array.isArray(json.companies) ? json.companies : [];
       if (list.length > 0) return list;
+    } catch {
+      /* 다음 URL */
     }
-  } catch {
-    /* /api 없음(로컬 Vite)·네트워크 오류 */
   }
 
-  /** API가 200이지만 빈 배열이면(구버전 배포 등) Supabase 직접 조회로 한 번 더 */
   if (isSupabaseConfigured()) {
     return fetchNearbyCompaniesFromSupabase(center, radius);
   }
