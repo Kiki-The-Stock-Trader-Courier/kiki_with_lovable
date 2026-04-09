@@ -34,7 +34,7 @@ export default function StockSheetChat({ stock }: StockSheetChatProps) {
     setMessages([buildWelcomeMessage(stock)]);
     setInput("");
     setIsLoading(false);
-  }, [stock.id]);
+  }, [stock]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -149,6 +149,8 @@ export default function StockSheetChat({ stock }: StockSheetChatProps) {
         }}
       >
         <input
+          id="stock-sheet-chat-message"
+          name="stockSheetChatMessage"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="예: 한줄 요약해줘"

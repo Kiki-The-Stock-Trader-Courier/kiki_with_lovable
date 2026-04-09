@@ -24,6 +24,8 @@ const ProfilePage = () => {
 
         <div className="mt-4 flex items-center gap-2">
           <input
+            id="profile-nickname"
+            name="nickname"
             value={nicknameInput}
             onChange={(e) => setNicknameInput(e.target.value)}
             placeholder="닉네임 입력"

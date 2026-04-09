@@ -221,6 +221,8 @@ const ChatPage = () => {
           className="flex items-center gap-2 pb-[calc(env(safe-area-inset-bottom,0px)+72px)]"
         >
           <input
+            id="chat-page-message"
+            name="chatMessage"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="궁금한 종목이나 걸음 설정을 물어보세요"
