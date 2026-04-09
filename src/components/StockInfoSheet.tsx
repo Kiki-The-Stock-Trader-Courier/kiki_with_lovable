@@ -11,10 +11,14 @@ interface StockInfoSheetProps {
   cashBalance: number;
   isScrapped: boolean;
   onToggleScrap: () => void;
+  onBuyStock: (order: { ticker: string; name: string; price: number; shares: number }) => Promise<{
+    ok: boolean;
+    message: string;
+  }>;
 }
 
 /** 시트가 열리면 부모 state를 기다리지 않고 즉시 /api/quotes 호출 → 체감 지연 감소 */
-const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap }: StockInfoSheetProps) => {
+const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap, onBuyStock }: StockInfoSheetProps) => {
   const [sheetQuote, setSheetQuote] = useState<{ price: number; changePercent: number } | null>(null);
   const [quoteError, setQuoteError] = useState(false);
   /** 시세 재요청 (다시 시도 버튼) */
@@ -122,6 +126,32 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
               size="sm"
               className="h-auto max-w-[9.5rem] shrink-0 rounded-xl px-2.5 py-2 text-xs font-bold shadow-sm sm:max-w-none sm:px-3 sm:text-sm"
               disabled={!hasPrice || !canBuy}
+              onClick={() => {
+                if (!hasPrice || !canBuy || maxAffordableShares <= 0) return;
+                const raw = window.prompt(
+                  `몇 주를 매수할까요?\n(최대 ${maxAffordableShares.toLocaleString()}주)`,
+                  "1",
+                );
+                if (raw == null) return;
+                const qty = Number(String(raw).replace(/[^\d]/g, ""));
+                if (!Number.isFinite(qty) || qty <= 0) {
+                  window.alert("올바른 수량을 입력해 주세요.");
+                  return;
+                }
+                if (qty > maxAffordableShares) {
+                  window.alert(`최대 ${maxAffordableShares.toLocaleString()}주까지 매수할 수 있습니다.`);
+                  return;
+                }
+                void (async () => {
+                  const result = await onBuyStock({
+                    ticker: stock.ticker,
+                    name: stock.name,
+                    price,
+                    shares: Math.floor(qty),
+                  });
+                  window.alert(result.message);
+                })();
+              }}
               data-testid="buy-stock-button"
               aria-label={
                 !hasPrice
@@ -226,7 +256,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
         </div>
 
         {/* Info */}
-        <div className="mb-6 space-y-3">
+        <div className="mb-4 space-y-3">
           <div className="flex items-center gap-2 text-sm text-foreground">
             <Tag className="h-4 w-4 text-muted-foreground" />
             <span className="text-muted-foreground">업종:</span>
@@ -237,7 +267,6 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
               </span>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">{stock.description}</p>
         </div>
 
         <StockSheetChat

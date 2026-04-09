@@ -172,7 +172,7 @@ export default function StockSheetChat({ stock, isScrapped, onToggleScrap }: Sto
 
       <div
         ref={scrollRef}
-        className="mb-3 max-h-64 space-y-2 overflow-y-auto rounded-xl border border-border/50 bg-muted/30 p-3 pr-2"
+        className="mb-3 max-h-80 space-y-2 overflow-y-auto rounded-xl border border-border/50 bg-muted/30 p-3 pr-2"
         style={{ touchAction: "pan-y", WebkitOverflowScrolling: "touch", overscrollBehaviorY: "contain" }}
         onWheel={(e) => e.stopPropagation()}
         onTouchMove={(e) => e.stopPropagation()}

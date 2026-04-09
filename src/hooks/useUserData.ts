@@ -19,6 +19,10 @@ interface UseUserDataResult {
   setGoalSteps: (goal: number) => void;
   setNickname: (nickname: string) => void;
   addSteps: (steps: number) => void;
+  buyStock: (order: { ticker: string; name: string; price: number; shares: number }) => Promise<{
+    ok: boolean;
+    message: string;
+  }>;
   toggleScrap: (stock: { ticker: string; name: string; sector?: string | null }) => void;
   isScrapped: (ticker: string) => boolean;
   isReady: boolean;
@@ -46,6 +50,40 @@ interface HoldingRow {
   shares: number | null;
   avg_price: number | null;
   current_price: number | null;
+}
+
+function applyBuyToHoldings(
+  prev: HoldingStock[],
+  order: { ticker: string; name: string; price: number; shares: number },
+): HoldingStock[] {
+  const key = normalizeTicker(order.ticker);
+  const idx = prev.findIndex((h) => normalizeTicker(h.ticker) === key);
+  if (idx < 0) {
+    return [
+      ...prev,
+      {
+        ticker: key,
+        name: order.name,
+        shares: order.shares,
+        avgPrice: order.price,
+        currentPrice: order.price,
+      },
+    ];
+  }
+
+  const cur = prev[idx];
+  const nextShares = cur.shares + order.shares;
+  const nextAvg = nextShares > 0 ? (cur.avgPrice * cur.shares + order.price * order.shares) / nextShares : order.price;
+
+  const next = [...prev];
+  next[idx] = {
+    ...cur,
+    name: order.name || cur.name,
+    shares: nextShares,
+    avgPrice: Math.round(nextAvg),
+    currentPrice: order.price,
+  };
+  return next;
 }
 
 const KOR_DAY = ["일", "월", "화", "수", "목", "금", "토"] as const;
@@ -351,6 +389,79 @@ export function useUserData(): UseUserDataResult {
     [enqueue, session?.user?.id, walk.cashBalance, walk.cashPerStep, walk.goalSteps],
   );
 
+  const buyStock = useCallback(
+    async (order: { ticker: string; name: string; price: number; shares: number }) => {
+      const ticker = normalizeTicker(order.ticker);
+      const shares = Math.max(0, Math.floor(order.shares));
+      const price = Math.max(0, Math.round(order.price));
+      const total = price * shares;
+
+      if (!ticker || shares <= 0 || price <= 0) {
+        return { ok: false, message: "매수 수량/가격이 올바르지 않습니다." };
+      }
+      if (walk.cashBalance < total) {
+        return { ok: false, message: "캐시가 부족합니다." };
+      }
+
+      // 1) 즉시 UI 반영
+      setWalk((prev) => ({
+        ...prev,
+        cashBalance: Math.round((prev.cashBalance - total) * 10) / 10,
+      }));
+      setHoldings((prev) => applyBuyToHoldings(prev, { ticker, name: order.name, price, shares }));
+
+      // 2) 비로그인/오프라인 모드: 로컬 상태만 유지
+      if (!supabase || !session?.user?.id) {
+        return { ok: true, message: `${order.name} ${shares}주를 매수했습니다.` };
+      }
+
+      // 3) DB 동기화(직렬 큐)
+      const userId = session.user.id;
+      enqueue(async () => {
+        const { data: dbHolding } = await supabase
+          .from("user_holdings")
+          .select("ticker,name,shares,avg_price,current_price")
+          .eq("user_id", userId)
+          .eq("ticker", ticker)
+          .maybeSingle<{
+            ticker: string;
+            name: string;
+            shares: number | null;
+            avg_price: number | null;
+            current_price: number | null;
+          }>();
+
+        const curShares = Number(dbHolding?.shares ?? 0);
+        const curAvg = Number(dbHolding?.avg_price ?? 0);
+        const nextShares = curShares + shares;
+        const nextAvg = nextShares > 0 ? (curAvg * curShares + price * shares) / nextShares : price;
+
+        await supabase.from("user_holdings").upsert(
+          {
+            user_id: userId,
+            ticker,
+            name: order.name,
+            shares: nextShares,
+            avg_price: Math.round(nextAvg),
+            current_price: price,
+          },
+          { onConflict: "user_id,ticker" },
+        );
+
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("cash_balance")
+          .eq("user_id", userId)
+          .single<{ cash_balance: number | null }>();
+        const nextCash = Math.max(0, Number(profile?.cash_balance ?? 0) - total);
+        await supabase.from("user_profiles").update({ cash_balance: nextCash }).eq("user_id", userId);
+      });
+
+      return { ok: true, message: `${order.name} ${shares}주를 매수했습니다.` };
+    },
+    [enqueue, session?.user?.id, walk.cashBalance],
+  );
+
   const toggleScrap = useCallback((stock: { ticker: string; name: string; sector?: string | null }) => {
     const key = normalizeTicker(stock.ticker);
     if (!key) return;
@@ -391,10 +502,11 @@ export function useUserData(): UseUserDataResult {
       setGoalSteps,
       setNickname,
       addSteps,
+      buyStock,
       toggleScrap,
       isScrapped,
       isReady,
     }),
-    [walk, nickname, weeklySteps, holdings, scraps, setGoalSteps, setNickname, addSteps, toggleScrap, isScrapped, isReady],
+    [walk, nickname, weeklySteps, holdings, scraps, setGoalSteps, setNickname, addSteps, buyStock, toggleScrap, isScrapped, isReady],
   );
 }

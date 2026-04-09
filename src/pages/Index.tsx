@@ -31,7 +31,7 @@ const Index = () => {
   const { center, accuracyM, status, refreshLocation } = useUserLocation(DEFAULT_CENTER);
   /** API로 주변 상장사만 채움 — 빈 배열이면 지도에 핀 없음(춘천 목업 좌표가 남지 않도록) */
   const [stocks, setStocks] = useState<StockPin[]>([]);
-  const { walk, addSteps, setGoalSteps, holdings, isScrapped, toggleScrap } = useUserData();
+  const { walk, addSteps, setGoalSteps, holdings, buyStock, isScrapped, toggleScrap } = useUserData();
   const stocksRef = useRef<StockPin[]>([]);
   const prevCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const gravityRef = useRef(9.8);
@@ -357,6 +357,7 @@ const Index = () => {
             sector: selectedStock.sector,
           });
         }}
+        onBuyStock={buyStock}
       />
 
       {/* Bottom nav */}
