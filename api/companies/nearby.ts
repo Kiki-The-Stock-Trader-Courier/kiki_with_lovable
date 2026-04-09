@@ -1,6 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
-import { resolveListedFromDbRow } from "../../src/lib/poiTickerResolve";
 import { getSupabaseUrlAndAnonKey } from "../supabasePublicEnv";
 
 function normalizeKrxTicker(raw: string | null | undefined): string | null {
@@ -38,47 +37,54 @@ function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number):
   return 2 * R * Math.atan2(Math.sqrt(p), Math.sqrt(1 - p));
 }
 
+type ListedLite = {
+  ticker: string;
+  stockName: string;
+  mapDisplayName: string;
+  sector?: string;
+};
+
 function mapRowsToCompanies(
   rows: DbCompanyRow[],
   lat: number,
   lng: number,
   maxDistanceM: number,
+  resolveListedFromDbRow: ((row: DbCompanyRow) => ListedLite | null) | null,
 ) {
   return rows
     .map((row) => {
       try {
-      /** DB ticker 가 비어도 상호·설명으로 krxListedMatch 보강 → 마커 표시 */
-      let ticker = normalizeKrxTicker(row.ticker != null ? String(row.ticker) : null);
-      let displayName = String(row.stock_name ?? row.map_display_name ?? row.name ?? "").trim();
-      let sector = row.sector ?? "기타";
-      if (!ticker) {
-        const listed = resolveListedFromDbRow(row);
-        if (listed) {
-          ticker = normalizeKrxTicker(listed.ticker);
-          displayName = String(listed.mapDisplayName ?? listed.stockName ?? displayName).trim();
-          if (listed.sector) sector = listed.sector;
+        let ticker = normalizeKrxTicker(row.ticker != null ? String(row.ticker) : null);
+        let displayName = String(row.stock_name ?? row.map_display_name ?? row.name ?? "").trim();
+        let sector = row.sector ?? "기타";
+        if (!ticker && resolveListedFromDbRow) {
+          const listed = resolveListedFromDbRow(row);
+          if (listed) {
+            ticker = normalizeKrxTicker(listed.ticker);
+            displayName = String(listed.mapDisplayName ?? listed.stockName ?? displayName).trim();
+            if (listed.sector) sector = listed.sector;
+          }
         }
-      }
-      if (!ticker) return null;
-      const la = Number(row.lat);
-      const ln = Number(row.lng);
-      if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
-      const distanceM = distanceMeters(lat, lng, la, ln);
-      return {
-        id: row.source_place_id,
-        ticker,
-        name: displayName,
-        lat: la,
-        lng: ln,
-        sector,
-        description: row.description ?? "주변 기업 정보",
-        isSponsored: false,
-        logoUrl: undefined,
-        price: 0,
-        changePercent: 0,
-        distanceM,
-        sourceStation: row.source_station,
-      };
+        if (!ticker) return null;
+        const la = Number(row.lat);
+        const ln = Number(row.lng);
+        if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
+        const distanceM = distanceMeters(lat, lng, la, ln);
+        return {
+          id: row.source_place_id,
+          ticker,
+          name: displayName,
+          lat: la,
+          lng: ln,
+          sector,
+          description: row.description ?? "주변 기업 정보",
+          isSponsored: false,
+          logoUrl: undefined,
+          price: 0,
+          changePercent: 0,
+          distanceM,
+          sourceStation: row.source_station,
+        };
       } catch (rowErr) {
         console.warn("[api/companies/nearby] row skip:", rowErr);
         return null;
@@ -89,18 +95,27 @@ function mapRowsToCompanies(
     .sort((a, b) => a.distanceM - b.distanceM);
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+function sendJson(res: VercelResponse, status: number, body: unknown) {
+  if (res.writableEnded) return;
+  res.statusCode = status;
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("X-API-Nearby", "resilient-v1");
+  res.end(JSON.stringify(body));
+}
 
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "OPTIONS") {
-    res.status(204).end();
+    res.statusCode = 204;
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.end();
     return;
   }
 
   if (req.method !== "GET") {
-    res.status(405).json({ error: "Method not allowed" });
+    sendJson(res, 405, { error: "Method not allowed" });
     return;
   }
 
@@ -108,16 +123,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const lng = Number(req.query.lng);
   const radius = Number(req.query.radius ?? 1000);
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    res.status(400).json({ error: "lat/lng query required" });
+    sendJson(res, 400, { error: "lat/lng query required" });
     return;
+  }
+
+  /** krxListedMatch 가 큰 번들 — 정적 import 시 Vercel 로드 실패로 500 이 날 수 있어 동적 로드 */
+  let resolveListedFromDbRow: ((row: DbCompanyRow) => ListedLite | null) | null = null;
+  try {
+    const poi = await import("../../src/lib/poiTickerResolve");
+    resolveListedFromDbRow = (row: DbCompanyRow) => poi.resolveListedFromDbRow(row);
+  } catch (e) {
+    console.warn("[api/companies/nearby] poiTickerResolve import failed, DB ticker column only", e);
   }
 
   const cfg = getSupabaseUrlAndAnonKey();
   if (!cfg) {
-    res.status(503).json({
-      error:
-        "Supabase env is not configured. Set VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY or SUPABASE_URL + SUPABASE_ANON_KEY on Vercel.",
-    });
+    sendJson(res, 200, { companies: [], warning: "Supabase env missing on server" });
     return;
   }
 
@@ -140,9 +161,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .limit(500);
     };
 
-    /** 서울숲역↔여의도역(~12km)처럼 bbox가 서로를 못 잡는 경우 대비 — 넓은 바운딩 */
     const SEOUL_METRO_BBOX_M = 22000;
-    /** 수도권 밖 GPS여도 DB에 행이 있으면 가까운 순으로 표시 (km) */
     const GLOBAL_MAX_KM = 200;
 
     const bboxRadius = Math.max(radius, 800);
@@ -150,28 +169,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) {
       console.error("[api/companies/nearby] Supabase:", error.message, error.code ?? "");
-      res.status(502).json({
-        error: error.message,
+      /** 브라우저에서 Supabase 직접 폴백 가능하도록 200 + 빈 배열 */
+      sendJson(res, 200, {
+        companies: [],
+        supabaseError: error.message,
         code: error.code,
-        hint: "Check Vercel env (SUPABASE_URL + SUPABASE_ANON_KEY) and that nearby_companies exists with RLS select for anon.",
       });
       return;
     }
 
     let rows = (data ?? []) as DbCompanyRow[];
-    let filtered = mapRowsToCompanies(rows, lat, lng, radius);
+    let filtered = mapRowsToCompanies(rows, lat, lng, radius, resolveListedFromDbRow);
 
-    // 2차: 수도권 단일 크롤 구역 간 거리까지 포함
     if (filtered.length === 0) {
       const wide = Math.min(Math.max(radius * 3, SEOUL_METRO_BBOX_M), 28000);
       const second = await fetchInBbox(wide);
       if (!second.error && second.data?.length) {
         rows = second.data as DbCompanyRow[];
-        filtered = mapRowsToCompanies(rows, lat, lng, wide);
+        filtered = mapRowsToCompanies(rows, lat, lng, wide, resolveListedFromDbRow);
       }
     }
 
-    // 3차: bbox에 한 건도 안 잡히면(다른 지역 GPS 등) ticker 있는 전체에서 거리순 상한
     if (filtered.length === 0) {
       const { data: allRows, error: allErr } = await supabase
         .from("nearby_companies")
@@ -181,9 +199,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .limit(2000);
 
       if (!allErr && allRows?.length) {
-        let capped = mapRowsToCompanies(allRows as DbCompanyRow[], lat, lng, GLOBAL_MAX_KM * 1000);
+        let capped = mapRowsToCompanies(allRows as DbCompanyRow[], lat, lng, GLOBAL_MAX_KM * 1000, resolveListedFromDbRow);
         if (capped.length === 0) {
-          capped = mapRowsToCompanies(allRows as DbCompanyRow[], lat, lng, Number.POSITIVE_INFINITY);
+          capped = mapRowsToCompanies(
+            allRows as DbCompanyRow[],
+            lat,
+            lng,
+            Number.POSITIVE_INFINITY,
+            resolveListedFromDbRow,
+          );
         }
         filtered = capped.slice(0, 80);
       }
@@ -191,9 +215,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const companies = filtered.map(({ distanceM, sourceStation: _s, ...rest }) => rest);
 
-    res.status(200).json({ companies });
+    sendJson(res, 200, { companies });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    res.status(500).json({ error: message });
+    console.error("[api/companies/nearby] fatal", e);
+    sendJson(res, 200, { companies: [], warning: e instanceof Error ? e.message : "nearby error" });
   }
 }
