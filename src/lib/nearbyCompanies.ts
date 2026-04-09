@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import type { StockPin } from "@/types/stock";
+import { resolveListedFromDbRow } from "@/lib/poiTickerResolve";
 
 /** KRX 6자리로 정규화 (DB에 앞자리 0 누락·문자 섞인 경우 대비) */
 export function normalizeKrxTicker(raw: string | null | undefined): string | null {
@@ -61,8 +62,6 @@ export async function fetchNearbyCompaniesFromSupabase(
       .select(
         "source_place_id,name,lat,lng,sector,description,source_station,ticker,stock_name,map_display_name",
       )
-      .not("ticker", "is", null)
-      .neq("ticker", "")
       .gte("lat", lat - latPad)
       .lte("lat", lat + latPad)
       .gte("lng", lng - lngPad)
@@ -75,16 +74,26 @@ export async function fetchNearbyCompaniesFromSupabase(
   const rowsToPins = (r: DbRow[], maxDistM: number): StockPin[] => {
     const mapped: WithD[] = r
       .map((row) => {
-        const ticker = normalizeKrxTicker(row.ticker != null ? String(row.ticker) : null);
+        let ticker = normalizeKrxTicker(row.ticker != null ? String(row.ticker) : null);
+        let displayName = (row.stock_name ?? row.map_display_name ?? row.name).trim();
+        let sector = row.sector ?? "기타";
+        if (!ticker) {
+          const listed = resolveListedFromDbRow(row);
+          if (listed) {
+            ticker = normalizeKrxTicker(listed.ticker);
+            displayName = listed.mapDisplayName ?? listed.stockName ?? displayName;
+            if (listed.sector) sector = listed.sector;
+          }
+        }
         if (!ticker) return null;
         const _d = distanceMeters(lat, lng, row.lat, row.lng);
         const pin: WithD = {
           id: row.source_place_id,
           ticker,
-          name: (row.stock_name ?? row.map_display_name ?? row.name).trim(),
+          name: displayName,
           lat: row.lat,
           lng: row.lng,
-          sector: row.sector ?? "기타",
+          sector,
           description: row.description ?? "주변 기업 정보",
           isSponsored: false,
           logoUrl: undefined,
@@ -123,8 +132,6 @@ export async function fetchNearbyCompaniesFromSupabase(
       .select(
         "source_place_id,name,lat,lng,sector,description,source_station,ticker,stock_name,map_display_name",
       )
-      .not("ticker", "is", null)
-      .neq("ticker", "")
       .limit(2000);
 
     if (!allErr && allRows?.length) {

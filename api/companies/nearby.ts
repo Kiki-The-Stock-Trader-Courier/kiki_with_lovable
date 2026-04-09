@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
+import { resolveListedFromDbRow } from "../../src/lib/poiTickerResolve";
 
 function normalizeKrxTicker(raw: string | null | undefined): string | null {
   if (raw == null) return null;
@@ -44,16 +45,27 @@ function mapRowsToCompanies(
 ) {
   return rows
     .map((row) => {
-      const ticker = normalizeKrxTicker(row.ticker != null ? String(row.ticker) : null);
+      /** DB ticker 가 비어도 상호·설명으로 krxListedMatch 보강 → 마커 표시 */
+      let ticker = normalizeKrxTicker(row.ticker != null ? String(row.ticker) : null);
+      let displayName = (row.stock_name ?? row.map_display_name ?? row.name).trim();
+      let sector = row.sector ?? "기타";
+      if (!ticker) {
+        const listed = resolveListedFromDbRow(row);
+        if (listed) {
+          ticker = normalizeKrxTicker(listed.ticker);
+          displayName = listed.mapDisplayName ?? listed.stockName ?? displayName;
+          if (listed.sector) sector = listed.sector;
+        }
+      }
       if (!ticker) return null;
       const distanceM = distanceMeters(lat, lng, row.lat, row.lng);
       return {
         id: row.source_place_id,
         ticker,
-        name: (row.stock_name ?? row.map_display_name ?? row.name).trim(),
+        name: displayName,
         lat: row.lat,
         lng: row.lng,
-        sector: row.sector ?? "기타",
+        sector,
         description: row.description ?? "주변 기업 정보",
         isSponsored: false,
         logoUrl: undefined,
@@ -109,8 +121,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select(
           "source_place_id,name,lat,lng,sector,description,source_station,ticker,stock_name,map_display_name",
         )
-        .not("ticker", "is", null)
-        .neq("ticker", "")
         .gte("lat", lat - latPad)
         .lte("lat", lat + latPad)
         .gte("lng", lng - lngPad)
@@ -151,8 +161,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .select(
           "source_place_id,name,lat,lng,sector,description,source_station,ticker,stock_name,map_display_name",
         )
-        .not("ticker", "is", null)
-        .neq("ticker", "")
         .limit(2000);
 
       if (!allErr && allRows?.length) {
