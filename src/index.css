@@ -132,7 +132,7 @@
 }
 
 .leaflet-tile-pane {
-  filter: saturate(0.68) hue-rotate(12deg) brightness(1.05) contrast(0.9);
+  filter: saturate(0.92) hue-rotate(6deg) brightness(1.04) contrast(0.94);
 }
 
 .leaflet-overlay-pane path {
