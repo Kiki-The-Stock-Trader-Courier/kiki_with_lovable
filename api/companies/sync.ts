@@ -33,6 +33,30 @@ const STATIONS = [
   { name: "서울숲역" as const, lat: 37.543617, lng: 127.044707 },
   { name: "여의도역" as const, lat: 37.521758, lng: 126.924139 },
 ];
+const YEOUIDO_STATION = STATIONS[1];
+
+/** 네이버 지역 검색으로 여의도 상장사 후보를 넓게 수집하기 위한 질의 */
+const NAVER_LISTED_QUERIES = [
+  "여의도 삼성",
+  "여의도 SK",
+  "여의도 LG",
+  "여의도 현대",
+  "여의도 신한",
+  "여의도 KB",
+  "여의도 하나은행",
+  "여의도 우리은행",
+  "여의도 NH투자증권",
+  "여의도 키움증권",
+  "여의도 미래에셋증권",
+  "여의도 삼성증권",
+  "여의도 카카오",
+  "여의도 네이버",
+  "여의도 GS25",
+  "여의도 CU",
+  "여의도 세븐일레븐",
+  "여의도 이마트24",
+  "여의도 올리브영",
+];
 
 function inferSector(tags: Record<string, string> | undefined): string {
   if (!tags) return "기타";
@@ -60,6 +84,22 @@ function toDescription(tags: Record<string, string> | undefined, stationName: st
   const brandOp = [tags.brand, tags.operator].map((s) => (typeof s === "string" ? s.trim() : "")).filter(Boolean);
   const brandHint = brandOp.length ? ` · ${brandOp.join(" ")}` : "";
   return `${stationName} 반경 1km 기업 정보 (${detail}) · ${sourceHint}${brandHint}`;
+}
+
+function stripHtmlTags(s: string | undefined): string {
+  if (!s) return "";
+  return s.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+}
+
+function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const R = 6371000;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const p =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(p), Math.sqrt(1 - p));
 }
 
 function toCompany(stationName: "서울숲역" | "여의도역", el: OverpassElement): CrawledCompany | null {
@@ -182,6 +222,103 @@ out center;
   };
 }
 
+type NaverLocalItem = {
+  title?: string;
+  category?: string;
+  description?: string;
+  telephone?: string;
+  address?: string;
+  roadAddress?: string;
+  mapx?: string; // 경도 * 1e7
+  mapy?: string; // 위도 * 1e7
+};
+
+/**
+ * 네이버 로컬 검색 API로 여의도역 주변 상장사 후보를 보강합니다.
+ * - NAVER_CLIENT_ID / NAVER_CLIENT_SECRET이 없으면 건너뜀
+ * - 여의도역 1km 반경 필터 적용
+ */
+async function crawlNaverListedAroundYeouido(): Promise<{
+  companies: CrawledCompany[];
+  searchedQueries: number;
+  rawItems: number;
+}> {
+  const clientId = (process.env.NAVER_CLIENT_ID ?? "").trim();
+  const clientSecret = (process.env.NAVER_CLIENT_SECRET ?? "").trim();
+  if (!clientId || !clientSecret) {
+    return { companies: [], searchedQueries: 0, rawItems: 0 };
+  }
+
+  const rows: CrawledCompany[] = [];
+  let rawItems = 0;
+  let searchedQueries = 0;
+
+  for (const query of NAVER_LISTED_QUERIES) {
+    searchedQueries += 1;
+    try {
+      const url = `https://openapi.naver.com/v1/search/local.json?query=${encodeURIComponent(query)}&display=5&start=1&sort=random`;
+      const r = await fetch(url, {
+        headers: {
+          "X-Naver-Client-Id": clientId,
+          "X-Naver-Client-Secret": clientSecret,
+        },
+      });
+      if (!r.ok) continue;
+      const j = (await r.json()) as { items?: NaverLocalItem[] };
+      const items = Array.isArray(j.items) ? j.items : [];
+      rawItems += items.length;
+
+      for (const item of items) {
+        const title = stripHtmlTags(item.title);
+        if (!title) continue;
+
+        const lng = Number(item.mapx) / 1e7;
+        const lat = Number(item.mapy) / 1e7;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+        const d = distanceMeters(YEOUIDO_STATION.lat, YEOUIDO_STATION.lng, lat, lng);
+        if (d > 1000) continue;
+
+        const searchExtra = [
+          stripHtmlTags(item.category),
+          stripHtmlTags(item.roadAddress),
+          stripHtmlTags(item.address),
+          stripHtmlTags(item.description),
+        ]
+          .filter(Boolean)
+          .join(" ");
+
+        const listed = resolveListedKrx(title, { searchExtra });
+        if (!listed) continue;
+
+        const keyBase = `${title}:${lat.toFixed(6)}:${lng.toFixed(6)}`;
+        rows.push({
+          source_place_id: `여의도역:naver:${encodeURIComponent(keyBase)}`,
+          name: title,
+          lat,
+          lng,
+          sector: listed.sector ?? "기타",
+          description: `여의도역 반경 1km 기업 정보 (naver-local-search)`,
+          source_station: "여의도역",
+          ticker: listed.ticker,
+          stock_name: listed.stockName,
+          map_display_name: listed.mapDisplayName,
+        });
+      }
+    } catch (e) {
+      console.warn("[sync] naver query failed:", query, e);
+    }
+  }
+
+  const dedup = new Map<string, CrawledCompany>();
+  for (const r of rows) dedup.set(r.source_place_id, r);
+  return {
+    companies: Array.from(dedup.values()),
+    searchedQueries,
+    rawItems,
+  };
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -214,7 +351,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { companies, overpassElementsTotal, matchedListedBeforeDedup } = await crawlCompaniesAroundStations();
+    const [osm, naver] = await Promise.all([
+      crawlCompaniesAroundStations(),
+      crawlNaverListedAroundYeouido(),
+    ]);
+
+    const merged = new Map<string, CrawledCompany>();
+    for (const c of osm.companies) merged.set(c.source_place_id, c);
+    for (const c of naver.companies) merged.set(c.source_place_id, c);
+
+    const companies = Array.from(merged.values());
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const payload = companies.map((c) => ({
@@ -250,9 +396,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const crawlStats = {
       /** Overpass가 돌려준 원시 요소 수(두 역 합) — 0이면 Overpass 실패·차단 가능 */
-      overpassElementsTotal,
+      overpassElementsTotal: osm.overpassElementsTotal,
       /** KRX 규칙에 걸린 POI 수(중복 제거 전) */
-      matchedListedBeforeDedup,
+      matchedListedBeforeDedup: osm.matchedListedBeforeDedup,
+      /** 네이버 API 검색 보강 */
+      naverQueries: naver.searchedQueries,
+      naverRawItems: naver.rawItems,
+      naverMatchedAfterDedup: naver.companies.length,
       /** upsert 행 수(중복 제거 후, 곧 ticker 있는 행) */
       upsertedAfterDedup: payload.length,
     };
@@ -265,9 +415,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       crawlStats,
       tickerRepair,
       hint:
-        overpassElementsTotal === 0
+        osm.overpassElementsTotal === 0
           ? "Overpass에서 요소가 0입니다. 네트워크·API 제한을 확인하세요."
-          : matchedListedBeforeDedup === 0
+          : osm.matchedListedBeforeDedup === 0 && naver.companies.length === 0
             ? "OSM 이름이 krxListedMatch 규칙과 맞는 POI가 없습니다. RULES 확장 또는 다른 역 반경을 검토하세요."
             : payload.length === 0
               ? "매칭은 됐으나 중복 제거 후 0건입니다(비정상)."
