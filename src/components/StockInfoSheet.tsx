@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { TrendingUp, TrendingDown, X, ShoppingCart, Building2, Tag } from "lucide-react";
+import { TrendingUp, TrendingDown, X, ShoppingCart, Building2, Tag, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StockSheetChat from "@/components/StockSheetChat";
 import type { StockPin } from "@/types/stock";
 import { fetchYahooQuotes } from "@/lib/quoteApi";
+import { parseTickersQuery } from "../../api/yahooKrxQuotesCore";
 
 interface StockInfoSheetProps {
   stock: StockPin | null;
@@ -14,35 +15,54 @@ interface StockInfoSheetProps {
 /** 시트가 열리면 부모 state를 기다리지 않고 즉시 /api/quotes 호출 → 체감 지연 감소 */
 const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) => {
   const [sheetQuote, setSheetQuote] = useState<{ price: number; changePercent: number } | null>(null);
+  const [quoteError, setQuoteError] = useState(false);
+  /** 시세 재요청 (다시 시도 버튼) */
+  const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     if (!stock) {
       setSheetQuote(null);
+      setQuoteError(false);
       return;
     }
-    const t = stock.ticker;
-    if (!/^\d{6}$/.test(t)) return;
+
+    const codes = parseTickersQuery(String(stock.ticker));
+    if (codes.length === 0) {
+      setSheetQuote(null);
+      setQuoteError(true);
+      return;
+    }
+    const t = codes[0];
 
     let cancelled = false;
     setSheetQuote(null);
+    setQuoteError(false);
 
     void (async () => {
       try {
         const qs = await fetchYahooQuotes([t]);
-        if (cancelled || !qs[0]) return;
-        setSheetQuote({
-          price: Math.round(qs[0].price),
-          changePercent: qs[0].changePercent,
-        });
+        if (cancelled) return;
+        if (qs[0]) {
+          setSheetQuote({
+            price: Math.round(qs[0].price),
+            changePercent: qs[0].changePercent,
+          });
+          setQuoteError(false);
+        } else {
+          setQuoteError(true);
+        }
       } catch {
-        if (!cancelled) setSheetQuote(null);
+        if (!cancelled) {
+          setSheetQuote(null);
+          setQuoteError(true);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [stock?.id, stock?.ticker]);
+  }, [stock?.id, stock?.ticker, retryToken]);
 
   if (!stock) return null;
 
@@ -135,19 +155,37 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
         <div className="mb-4 rounded-xl bg-muted/50 p-4">
           <p className="mb-1 text-sm text-muted-foreground">현재가</p>
           <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-2xl font-bold text-foreground">
-              {hasPrice ? `${price.toLocaleString()}원` : "시세 불러오는 중…"}
-            </span>
-            {hasPrice && (
-              <span
-                className={`flex items-center gap-1 text-sm font-semibold ${
-                  isUp ? "text-destructive" : "text-accent"
-                }`}
-              >
-                {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                {isUp ? "+" : ""}
-                {Number.isFinite(changePct) ? changePct.toFixed(2) : "0.00"}%
-              </span>
+            {hasPrice ? (
+              <>
+                <span className="text-2xl font-bold text-foreground">{price.toLocaleString()}원</span>
+                <span
+                  className={`flex items-center gap-1 text-sm font-semibold ${
+                    isUp ? "text-destructive" : "text-accent"
+                  }`}
+                >
+                  {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                  {isUp ? "+" : ""}
+                  {Number.isFinite(changePct) ? changePct.toFixed(2) : "0.00"}%
+                </span>
+              </>
+            ) : quoteError ? (
+              <div className="flex w-full flex-col gap-2">
+                <span className="text-sm text-muted-foreground">
+                  시세를 불러오지 못했습니다. 네트워크 또는 API 제한일 수 있습니다.
+                </span>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-fit gap-1.5"
+                  onClick={() => setRetryToken((k) => k + 1)}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  다시 시도
+                </Button>
+              </div>
+            ) : (
+              <span className="text-lg font-medium text-muted-foreground">시세 불러오는 중…</span>
             )}
           </div>
         </div>
