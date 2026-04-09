@@ -6,7 +6,7 @@ import TrendingSection from "@/components/TrendingSection";
 import BottomNav from "@/components/BottomNav";
 import { MOCK_STOCKS, MOCK_TRENDING, DEFAULT_CENTER, DEFAULT_RADIUS_M } from "@/data/mockStocks";
 import type { StockPin } from "@/types/stock";
-import { Compass, MapPin, MessageCircle } from "lucide-react";
+import { LocateFixed, MapPin, MessageCircle } from "lucide-react";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { Capacitor } from "@capacitor/core";
 import { StepTracker } from "@/plugins/stepTracker";
@@ -278,7 +278,7 @@ const Index = () => {
           className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
           aria-label="내 위치 새로고침"
         >
-          <Compass className="h-5 w-5" />
+          <LocateFixed className="h-5 w-5" strokeWidth={1.5} aria-hidden />
         </button>
         <button
           type="button"
