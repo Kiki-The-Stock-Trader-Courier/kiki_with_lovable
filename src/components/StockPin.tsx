@@ -85,20 +85,20 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
 }
 
 const createPinIcon = (stock: StockPinType, isOwned: boolean, isOutOfRadius: boolean) => {
-  /** 보유 종목은 진한 티얼, 기본은 밝은 민트톤 */
+  /** 보유 종목은 초록 계열, 일반은 기존 주황 계열 */
   const color = isOutOfRadius
-    ? (stock.isSponsored ? "hsl(166, 12%, 70%)" : "hsl(166, 14%, 78%)")
+    ? (stock.isSponsored ? "hsl(0, 0%, 58%)" : "hsl(0, 0%, 68%)")
     : isOwned
-      ? (stock.isSponsored ? "hsl(168, 42%, 52%)" : "hsl(168, 38%, 58%)")
-      : (stock.isSponsored ? "hsl(169, 34%, 66%)" : "hsl(169, 30%, 73%)");
+      ? (stock.isSponsored ? "hsl(145, 66%, 40%)" : "hsl(145, 60%, 45%)")
+      : (stock.isSponsored ? "hsl(12, 78%, 57%)" : "hsl(12, 65%, 65%)");
   const inner = logoOrSectorInner(stock, color);
 
   return L.divIcon({
     className: "stock-pin-icon",
     html: `
       <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M16 1.5C8.54 1.5 2.5 7.54 2.5 15c0 9.92 13.5 22.8 13.5 22.8S29.5 24.92 29.5 15C29.5 7.54 23.46 1.5 16 1.5z" fill="${color}" stroke="rgba(245,255,250,0.95)" stroke-width="1.5"/>
-        <circle cx="16" cy="14.8" r="9.6" fill="white" opacity="0.97"/>
+        <path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 24 16 24s16-12 16-24C32 7.16 24.84 0 16 0z" fill="${color}"/>
+        <circle cx="16" cy="15" r="10" fill="white" opacity="0.95"/>
         ${inner}
       </svg>
     `,

@@ -138,7 +138,7 @@ const MapView = ({
         className: "user-location-marker-icon",
         html: `<div class="user-location-marker-pin" role="presentation" aria-hidden="true">
 <svg width="36" height="44" viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg">
-  <path d="M18 42s14-14 14-26C32 8 26 2 18 2S4 8 4 16c0 12 14 26 14 26z" fill="hsl(169,47%,58%)" stroke="#f7fffb" stroke-width="2.5"/>
+  <path d="M18 42s14-14 14-26C32 8 26 2 18 2S4 8 4 16c0 12 14 26 14 26z" fill="hsl(217,91%,52%)" stroke="#fff" stroke-width="2.5"/>
   <circle cx="18" cy="16" r="5" fill="#fff"/>
 </svg>
 </div>`,
@@ -165,7 +165,6 @@ const MapView = ({
           url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           subdomains={["a", "b", "c", "d"]}
           maxZoom={20}
-          className="map-tile-soft"
         />
         <MapInvalidateSize />
         <InvalidateWhenStocksChange count={stocks.length} />
@@ -177,13 +176,11 @@ const MapView = ({
           center={[center.lat, center.lng]}
           radius={radius}
           pathOptions={{
-            color: "hsl(170, 34%, 60%)",
-            fillColor: "hsl(168, 40%, 74%)",
-            fillOpacity: 0.12,
-            weight: 2.25,
-            dashArray: "8 6",
-            lineCap: "round",
-            lineJoin: "round",
+            color: "hsl(210, 60%, 55%)",
+            fillColor: "hsl(210, 60%, 55%)",
+            fillOpacity: 0.08,
+            weight: 2,
+            dashArray: "6 4",
             interactive: false,
           }}
         />
@@ -194,10 +191,10 @@ const MapView = ({
             center={[center.lat, center.lng]}
             radius={Math.min(userAccuracyM, 400)}
             pathOptions={{
-              color: "hsl(169, 38%, 63%)",
-              fillColor: "hsl(169, 42%, 76%)",
-              fillOpacity: 0.16,
-              weight: 1.25,
+              color: "hsl(217, 91%, 60%)",
+              fillColor: "hsl(217, 91%, 60%)",
+              fillOpacity: 0.12,
+              weight: 1,
               interactive: false,
             }}
           />
@@ -210,8 +207,8 @@ const MapView = ({
               center={[center.lat, center.lng]}
               radius={8}
               pathOptions={{
-                color: "#f8fffc",
-                fillColor: "hsl(170, 44%, 56%)",
+                color: "#ffffff",
+                fillColor: "hsl(217, 91%, 55%)",
                 fillOpacity: 1,
                 weight: 3,
                 interactive: false,

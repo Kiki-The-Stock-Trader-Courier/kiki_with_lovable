@@ -118,19 +118,6 @@
 .leaflet-container {
   background: hsl(var(--color-map-bg)) !important;
   font-family: var(--font-body) !important;
-  border-radius: 24px;
-}
-
-.leaflet-tile-pane {
-  filter: saturate(0.52) hue-rotate(18deg) brightness(1.1) contrast(0.86);
-}
-
-.leaflet-overlay-pane path {
-  vector-effect: non-scaling-stroke;
-}
-
-.leaflet-pane .leaflet-marker-icon {
-  filter: drop-shadow(0 4px 8px rgb(58 105 94 / 0.14));
 }
 
 /* OSM/Carto 저작권 배지가 하단 탭바에 가리지 않도록 */
@@ -157,7 +144,7 @@
 .user-location-marker-pin {
   display: flex;
   justify-content: center;
-  filter: drop-shadow(0 4px 8px rgb(58 105 94 / 0.14));
+  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.28));
 }
 
 .leaflet-control-zoom {
