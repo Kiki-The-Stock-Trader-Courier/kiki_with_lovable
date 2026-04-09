@@ -85,26 +85,27 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
 }
 
 const createPinIcon = (stock: StockPinType, isOwned: boolean, isOutOfRadius: boolean) => {
-  /** 보유 종목은 초록 계열, 일반은 기존 주황 계열 */
+  /** 기본/보유는 티얼, 반경 밖은 비활성 회색 */
   const color = isOutOfRadius
-    ? (stock.isSponsored ? "hsl(0, 0%, 58%)" : "hsl(0, 0%, 68%)")
+    ? "#9CA3AF"
     : isOwned
-      ? (stock.isSponsored ? "hsl(145, 66%, 40%)" : "hsl(145, 60%, 45%)")
-      : (stock.isSponsored ? "hsl(12, 78%, 57%)" : "hsl(12, 65%, 65%)");
+      ? "#2E8F7D"
+      : "#3FB39A";
   const inner = logoOrSectorInner(stock, color);
 
   return L.divIcon({
     className: "stock-pin-icon",
     html: `
-      <svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M16 0C7.16 0 0 7.16 0 16c0 12 16 24 16 24s16-12 16-24C32 7.16 24.84 0 16 0z" fill="${color}"/>
-        <circle cx="16" cy="15" r="10" fill="white" opacity="0.95"/>
+      <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="5" y="2" width="24" height="24" rx="8" fill="${color}"/>
+        <path d="M17 40L10.8 26h12.4L17 40z" fill="${color}"/>
+        <circle cx="17" cy="14" r="8.5" fill="white" opacity="0.98"/>
         ${inner}
       </svg>
     `,
-    iconSize: [32, 40],
-    iconAnchor: [16, 40],
-    popupAnchor: [0, -40],
+    iconSize: [34, 42],
+    iconAnchor: [17, 40],
+    popupAnchor: [0, -42],
   });
 };
 

@@ -131,14 +131,14 @@ const MapView = ({
   userLocationStatus = "pending",
   userRecenterTarget = null,
 }: MapViewProps) => {
-  /** 내 위치 핀 — 종목 핀과 구분되는 파란 마커 */
+  /** 내 위치 핀 — 종목 핀과 구분되는 티얼 마커 */
   const userLocationIcon = useMemo(
     () =>
       L.divIcon({
         className: "user-location-marker-icon",
         html: `<div class="user-location-marker-pin" role="presentation" aria-hidden="true">
 <svg width="36" height="44" viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg">
-  <path d="M18 42s14-14 14-26C32 8 26 2 18 2S4 8 4 16c0 12 14 26 14 26z" fill="hsl(217,91%,52%)" stroke="#fff" stroke-width="2.5"/>
+  <path d="M18 42s14-14 14-26C32 8 26 2 18 2S4 8 4 16c0 12 14 26 14 26z" fill="#3FB39A" stroke="#FFFFFF" stroke-width="2.5"/>
   <circle cx="18" cy="16" r="5" fill="#fff"/>
 </svg>
 </div>`,
@@ -149,11 +149,11 @@ const MapView = ({
   );
 
   return (
-    <div className="absolute inset-0 z-0 min-h-0 w-full" data-testid="map-wrapper">
+    <div className="absolute inset-0 z-0 min-h-0 w-full p-6 md:p-8" data-testid="map-wrapper">
       <MapContainer
         center={[center.lat, center.lng]}
         zoom={DEFAULT_MAP_ZOOM}
-        className="z-0 h-full w-full min-h-[100dvh]"
+        className="map-canvas z-0 h-full w-full min-h-[100dvh]"
         style={{ minHeight: "100%" }}
         zoomControl={false}
         attributionControl
@@ -176,11 +176,13 @@ const MapView = ({
           center={[center.lat, center.lng]}
           radius={radius}
           pathOptions={{
-            color: "hsl(210, 60%, 55%)",
-            fillColor: "hsl(210, 60%, 55%)",
-            fillOpacity: 0.08,
-            weight: 2,
-            dashArray: "6 4",
+            color: "#3FB39A",
+            fillColor: "#3FB39A",
+            fillOpacity: 0.1,
+            weight: 4,
+            dashArray: "0",
+            lineCap: "round",
+            lineJoin: "round",
             interactive: false,
           }}
         />
@@ -191,8 +193,8 @@ const MapView = ({
             center={[center.lat, center.lng]}
             radius={Math.min(userAccuracyM, 400)}
             pathOptions={{
-              color: "hsl(217, 91%, 60%)",
-              fillColor: "hsl(217, 91%, 60%)",
+              color: "#3FB39A",
+              fillColor: "#3FB39A",
               fillOpacity: 0.12,
               weight: 1,
               interactive: false,
@@ -208,7 +210,7 @@ const MapView = ({
               radius={8}
               pathOptions={{
                 color: "#ffffff",
-                fillColor: "hsl(217, 91%, 55%)",
+                fillColor: "#3FB39A",
                 fillOpacity: 1,
                 weight: 3,
                 interactive: false,

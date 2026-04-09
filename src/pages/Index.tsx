@@ -255,7 +255,7 @@ const Index = () => {
   }, [center, status, accuracyM]);
 
   return (
-    <div className="relative h-[100dvh] min-h-0 w-full overflow-hidden" data-testid="map-screen">
+    <div className="map-screen-shell relative h-[100dvh] min-h-0 w-full overflow-hidden" data-testid="map-screen">
       {/* Map — 중심은 GPS(실패 시 mock 기본 좌표) */}
       <MapView
         center={center}
@@ -301,7 +301,7 @@ const Index = () => {
         <button
           type="button"
           onClick={() => navigate(isAuthenticated ? "/chat" : "/login")}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
+          className="map-icon-btn flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
           aria-label="챗봇 열기"
         >
           <MessageCircle className="h-5 w-5" />
@@ -317,7 +317,7 @@ const Index = () => {
               }
             })();
           }}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
+          className="map-icon-btn flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
           aria-label="내 위치 새로고침"
         >
           <LocateFixed className="h-5 w-5" strokeWidth={1.5} aria-hidden />
@@ -331,7 +331,7 @@ const Index = () => {
             }
             setShowTrending(!showTrending);
           }}
-          className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
+          className="map-icon-btn flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
           aria-label="근처 인기 종목 보기"
           aria-pressed={showTrending}
         >
