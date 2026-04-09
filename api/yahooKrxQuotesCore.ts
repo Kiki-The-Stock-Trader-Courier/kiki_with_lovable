@@ -132,6 +132,68 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
     return [];
   };
 
+  /**
+   * v7 quote 가 빈 배열·차단일 때 — v8 chart 는 같은 환경에서 더 자주 성공함.
+   * 심볼당 1회 호출이므로 배치 실패 후 누락 티커에만 사용.
+   */
+  const fetchQuoteFromYahooChart = async (
+    yahooSymbol: string,
+    ticker6: string,
+  ): Promise<KrxLiveQuote | null> => {
+    const path = encodeURIComponent(yahooSymbol);
+    const qs = "interval=1d&range=5d";
+    const hosts = ["https://query1.finance.yahoo.com", "https://query2.finance.yahoo.com"] as const;
+
+    for (const host of hosts) {
+      const url = `${host}/v8/finance/chart/${path}?${qs}`;
+      const r = await fetch(url, { cache: "no-store", headers: YAHOO_FETCH_HEADERS });
+      if (!r.ok) continue;
+
+      const json = (await r.json()) as {
+        chart?: {
+          result?: Array<{
+            meta?: {
+              regularMarketPrice?: number;
+              chartPreviousClose?: number;
+              previousClose?: number;
+              regularMarketChangePercent?: number;
+            };
+            error?: unknown;
+          }>;
+          error?: unknown;
+        };
+      };
+
+      if (json.chart?.error) continue;
+      const first = json.chart?.result?.[0];
+      if (!first || first.error || !first.meta) continue;
+
+      const m = first.meta;
+      const price =
+        m.regularMarketPrice != null && Number.isFinite(m.regularMarketPrice) && m.regularMarketPrice > 0
+          ? m.regularMarketPrice
+          : m.chartPreviousClose != null &&
+              Number.isFinite(m.chartPreviousClose) &&
+              m.chartPreviousClose > 0
+            ? m.chartPreviousClose
+            : m.previousClose != null && Number.isFinite(m.previousClose) && m.previousClose > 0
+              ? m.previousClose
+              : null;
+
+      if (price == null) continue;
+
+      let changePercent = m.regularMarketChangePercent;
+      if (changePercent == null || Number.isNaN(changePercent)) {
+        const prev = m.chartPreviousClose ?? m.previousClose;
+        changePercent = prev != null && prev > 0 ? ((price - prev) / prev) * 100 : 0;
+      }
+
+      return { ticker: ticker6, price, changePercent: Number(changePercent.toFixed(2)) };
+    }
+
+    return null;
+  };
+
   const MAX_SYMBOLS = 80;
   const symMap = mapSymbolToTicker(allSymbols);
   const chunks: string[][] = [];
@@ -156,7 +218,23 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
     else if (symU.endsWith(".KQ")) byKq.set(q.ticker, q);
   }
 
-  return uniqTickers
-    .map((t) => byKs.get(t) ?? byKq.get(t))
-    .filter((v): v is KrxLiveQuote => v != null);
+  const out: KrxLiveQuote[] = [];
+
+  for (const t of uniqTickers) {
+    const primary = byKs.get(t) ?? byKq.get(t);
+    if (primary) {
+      out.push(primary);
+      continue;
+    }
+    // v7 배치가 비었거나 가격 필드가 비어 매칭 실패한 경우 — Chart v8 단건 폴백
+    const fromChartKs = await fetchQuoteFromYahooChart(`${t}.KS`, t);
+    if (fromChartKs) {
+      out.push(fromChartKs);
+      continue;
+    }
+    const fromChartKq = await fetchQuoteFromYahooChart(`${t}.KQ`, t);
+    if (fromChartKq) out.push(fromChartKq);
+  }
+
+  return out;
 }
