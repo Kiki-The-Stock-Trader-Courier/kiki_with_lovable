@@ -158,6 +158,7 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
               previousClose?: number;
               regularMarketChangePercent?: number;
             };
+            indicators?: { quote?: Array<{ close?: Array<number | null> }> };
             error?: unknown;
           }>;
           error?: unknown;
@@ -166,25 +167,46 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
 
       if (json.chart?.error) continue;
       const first = json.chart?.result?.[0];
-      if (!first || first.error || !first.meta) continue;
+      if (!first || first.error) continue;
 
       const m = first.meta;
-      const price =
-        m.regularMarketPrice != null && Number.isFinite(m.regularMarketPrice) && m.regularMarketPrice > 0
+      let price: number | null =
+        m?.regularMarketPrice != null && Number.isFinite(m.regularMarketPrice) && m.regularMarketPrice > 0
           ? m.regularMarketPrice
-          : m.chartPreviousClose != null &&
+          : m?.chartPreviousClose != null &&
               Number.isFinite(m.chartPreviousClose) &&
               m.chartPreviousClose > 0
             ? m.chartPreviousClose
-            : m.previousClose != null && Number.isFinite(m.previousClose) && m.previousClose > 0
+            : m?.previousClose != null && Number.isFinite(m.previousClose) && m.previousClose > 0
               ? m.previousClose
               : null;
 
+      let changePercent: number | undefined = m?.regularMarketChangePercent;
+
+      /** meta 가 비어 있어도 일봉 종가 배열에서 최근가·전봉 추출 (일부 환경에서 meta 만 비는 경우) */
+      if (price == null) {
+        const closes = first.indicators?.quote?.[0]?.close;
+        if (closes?.length) {
+          const recent: number[] = [];
+          for (let i = closes.length - 1; i >= 0 && recent.length < 2; i--) {
+            const v = closes[i];
+            if (v != null && Number.isFinite(v) && v > 0) recent.push(v);
+          }
+          if (recent.length >= 1) {
+            price = recent[0];
+            const prevBar = recent[1];
+            if (changePercent == null || Number.isNaN(changePercent)) {
+              changePercent =
+                prevBar != null && prevBar > 0 ? ((price - prevBar) / prevBar) * 100 : 0;
+            }
+          }
+        }
+      }
+
       if (price == null) continue;
 
-      let changePercent = m.regularMarketChangePercent;
       if (changePercent == null || Number.isNaN(changePercent)) {
-        const prev = m.chartPreviousClose ?? m.previousClose;
+        const prev = m?.chartPreviousClose ?? m?.previousClose;
         changePercent = prev != null && prev > 0 ? ((price - prev) / prev) * 100 : 0;
       }
 
