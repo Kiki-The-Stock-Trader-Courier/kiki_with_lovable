@@ -32,16 +32,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const uniqTickers = Array.from(new Set(tickers));
+  const uniqTickers = Array.from(new Set(tickers)).filter((t) => /^\d{6}$/.test(t));
 
-  const ksSymbols = uniqTickers
-    .map((t) => (/^\d{6}$/.test(t) ? `${t}.KS` : null))
-    .filter((v): v is string => v != null);
-
-  if (ksSymbols.length === 0) {
+  if (uniqTickers.length === 0) {
     res.status(200).json({ quotes: [] });
     return;
   }
+
+  /** 코스피·코스닥 심볼을 한 번에 요청해 왕복 지연을 절반으로 줄임 */
+  const allSymbols = uniqTickers.flatMap((t) => [`${t}.KS`, `${t}.KQ`]);
 
   const mapSymbolToTicker = (symbols: string[]) => {
     const m = new Map<string, string>();
@@ -73,38 +72,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const fetchYahooBatch = async (symbols: string[]) => {
     if (symbols.length === 0) return [] as YahooQuote[];
     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbols.join(","))}`;
-    const r = await fetch(url);
+    const r = await fetch(url, { cache: "no-store" });
     if (!r.ok) throw new Error(`Yahoo ${r.status}`);
     const json = (await r.json()) as { quoteResponse?: { result?: YahooQuote[] } };
     return Array.isArray(json.quoteResponse?.result) ? json.quoteResponse!.result! : [];
   };
 
+  /** URL 길이 제한 대비 — 심볼당 2개(KS+KQ)이므로 티커 기준으로 청크 */
+  const MAX_SYMBOLS = 80;
+
   try {
-    const symKs = mapSymbolToTicker(ksSymbols);
-    let rows = await fetchYahooBatch(ksSymbols);
-    let quotes = rows
-      .map((row) => rowToQuote(row, symKs))
+    const symMap = mapSymbolToTicker(allSymbols);
+    const chunks: string[][] = [];
+    for (let i = 0; i < allSymbols.length; i += MAX_SYMBOLS) {
+      chunks.push(allSymbols.slice(i, i + MAX_SYMBOLS));
+    }
+
+    const rows: YahooQuote[] = [];
+    for (const part of chunks) {
+      const batch = await fetchYahooBatch(part);
+      rows.push(...batch);
+    }
+
+    const byKs = new Map<string, { ticker: string; price: number; changePercent: number }>();
+    const byKq = new Map<string, { ticker: string; price: number; changePercent: number }>();
+
+    for (const row of rows) {
+      const sym = row.symbol ?? "";
+      const q = rowToQuote(row, symMap);
+      if (!q) continue;
+      if (sym.endsWith(".KS")) byKs.set(q.ticker, q);
+      else if (sym.endsWith(".KQ")) byKq.set(q.ticker, q);
+    }
+
+    const quotes = uniqTickers
+      .map((t) => byKs.get(t) ?? byKq.get(t))
       .filter((v): v is { ticker: string; price: number; changePercent: number } => v != null);
 
-    const seen = new Set(quotes.map((q) => q.ticker));
-    const missingKq = uniqTickers.filter((t) => /^\d{6}$/.test(t) && !seen.has(t));
-    if (missingKq.length > 0) {
-      const kqSyms = missingKq.map((t) => `${t}.KQ`);
-      const symKq = mapSymbolToTicker(kqSyms);
-      rows = await fetchYahooBatch(kqSyms);
-      const extra = rows
-        .map((row) => rowToQuote(row, symKq))
-        .filter((v): v is { ticker: string; price: number; changePercent: number } => v != null);
-      quotes = [...quotes, ...extra];
-    }
-
-    /** 동일 종목이 KS/KQ 중복 시 첫 값만 유지 */
-    const byTicker = new Map<string, (typeof quotes)[0]>();
-    for (const q of quotes) {
-      if (!byTicker.has(q.ticker)) byTicker.set(q.ticker, q);
-    }
-
-    res.status(200).json({ quotes: Array.from(byTicker.values()) });
+    res.status(200).json({ quotes });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     res.status(500).json({ error: message });

@@ -9,7 +9,7 @@ export async function fetchYahooQuotes(tickers: string[]): Promise<LiveQuote[]> 
   if (uniq.length === 0) return [];
 
   const params = new URLSearchParams({ tickers: uniq.join(",") });
-  const r = await fetch(`/api/quotes?${params.toString()}`);
+  const r = await fetch(`/api/quotes?${params.toString()}`, { cache: "no-store" });
   if (!r.ok) throw new Error(`Failed to fetch quotes (${r.status})`);
 
   const json = (await r.json()) as { quotes?: LiveQuote[] };

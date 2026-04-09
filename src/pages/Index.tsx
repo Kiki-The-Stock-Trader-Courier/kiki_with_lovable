@@ -117,32 +117,6 @@ const Index = () => {
     };
   }, [stockTickerKey]);
 
-  /** 바텀시트를 열 때 해당 종목 시세를 즉시 한 번 더 받음 */
-  useEffect(() => {
-    if (!selectedStock) return;
-    const ticker = selectedStock.ticker;
-    if (!/^\d{6}$/.test(ticker)) return;
-    const id = selectedStock.id;
-    let canceled = false;
-    (async () => {
-      try {
-        const quotes = await fetchYahooQuotes([ticker]);
-        if (canceled || quotes.length === 0) return;
-        const q = quotes[0];
-        setStocks((prev) =>
-          prev.map((s) =>
-            s.id === id ? { ...s, price: Math.round(q.price), changePercent: q.changePercent } : s,
-          ),
-        );
-      } catch {
-        /* 시세 일시 오류 */
-      }
-    })();
-    return () => {
-      canceled = true;
-    };
-  }, [selectedStock?.id]);
-
   useEffect(() => {
     if (!selectedStock) return;
     const refreshed = stocks.find((s) => s.id === selectedStock.id);

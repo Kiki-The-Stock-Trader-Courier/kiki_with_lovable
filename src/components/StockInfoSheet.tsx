@@ -1,7 +1,9 @@
+import { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, X, ShoppingCart, Building2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StockSheetChat from "@/components/StockSheetChat";
 import type { StockPin } from "@/types/stock";
+import { fetchYahooQuotes } from "@/lib/quoteApi";
 
 interface StockInfoSheetProps {
   stock: StockPin | null;
@@ -9,13 +11,47 @@ interface StockInfoSheetProps {
   cashBalance: number;
 }
 
+/** 시트가 열리면 부모 state를 기다리지 않고 즉시 /api/quotes 호출 → 체감 지연 감소 */
 const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) => {
+  const [sheetQuote, setSheetQuote] = useState<{ price: number; changePercent: number } | null>(null);
+
+  useEffect(() => {
+    if (!stock) {
+      setSheetQuote(null);
+      return;
+    }
+    const t = stock.ticker;
+    if (!/^\d{6}$/.test(t)) return;
+
+    let cancelled = false;
+    setSheetQuote(null);
+
+    void (async () => {
+      try {
+        const qs = await fetchYahooQuotes([t]);
+        if (cancelled || !qs[0]) return;
+        setSheetQuote({
+          price: Math.round(qs[0].price),
+          changePercent: qs[0].changePercent,
+        });
+      } catch {
+        if (!cancelled) setSheetQuote(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [stock?.id, stock?.ticker]);
+
   if (!stock) return null;
 
-  const isUp = stock.changePercent >= 0;
-  const hasPrice = stock.price > 0;
-  const canBuy = hasPrice && cashBalance >= stock.price;
-  const affordableShares = hasPrice ? cashBalance / stock.price : 0;
+  const price = sheetQuote && sheetQuote.price > 0 ? sheetQuote.price : stock.price;
+  const changePct = sheetQuote ? sheetQuote.changePercent : stock.changePercent;
+  const isUp = changePct >= 0;
+  const hasPrice = price > 0;
+  const canBuy = hasPrice && cashBalance >= price;
+  const affordableShares = hasPrice ? cashBalance / price : 0;
 
   return (
     <div className="animate-fade-in fixed inset-0 z-[1400]" data-testid="stock-info-sheet">
@@ -54,7 +90,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
                 !hasPrice
                   ? "시세 확인 후 매수 가능"
                   : canBuy
-                    ? `${stock.name} 캐시로 매수 (${stock.price.toLocaleString()}원)`
+                    ? `${stock.name} 캐시로 매수 (${price.toLocaleString()}원)`
                     : `보유 ${cashBalance.toLocaleString()}원, 구매 가능 ${affordableShares.toFixed(4)}주`
               }
             >
@@ -69,7 +105,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
                   <>
                     <span>매수하기</span>
                     <span className="text-[10px] font-normal opacity-90 sm:text-xs">
-                      {stock.price.toLocaleString()}원
+                      {price.toLocaleString()}원
                     </span>
                   </>
                 ) : (
@@ -95,14 +131,14 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
           </div>
         </div>
 
-        {/* Price — Index에서 Yahoo 시세 폴링·시트 오픈 시 즉시 갱신 */}
+        {/* Price */}
         <div className="mb-4 rounded-xl bg-muted/50 p-4">
           <p className="mb-1 text-sm text-muted-foreground">현재가</p>
           <div className="flex flex-wrap items-baseline gap-2">
             <span className="text-2xl font-bold text-foreground">
-              {stock.price > 0 ? `${stock.price.toLocaleString()}원` : "시세 불러오는 중…"}
+              {hasPrice ? `${price.toLocaleString()}원` : "시세 불러오는 중…"}
             </span>
-            {stock.price > 0 && (
+            {hasPrice && (
               <span
                 className={`flex items-center gap-1 text-sm font-semibold ${
                   isUp ? "text-destructive" : "text-accent"
@@ -110,7 +146,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
               >
                 {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
                 {isUp ? "+" : ""}
-                {Number.isFinite(stock.changePercent) ? stock.changePercent.toFixed(2) : "0.00"}%
+                {Number.isFinite(changePct) ? changePct.toFixed(2) : "0.00"}%
               </span>
             )}
           </div>
@@ -131,7 +167,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
           <p className="text-sm text-muted-foreground">{stock.description}</p>
         </div>
 
-        <StockSheetChat stock={stock} />
+        <StockSheetChat stock={{ ...stock, price, changePercent: changePct }} />
         </div>
       </div>
     </div>
