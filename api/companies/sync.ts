@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 import { resolveListedKrx } from "./krxListedMatch";
+import { repairEmptyTickers } from "./tickerRepair";
 
 interface CrawledCompany {
   source_place_id: string;
@@ -67,9 +68,21 @@ function toCompany(stationName: "서울숲역" | "여의도역", el: OverpassEle
   const label = name || nameKo || brand;
   if (!label) return null;
 
+  /** OSM 다국어·공식명을 매칭 문자열에 포함 (상호만으로는 규칙에 안 걸리는 경우 감소) */
+  const searchExtra = [
+    tags["name:en"],
+    tags["name:ko"],
+    tags["official_name"],
+    tags["alt_name"],
+  ]
+    .map((s) => (typeof s === "string" ? s.trim() : ""))
+    .filter((s) => s.length > 0 && s !== label)
+    .join(" ");
+
   const listed = resolveListedKrx(label, {
     brand,
     operator: tags.operator?.trim(),
+    searchExtra: searchExtra || undefined,
   });
   if (!listed) return null;
 
@@ -206,11 +219,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return;
     }
 
+    /** 예전에 ticker 없이 쌓인 행·이번 크롤에서 놓친 행 보정 */
+    let tickerRepair = { scanned: 0, updated: 0, skipped: 0 };
+    try {
+      tickerRepair = await repairEmptyTickers(supabase);
+    } catch (repairErr) {
+      console.warn("[sync] tickerRepair:", repairErr);
+    }
+
     res.status(200).json({
       ok: true,
       upsertedCount: payload.length,
       stations: ["서울숲역", "여의도역"],
       radiusM: 1000,
+      tickerRepair,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";

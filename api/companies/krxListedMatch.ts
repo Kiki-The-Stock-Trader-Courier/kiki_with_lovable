@@ -392,15 +392,166 @@ const RULES: Rule[] = [
     sector: "지주",
     mapLabel: () => "GS",
   },
+
+  // ── 아래는 매장·지점·간판에서 자주 노출되는 상장사 (키워드 보강) ──
+  {
+    ticker: "323410",
+    defaultLabel: "카카오뱅크",
+    terms: sortTermsLongFirst(["카카오뱅크", "KakaoBank", "Kakao Bank", "카뱅"]),
+    sector: "금융",
+  },
+  {
+    ticker: "024030",
+    defaultLabel: "한국산업은행",
+    terms: sortTermsLongFirst(["한국산업은행", "산업은행", "KDB"]),
+    sector: "금융",
+  },
+  {
+    ticker: "138930",
+    defaultLabel: "BNK금융지주",
+    terms: sortTermsLongFirst(["BNK금융", "부산은행", "경남은행", "대구은행", "iM뱅크"]),
+    sector: "금융",
+  },
+  {
+    ticker: "086320",
+    defaultLabel: "쿠팡",
+    terms: sortTermsLongFirst(["쿠팡", "Coupang", "로켓배송"]),
+    sector: "유통",
+  },
+  {
+    ticker: "352820",
+    defaultLabel: "하이브",
+    terms: sortTermsLongFirst(["하이브", "HYBE", "빅히트", "Big Hit"]),
+    sector: "IT",
+  },
+  {
+    ticker: "251270",
+    defaultLabel: "넷마블",
+    terms: sortTermsLongFirst(["넷마블", "Netmarble"]),
+    sector: "IT",
+  },
+  {
+    ticker: "036570",
+    defaultLabel: "엔씨소프트",
+    terms: sortTermsLongFirst(["엔씨소프트", "NC소프트", "NC Soft", "리니지"]),
+    sector: "IT",
+  },
+  {
+    ticker: "263750",
+    defaultLabel: "펄어비스",
+    terms: sortTermsLongFirst(["펄어비스", "Pearl Abyss", "검은사막"]),
+    sector: "IT",
+  },
+  {
+    ticker: "041510",
+    defaultLabel: "에스엠",
+    terms: sortTermsLongFirst(["SM엔터", "SM Entertainment", "에스엠"]),
+    sector: "유통",
+  },
+  {
+    ticker: "035900",
+    defaultLabel: "JYP Ent.",
+    terms: sortTermsLongFirst(["JYP", "JYP엔터"]),
+    sector: "유통",
+  },
+  {
+    ticker: "122870",
+    defaultLabel: "와이지엔터",
+    terms: sortTermsLongFirst(["YG엔터", "YG Entertainment", "와이지"]),
+    sector: "유통",
+  },
+  {
+    ticker: "034220",
+    defaultLabel: "LG디스플레이",
+    terms: sortTermsLongFirst(["LG디스플레이", "LG Display"]),
+    sector: "제조",
+  },
+  {
+    ticker: "029780",
+    defaultLabel: "삼성카드",
+    terms: sortTermsLongFirst(["삼성카드", "Samsung Card"]),
+    sector: "금융",
+  },
+  {
+    ticker: "097950",
+    defaultLabel: "CJ제일제당",
+    terms: sortTermsLongFirst([
+      "CJ제일제당",
+      "CJ푸드빌",
+      "빕스",
+      "제일제당",
+      "CJ제당",
+    ]),
+    sector: "유통",
+    mapLabel: (raw) => (normalize(raw).includes("빕스") ? "빕스 CJ제일제당" : "CJ제일제당"),
+  },
+  {
+    ticker: "271560",
+    defaultLabel: "오리온",
+    terms: sortTermsLongFirst(["오리온", "Orion", "초코파이"]),
+    sector: "유통",
+  },
+  {
+    ticker: "000080",
+    defaultLabel: "하이트진로",
+    terms: sortTermsLongFirst(["하이트진로", "하이트", "진로", "테라"]),
+    sector: "유통",
+  },
+  {
+    ticker: "017810",
+    defaultLabel: "풀무원",
+    terms: sortTermsLongFirst(["풀무원", "Pulmuone"]),
+    sector: "유통",
+  },
+  {
+    ticker: "051900",
+    defaultLabel: "LG생활건강",
+    terms: sortTermsLongFirst(["LG생활건강", "엘지생활건강", "THE FACE SHOP", "후", "Whoo"]),
+    sector: "유통",
+  },
+  /** 올리브영 등 CJ 계열 유통 — 비상장 자회사가 많아 지주(001040)로 매핑 */
+  {
+    ticker: "001040",
+    defaultLabel: "CJ",
+    terms: sortTermsLongFirst(["올리브영", "Olive Young", "CJ올리브영"]),
+    sector: "지주",
+    mapLabel: () => "올리브영·CJ",
+  },
+  {
+    ticker: "090430",
+    defaultLabel: "아모레퍼시픽",
+    terms: sortTermsLongFirst([
+      "아모레퍼시픽",
+      "아모레",
+      "에뛰드",
+      "Etude",
+      "라네즈",
+      "Laneige",
+      "설화수",
+    ]),
+    sector: "유통",
+  },
+  {
+    ticker: "004370",
+    defaultLabel: "농심",
+    terms: sortTermsLongFirst(["농심", "Nongshim", "신라면"]),
+    sector: "유통",
+  },
+  {
+    ticker: "097520",
+    defaultLabel: "CJ ENM",
+    terms: sortTermsLongFirst(["CJ ENM", "씨제이이엔엠", "tvN", "Mnet"]),
+    sector: "유통",
+  },
 ];
 
-/** OSM name·brand·operator를 합쳐 매칭 (편의점은 brand만 있는 경우가 많음) */
+/** OSM name·brand·operator·추가 텍스트를 합쳐 매칭 (mapLabel에는 osmName 우선 사용) */
 export function resolveListedKrx(
   osmName: string,
-  ctx?: { brand?: string; operator?: string },
+  ctx?: { brand?: string; operator?: string; /** DB description·다국어 상호 등 매칭만 보강 */ searchExtra?: string },
 ): ListedResolve | null {
   const raw = osmName.trim();
-  const blob = [raw, ctx?.brand, ctx?.operator].filter(Boolean).join(" ");
+  const blob = [raw, ctx?.brand, ctx?.operator, ctx?.searchExtra].filter(Boolean).join(" ");
   const n = normalize(blob);
   if (!n) return null;
 
