@@ -48,13 +48,28 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
             changePercent: qs[0].changePercent,
           });
           setQuoteError(false);
+        } else if (stock.price > 0) {
+          /** API·Yahoo 빈 응답: 지도에서 이미 받은 시세로 표시 (완전 실패 UX 방지) */
+          setSheetQuote({
+            price: Math.round(stock.price),
+            changePercent: stock.changePercent,
+          });
+          setQuoteError(false);
         } else {
           setQuoteError(true);
         }
       } catch {
         if (!cancelled) {
-          setSheetQuote(null);
-          setQuoteError(true);
+          if (stock.price > 0) {
+            setSheetQuote({
+              price: Math.round(stock.price),
+              changePercent: stock.changePercent,
+            });
+            setQuoteError(false);
+          } else {
+            setSheetQuote(null);
+            setQuoteError(true);
+          }
         }
       }
     })();
@@ -62,7 +77,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
     return () => {
       cancelled = true;
     };
-  }, [stock?.id, stock?.ticker, retryToken]);
+  }, [stock, retryToken]);
 
   if (!stock) return null;
 

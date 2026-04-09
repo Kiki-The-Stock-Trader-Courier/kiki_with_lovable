@@ -233,6 +233,50 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
     return null;
   };
 
+  /**
+   * Yahoo 가 Vercel 등에서 막힐 때 — 네이버 모바일 공개 basic JSON (코스피·코스닥 동일 6자리 코드).
+   * 서버 fetch 전용 (브라우저 CORS 아님).
+   */
+  const fetchQuoteFromNaverMobile = async (ticker6: string): Promise<KrxLiveQuote | null> => {
+    const code = ticker6.padStart(6, "0");
+    const url = `https://m.stock.naver.com/api/stock/${code}/basic`;
+    const headers: HeadersInit = {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      Accept: "application/json,*/*",
+      Referer: "https://m.stock.naver.com/",
+    };
+    try {
+      const r = await fetch(url, { cache: "no-store", headers });
+      if (!r.ok) return null;
+      const json = await parseJsonBody<{
+        closePrice?: string;
+        fluctuationsRatio?: string;
+        itemCode?: string;
+        overMarketPriceInfo?: { overPrice?: string; fluctuationsRatio?: string };
+      }>(r);
+      if (!json) return null;
+
+      const priceStr =
+        json.closePrice?.replace(/,/g, "").trim() ||
+        json.overMarketPriceInfo?.overPrice?.replace(/,/g, "").trim() ||
+        "";
+      const price = Number(priceStr);
+      if (!Number.isFinite(price) || price <= 0) return null;
+
+      const pctStr =
+        json.fluctuationsRatio?.replace(/,/g, "").trim() ||
+        json.overMarketPriceInfo?.fluctuationsRatio?.replace(/,/g, "").trim() ||
+        "0";
+      const rawPct = Number(pctStr.replace(/^\+/, ""));
+      const changePercent = Number.isFinite(rawPct) ? rawPct : 0;
+
+      return { ticker: code, price, changePercent: Number(changePercent.toFixed(2)) };
+    } catch {
+      return null;
+    }
+  };
+
   const MAX_SYMBOLS = 80;
   const symMap = mapSymbolToTicker(allSymbols);
   const chunks: string[][] = [];
@@ -272,7 +316,12 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
       continue;
     }
     const fromChartKq = await fetchQuoteFromYahooChart(`${t}.KQ`, t);
-    if (fromChartKq) out.push(fromChartKq);
+    if (fromChartKq) {
+      out.push(fromChartKq);
+      continue;
+    }
+    const fromNaver = await fetchQuoteFromNaverMobile(t);
+    if (fromNaver) out.push(fromNaver);
   }
 
   return out;
