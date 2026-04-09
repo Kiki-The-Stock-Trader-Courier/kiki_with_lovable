@@ -136,6 +136,17 @@
   justify-content: center;
 }
 
+/* 내 위치 divIcon — Leaflet 기본 테두리 제거 */
+.user-location-marker-icon {
+  background: transparent !important;
+  border: none !important;
+}
+.user-location-marker-pin {
+  display: flex;
+  justify-content: center;
+  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 0.28));
+}
+
 .leaflet-control-zoom {
   border: none !important;
   box-shadow: var(--shadow-md) !important;

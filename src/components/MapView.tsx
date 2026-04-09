@@ -1,5 +1,6 @@
-import { MapContainer, TileLayer, Circle, CircleMarker, useMap } from "react-leaflet";
-import { useEffect, useRef } from "react";
+import { MapContainer, TileLayer, Circle, CircleMarker, Marker, useMap } from "react-leaflet";
+import L from "leaflet";
+import { useEffect, useMemo, useRef } from "react";
 import StockPinMarker from "./StockPin";
 import type { StockPin } from "@/types/stock";
 
@@ -18,10 +19,9 @@ interface MapViewProps {
   /** 위치 권한·고정 상태 — 첫 `ok`일 때 지도를 한 번 사용자 좌표로 맞춤 */
   userLocationStatus?: UserMapLocationStatus;
   /**
-   * 값이 바뀔 때마다(예: 「내 위치」 버튼) 현재 center 로 flyTo.
-   * GPS 좌표가 이전과 같아도 지도를 사용자 위치로 다시 가져올 때 사용.
+   * 「내 위치」 버튼에서 받은 좌표 + token — React state 배치와 무관하게 flyTo.
    */
-  userRecenterSignal?: number;
+  userRecenterTarget?: { lat: number; lng: number; token: number } | null;
 }
 
 const DEFAULT_MAP_ZOOM = 16;
@@ -48,23 +48,27 @@ function InitialUserFit({
   return null;
 }
 
-/** 「내 위치 새로고침」 등 — 트리거가 바뀔 때마다 현재 좌표로 부드럽게 이동 */
-function FlyToUserOnSignal({
-  lat,
-  lng,
-  signal,
-}: {
-  lat: number;
-  lng: number;
-  signal: number;
-}) {
+/** 버튼으로 전달된 좌표로 이동 — `center` state 와 다른 타이밍에도 동작 */
+function FlyToExplicitTarget({ target }: { target: { lat: number; lng: number; token: number } | null }) {
   const map = useMap();
-  const prev = useRef(0);
+  const lastTokenRef = useRef(0);
+
   useEffect(() => {
-    if (signal <= 0 || signal === prev.current) return;
-    prev.current = signal;
-    map.flyTo([lat, lng], Math.max(map.getZoom(), 15), { duration: 0.75 });
-  }, [signal, lat, lng, map]);
+    if (!target) return;
+    if (target.token === lastTokenRef.current) return;
+    lastTokenRef.current = target.token;
+
+    const zoom = Math.max(map.getZoom(), 16);
+    const latlng: L.LatLngExpression = [target.lat, target.lng];
+
+    const fly = () => {
+      map.invalidateSize({ animate: false });
+      map.flyTo(latlng, zoom, { duration: 0.72, animate: true });
+    };
+    const id = requestAnimationFrame(fly);
+    return () => cancelAnimationFrame(id);
+  }, [target, map]);
+
   return null;
 }
 
@@ -105,8 +109,25 @@ const MapView = ({
   showUserMarker = false,
   userAccuracyM = null,
   userLocationStatus = "pending",
-  userRecenterSignal = 0,
+  userRecenterTarget = null,
 }: MapViewProps) => {
+  /** 내 위치 핀 — 종목 핀과 구분되는 파란 마커 */
+  const userLocationIcon = useMemo(
+    () =>
+      L.divIcon({
+        className: "user-location-marker-icon",
+        html: `<div class="user-location-marker-pin" role="presentation" aria-hidden="true">
+<svg width="36" height="44" viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg">
+  <path d="M18 42s14-14 14-26C32 8 26 2 18 2S4 8 4 16c0 12 14 26 14 26z" fill="hsl(217,91%,52%)" stroke="#fff" stroke-width="2.5"/>
+  <circle cx="18" cy="16" r="5" fill="#fff"/>
+</svg>
+</div>`,
+        iconSize: [36, 44],
+        iconAnchor: [18, 42],
+      }),
+    [],
+  );
+
   return (
     <div className="absolute inset-0 z-0 min-h-0 w-full" data-testid="map-wrapper">
       <MapContainer
@@ -128,7 +149,7 @@ const MapView = ({
         <MapInvalidateSize />
         <InvalidateWhenStocksChange count={stocks.length} />
         <InitialUserFit lat={center.lat} lng={center.lng} status={userLocationStatus} />
-        <FlyToUserOnSignal lat={center.lat} lng={center.lng} signal={userRecenterSignal} />
+        <FlyToExplicitTarget target={userRecenterTarget} />
 
         {/* 반경 표시 — interactive 끄면 path가 클릭·드래그를 가로채지 않음 */}
         <Circle
@@ -159,19 +180,28 @@ const MapView = ({
           />
         )}
 
-        {/* 내 위치 점(픽셀 반경) */}
+        {/* 내 위치: 정확도 원 + 점 + 핀 마커(항목 구분) */}
         {showUserMarker && (
-          <CircleMarker
-            center={[center.lat, center.lng]}
-            radius={8}
-            pathOptions={{
-              color: "#ffffff",
-              fillColor: "hsl(217, 91%, 55%)",
-              fillOpacity: 1,
-              weight: 3,
-              interactive: false,
-            }}
-          />
+          <>
+            <CircleMarker
+              center={[center.lat, center.lng]}
+              radius={8}
+              pathOptions={{
+                color: "#ffffff",
+                fillColor: "hsl(217, 91%, 55%)",
+                fillOpacity: 1,
+                weight: 3,
+                interactive: false,
+              }}
+            />
+            <Marker
+              position={[center.lat, center.lng]}
+              icon={userLocationIcon}
+              zIndexOffset={8000}
+              interactive={false}
+              keyboard={false}
+            />
+          </>
         )}
 
         {/* 주식 핀 */}

@@ -10,9 +10,9 @@ export interface UserLocationState {
   status: UserLocationStatus;
   /**
    * 사용자 액션(버튼)으로 `getCurrentPosition` 한 번 더 호출.
-   * 성공 시 `true` — 지도 flyTo 등은 호출부에서 시그널로 처리하기 좋게 Promise 로 반환.
+   * 성공 시 방금 받은 좌표를 반환 — 지도 flyTo 는 이 값으로 바로 이동(React state 배치와 무관).
    */
-  refreshLocation: () => Promise<boolean>;
+  refreshLocation: () => Promise<{ lat: number; lng: number } | null>;
 }
 
 /**
@@ -26,25 +26,26 @@ export function useUserLocation(fallback: { lat: number; lng: number }): UserLoc
     status: "pending",
   });
 
-  const refreshLocation = useCallback((): Promise<boolean> => {
+  const refreshLocation = useCallback((): Promise<{ lat: number; lng: number } | null> => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setState((s) => ({ ...s, status: "unsupported" }));
-      return Promise.resolve(false);
+      return Promise.resolve(null);
     }
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
+          const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           setState((s) => ({
             ...s,
-            center: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+            center: coords,
             accuracyM: pos.coords.accuracy != null ? pos.coords.accuracy : null,
             status: "ok",
           }));
-          resolve(true);
+          resolve(coords);
         },
         () => {
           setState((s) => ({ ...s, status: "denied" }));
-          resolve(false);
+          resolve(null);
         },
         {
           enableHighAccuracy: true,
