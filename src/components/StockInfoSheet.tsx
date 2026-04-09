@@ -84,6 +84,8 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
   const isUp = changePct >= 0;
   const hasPrice = price > 0;
   const canBuy = hasPrice && cashBalance >= price;
+  /** 보유 캐시로 살 수 있는 정수 주(소수점 버림) */
+  const maxAffordableShares = hasPrice ? Math.floor(cashBalance / price) : 0;
   const affordableShares = hasPrice ? cashBalance / price : 0;
 
   return (
@@ -123,7 +125,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
                 !hasPrice
                   ? "시세 확인 후 매수 가능"
                   : canBuy
-                    ? `${stock.name} 캐시로 매수 (${price.toLocaleString()}원)`
+                    ? `${stock.name} 캐시로 매수, 최대 ${maxAffordableShares.toLocaleString()}주`
                     : `보유 ${cashBalance.toLocaleString()}원, 구매 가능 ${affordableShares.toFixed(4)}주`
               }
             >
@@ -138,7 +140,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance }: StockInfoSheetProps) =>
                   <>
                     <span>매수하기</span>
                     <span className="text-[10px] font-normal opacity-90 sm:text-xs">
-                      {price.toLocaleString()}원
+                      최대 {maxAffordableShares.toLocaleString()}주 구매 가능
                     </span>
                   </>
                 ) : (

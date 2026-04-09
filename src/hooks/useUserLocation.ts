@@ -8,8 +8,11 @@ export interface UserLocationState {
   /** 정확도 반경(미터), 원 표시용 */
   accuracyM: number | null;
   status: UserLocationStatus;
-  /** 사용자 액션(버튼)으로 현재 위치를 즉시 다시 조회 */
-  refreshLocation: () => void;
+  /**
+   * 사용자 액션(버튼)으로 `getCurrentPosition` 한 번 더 호출.
+   * 성공 시 `true` — 지도 flyTo 등은 호출부에서 시그널로 처리하기 좋게 Promise 로 반환.
+   */
+  refreshLocation: () => Promise<boolean>;
 }
 
 /**
@@ -17,36 +20,39 @@ export interface UserLocationState {
  * 권한 거부·오류 시 fallback 좌표를 유지합니다.
  */
 export function useUserLocation(fallback: { lat: number; lng: number }): UserLocationState {
-  const [state, setState] = useState<UserLocationState>({
+  const [state, setState] = useState<Omit<UserLocationState, "refreshLocation">>({
     center: fallback,
     accuracyM: null,
     status: "pending",
-    refreshLocation: () => undefined,
   });
 
-  const refreshLocation = useCallback(() => {
+  const refreshLocation = useCallback((): Promise<boolean> => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setState((s) => ({ ...s, status: "unsupported" }));
-      return;
+      return Promise.resolve(false);
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setState((s) => ({
-          ...s,
-          center: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-          accuracyM: pos.coords.accuracy != null ? pos.coords.accuracy : null,
-          status: "ok",
-        }));
-      },
-      () => {
-        setState((s) => ({ ...s, status: "denied" }));
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 25000,
-      },
-    );
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setState((s) => ({
+            ...s,
+            center: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+            accuracyM: pos.coords.accuracy != null ? pos.coords.accuracy : null,
+            status: "ok",
+          }));
+          resolve(true);
+        },
+        () => {
+          setState((s) => ({ ...s, status: "denied" }));
+          resolve(false);
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 25000,
+        },
+      );
+    });
   }, []);
 
   useEffect(() => {
@@ -96,5 +102,5 @@ export function useUserLocation(fallback: { lat: number; lng: number }): UserLoc
     return () => navigator.geolocation.clearWatch(watchId);
   }, [fallback.lat, fallback.lng]);
 
-  return { ...state, refreshLocation };
+  return { ...state, refreshLocation } satisfies UserLocationState;
 }

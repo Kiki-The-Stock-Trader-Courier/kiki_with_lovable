@@ -21,6 +21,8 @@ const Index = () => {
   const { isAuthenticated } = useAuth();
   const [selectedStock, setSelectedStock] = useState<StockPin | null>(null);
   const [showTrending, setShowTrending] = useState(false);
+  /** 「내 위치」 버튼으로 GPS 갱신 후 지도 flyTo — 값만 증가 */
+  const [userRecenterSignal, setUserRecenterSignal] = useState(0);
   const { center, accuracyM, status, refreshLocation } = useUserLocation(DEFAULT_CENTER);
   /** API로 주변 상장사만 채움 — 빈 배열이면 지도에 핀 없음(춘천 목업 좌표가 남지 않도록) */
   const [stocks, setStocks] = useState<StockPin[]>([]);
@@ -249,6 +251,8 @@ const Index = () => {
         }}
         showUserMarker={status === "ok"}
         userAccuracyM={accuracyM}
+        userLocationStatus={status}
+        userRecenterSignal={userRecenterSignal}
       />
 
       {/* Top overlay: Step counter — Leaflet 판 z-index(≤1000) 위로 */}
@@ -285,11 +289,10 @@ const Index = () => {
         <button
           type="button"
           onClick={() => {
-            if (!isAuthenticated) {
-              navigate("/login");
-              return;
-            }
-            refreshLocation();
+            void (async () => {
+              const ok = await refreshLocation();
+              if (ok) setUserRecenterSignal((n) => n + 1);
+            })();
           }}
           className="flex h-12 w-12 items-center justify-center rounded-full bg-accent text-accent-foreground shadow-md ring-2 ring-background/80 transition-transform active:scale-95"
           aria-label="내 위치 새로고침"

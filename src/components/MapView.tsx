@@ -1,7 +1,10 @@
 import { MapContainer, TileLayer, Circle, CircleMarker, useMap } from "react-leaflet";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import StockPinMarker from "./StockPin";
 import type { StockPin } from "@/types/stock";
+
+/** 부모에서 넘기는 위치 상태(대기/성공/거부 등) — 첫 고정 시 1회만 뷰 맞춤 */
+export type UserMapLocationStatus = "pending" | "ok" | "denied" | "unsupported";
 
 interface MapViewProps {
   center: { lat: number; lng: number };
@@ -12,14 +15,56 @@ interface MapViewProps {
   showUserMarker?: boolean;
   /** 미터 단위, 있으면 반투명 정확도 원 */
   userAccuracyM?: number | null;
+  /** 위치 권한·고정 상태 — 첫 `ok`일 때 지도를 한 번 사용자 좌표로 맞춤 */
+  userLocationStatus?: UserMapLocationStatus;
+  /**
+   * 값이 바뀔 때마다(예: 「내 위치」 버튼) 현재 center 로 flyTo.
+   * GPS 좌표가 이전과 같아도 지도를 사용자 위치로 다시 가져올 때 사용.
+   */
+  userRecenterSignal?: number;
 }
 
-/** Recenter map when center changes */
-function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
+const DEFAULT_MAP_ZOOM = 16;
+
+/**
+ * 첫 GPS 고정 시 1회 setView — 이후에는 사용자가 지도를 드래그해도 watch 좌표만 마커/원에 반영하고 뷰는 강제 이동하지 않음.
+ */
+function InitialUserFit({
+  lat,
+  lng,
+  status,
+}: {
+  lat: number;
+  lng: number;
+  status: UserMapLocationStatus;
+}) {
   const map = useMap();
+  const done = useRef(false);
   useEffect(() => {
-    map.setView([lat, lng], map.getZoom());
-  }, [lat, lng, map]);
+    if (done.current || status !== "ok") return;
+    done.current = true;
+    map.setView([lat, lng], DEFAULT_MAP_ZOOM);
+  }, [lat, lng, status, map]);
+  return null;
+}
+
+/** 「내 위치 새로고침」 등 — 트리거가 바뀔 때마다 현재 좌표로 부드럽게 이동 */
+function FlyToUserOnSignal({
+  lat,
+  lng,
+  signal,
+}: {
+  lat: number;
+  lng: number;
+  signal: number;
+}) {
+  const map = useMap();
+  const prev = useRef(0);
+  useEffect(() => {
+    if (signal <= 0 || signal === prev.current) return;
+    prev.current = signal;
+    map.flyTo([lat, lng], Math.max(map.getZoom(), 15), { duration: 0.75 });
+  }, [signal, lat, lng, map]);
   return null;
 }
 
@@ -59,12 +104,14 @@ const MapView = ({
   onSelectStock,
   showUserMarker = false,
   userAccuracyM = null,
+  userLocationStatus = "pending",
+  userRecenterSignal = 0,
 }: MapViewProps) => {
   return (
     <div className="absolute inset-0 z-0 min-h-0 w-full" data-testid="map-wrapper">
       <MapContainer
         center={[center.lat, center.lng]}
-        zoom={16}
+        zoom={DEFAULT_MAP_ZOOM}
         className="z-0 h-full w-full min-h-[100dvh]"
         style={{ minHeight: "100%" }}
         zoomControl={false}
@@ -80,7 +127,8 @@ const MapView = ({
         />
         <MapInvalidateSize />
         <InvalidateWhenStocksChange count={stocks.length} />
-        <RecenterMap lat={center.lat} lng={center.lng} />
+        <InitialUserFit lat={center.lat} lng={center.lng} status={userLocationStatus} />
+        <FlyToUserOnSignal lat={center.lat} lng={center.lng} signal={userRecenterSignal} />
 
         {/* 반경 표시 — interactive 끄면 path가 클릭·드래그를 가로채지 않음 */}
         <Circle
