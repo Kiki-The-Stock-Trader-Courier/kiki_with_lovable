@@ -4,6 +4,8 @@ import type { StockPin as StockPinType } from "@/types/stock";
 
 interface StockPinProps {
   stock: StockPinType;
+  /** 사용자 보유 종목이면 핀 색상을 다르게 표시 */
+  isOwned?: boolean;
   onSelect: (stock: StockPinType) => void;
 }
 
@@ -75,8 +77,11 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
   return sectorIconInner(stock.sector, color);
 }
 
-const createPinIcon = (stock: StockPinType) => {
-  const color = stock.isSponsored ? "hsl(12, 78%, 57%)" : "hsl(12, 65%, 65%)";
+const createPinIcon = (stock: StockPinType, isOwned: boolean) => {
+  /** 보유 종목은 초록 계열, 일반은 기존 주황 계열 */
+  const color = isOwned
+    ? (stock.isSponsored ? "hsl(145, 66%, 40%)" : "hsl(145, 60%, 45%)")
+    : (stock.isSponsored ? "hsl(12, 78%, 57%)" : "hsl(12, 65%, 65%)");
   const inner = logoOrSectorInner(stock, color);
 
   return L.divIcon({
@@ -94,11 +99,11 @@ const createPinIcon = (stock: StockPinType) => {
   });
 };
 
-const StockPinMarker = ({ stock, onSelect }: StockPinProps) => {
+const StockPinMarker = ({ stock, isOwned = false, onSelect }: StockPinProps) => {
   return (
     <Marker
       position={[stock.lat, stock.lng]}
-      icon={createPinIcon(stock)}
+      icon={createPinIcon(stock, isOwned)}
       eventHandlers={{
         click: () => onSelect(stock),
       }}

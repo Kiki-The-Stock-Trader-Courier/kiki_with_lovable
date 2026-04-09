@@ -3,6 +3,7 @@ import L from "leaflet";
 import { useEffect, useMemo, useRef } from "react";
 import StockPinMarker from "./StockPin";
 import type { StockPin } from "@/types/stock";
+import { normalizeKrxTickerKey } from "@/lib/quoteApi";
 
 /** 부모에서 넘기는 위치 상태(대기/성공/거부 등) — 첫 고정 시 1회만 뷰 맞춤 */
 export type UserMapLocationStatus = "pending" | "ok" | "denied" | "unsupported";
@@ -11,6 +12,8 @@ interface MapViewProps {
   center: { lat: number; lng: number };
   radius: number;
   stocks: StockPin[];
+  /** 보유 종목 티커(6자리) 집합 — 핀 색상 구분용 */
+  ownedTickerSet?: Set<string>;
   onSelectStock: (stock: StockPin) => void;
   /** GPS 성공 시 사용자 위치 마커·정확도 원 표시 */
   showUserMarker?: boolean;
@@ -110,6 +113,7 @@ const MapView = ({
   center,
   radius,
   stocks,
+  ownedTickerSet,
   onSelectStock,
   showUserMarker = false,
   userAccuracyM = null,
@@ -210,13 +214,18 @@ const MapView = ({
         )}
 
         {/* 주식 핀 */}
-        {stocks.map((stock) => (
-          <StockPinMarker
-            key={stock.id}
-            stock={stock}
-            onSelect={onSelectStock}
-          />
-        ))}
+        {stocks.map((stock) => {
+          const tickerKey = normalizeKrxTickerKey(stock.ticker);
+          const isOwned = tickerKey ? ownedTickerSet?.has(tickerKey) ?? false : false;
+          return (
+            <StockPinMarker
+              key={stock.id}
+              stock={stock}
+              isOwned={isOwned}
+              onSelect={onSelectStock}
+            />
+          );
+        })}
       </MapContainer>
     </div>
   );

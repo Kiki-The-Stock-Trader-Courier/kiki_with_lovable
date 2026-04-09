@@ -31,7 +31,7 @@ const Index = () => {
   const { center, accuracyM, status, refreshLocation } = useUserLocation(DEFAULT_CENTER);
   /** API로 주변 상장사만 채움 — 빈 배열이면 지도에 핀 없음(춘천 목업 좌표가 남지 않도록) */
   const [stocks, setStocks] = useState<StockPin[]>([]);
-  const { walk, addSteps, setGoalSteps, isScrapped, toggleScrap } = useUserData();
+  const { walk, addSteps, setGoalSteps, holdings, isScrapped, toggleScrap } = useUserData();
   const stocksRef = useRef<StockPin[]>([]);
   const prevCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const gravityRef = useRef(9.8);
@@ -81,6 +81,17 @@ const Index = () => {
         .sort()
         .join(","),
     [stocks],
+  );
+
+  /** 보유 종목 티커 집합 — 지도 핀 색상 구분용 */
+  const ownedTickerSet = useMemo(
+    () =>
+      new Set(
+        holdings
+          .map((h) => normalizeKrxTickerKey(h.ticker))
+          .filter((t): t is string => t != null),
+      ),
+    [holdings],
   );
 
   useEffect(() => {
@@ -247,6 +258,7 @@ const Index = () => {
         center={center}
         radius={DEFAULT_RADIUS_M}
         stocks={stocks}
+        ownedTickerSet={ownedTickerSet}
         onSelectStock={(stock) => {
           if (!isAuthenticated) {
             navigate("/login");
