@@ -46,26 +46,30 @@ function mapRowsToCompanies(
 ) {
   return rows
     .map((row) => {
+      try {
       /** DB ticker 가 비어도 상호·설명으로 krxListedMatch 보강 → 마커 표시 */
       let ticker = normalizeKrxTicker(row.ticker != null ? String(row.ticker) : null);
-      let displayName = (row.stock_name ?? row.map_display_name ?? row.name).trim();
+      let displayName = String(row.stock_name ?? row.map_display_name ?? row.name ?? "").trim();
       let sector = row.sector ?? "기타";
       if (!ticker) {
         const listed = resolveListedFromDbRow(row);
         if (listed) {
           ticker = normalizeKrxTicker(listed.ticker);
-          displayName = listed.mapDisplayName ?? listed.stockName ?? displayName;
+          displayName = String(listed.mapDisplayName ?? listed.stockName ?? displayName).trim();
           if (listed.sector) sector = listed.sector;
         }
       }
       if (!ticker) return null;
-      const distanceM = distanceMeters(lat, lng, row.lat, row.lng);
+      const la = Number(row.lat);
+      const ln = Number(row.lng);
+      if (!Number.isFinite(la) || !Number.isFinite(ln)) return null;
+      const distanceM = distanceMeters(lat, lng, la, ln);
       return {
         id: row.source_place_id,
         ticker,
         name: displayName,
-        lat: row.lat,
-        lng: row.lng,
+        lat: la,
+        lng: ln,
         sector,
         description: row.description ?? "주변 기업 정보",
         isSponsored: false,
@@ -75,6 +79,10 @@ function mapRowsToCompanies(
         distanceM,
         sourceStation: row.source_station,
       };
+      } catch (rowErr) {
+        console.warn("[api/companies/nearby] row skip:", rowErr);
+        return null;
+      }
     })
     .filter((v): v is NonNullable<typeof v> => v != null)
     .filter((row) => row.distanceM <= maxDistanceM)
@@ -118,7 +126,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const fetchInBbox = async (bboxRadiusM: number) => {
       const latPad = bboxRadiusM / 111320;
-      const lngPad = bboxRadiusM / (111320 * Math.cos((lat * Math.PI) / 180));
+      const cosLat = Math.cos((lat * Math.PI) / 180);
+      const lngPad = bboxRadiusM / (111320 * Math.max(Math.abs(cosLat), 1e-5));
       return supabase
         .from("nearby_companies")
         .select(
@@ -136,8 +145,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     /** 수도권 밖 GPS여도 DB에 행이 있으면 가까운 순으로 표시 (km) */
     const GLOBAL_MAX_KM = 200;
 
-    let bboxRadius = Math.max(radius, 800);
-    let { data, error } = await fetchInBbox(bboxRadius);
+    const bboxRadius = Math.max(radius, 800);
+    const { data, error } = await fetchInBbox(bboxRadius);
 
     if (error) {
       console.error("[api/companies/nearby] Supabase:", error.message, error.code ?? "");

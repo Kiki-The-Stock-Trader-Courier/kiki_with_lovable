@@ -46,6 +46,17 @@ function pickPrice(row: YahooQuoteRow): number | null {
   return tryNum(regularMarketPreviousClose);
 }
 
+/** Yahoo 가 HTML 에러 페이지를 주면 r.json() 이 throw → Vercel 500. 본문을 문자열로 받고 안전 파싱 */
+async function parseJsonBody<T>(r: Response): Promise<T | null> {
+  try {
+    const text = await r.text();
+    if (!text || !text.trim()) return null;
+    return JSON.parse(text) as T;
+  } catch {
+    return null;
+  }
+}
+
 /** Node/Vercel 기본 UA 는 Yahoo 가 403·빈 결과를 자주 반환 — 브라우저 UA 필수에 가깝게 */
 const YAHOO_FETCH_HEADERS: HeadersInit = {
   "User-Agent":
@@ -79,6 +90,7 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
   const uniqTickers = Array.from(new Set(tickersInput)).filter((t) => /^\d{6}$/.test(t));
   if (uniqTickers.length === 0) return [];
 
+  try {
   const allSymbols = uniqTickers.flatMap((t) => [`${t}.KS`, `${t}.KQ`]);
 
   const mapSymbolToTicker = (symbols: string[]) => {
@@ -119,9 +131,13 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
         console.warn("[yahooKrxQuotesCore] Yahoo HTTP", r.status, host);
         continue;
       }
-      const json = (await r.json()) as {
+      const json = await parseJsonBody<{
         quoteResponse?: { result?: YahooQuoteRow[]; error?: unknown };
-      };
+      }>(r);
+      if (!json) {
+        console.warn("[yahooKrxQuotesCore] Yahoo non-JSON body", host);
+        continue;
+      }
       if (json.quoteResponse?.error) {
         console.warn("[yahooKrxQuotesCore] quoteResponse.error:", json.quoteResponse.error);
       }
@@ -149,7 +165,7 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
       const r = await fetch(url, { cache: "no-store", headers: YAHOO_FETCH_HEADERS });
       if (!r.ok) continue;
 
-      const json = (await r.json()) as {
+      const json = await parseJsonBody<{
         chart?: {
           result?: Array<{
             meta?: {
@@ -163,7 +179,8 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
           }>;
           error?: unknown;
         };
-      };
+      }>(r);
+      if (!json) continue;
 
       if (json.chart?.error) continue;
       const first = json.chart?.result?.[0];
@@ -259,4 +276,8 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
   }
 
   return out;
+  } catch (e) {
+    console.error("[yahooKrxQuotesCore] unexpected", e);
+    return [];
+  }
 }

@@ -26,7 +26,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const quotes = await getKrxQuotesFromYahoo(uniqTickers);
     res.status(200).json({ quotes });
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    res.status(500).json({ error: message });
+    console.error("[api/quotes]", e);
+    /** 500 대신 빈 배열 — 앱은 시세만 비고 지도·목록은 유지 */
+    res.status(200).json({ quotes: [] });
   }
 }
