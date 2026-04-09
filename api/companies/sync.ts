@@ -36,6 +36,8 @@ function inferSector(tags: Record<string, string> | undefined): string {
   if (tags.amenity === "bank" || tags.office === "financial") return "금융";
   if (tags.office === "it" || tags.technology) return "IT";
   if (tags.shop === "mall" || tags.shop === "supermarket") return "유통";
+  if (tags.shop === "convenience" || tags.amenity === "cafe" || tags.shop === "bakery") return "유통";
+  if (tags.amenity === "fast_food") return "유통";
   if (tags.industrial) return "제조";
   if (tags.office) return "오피스";
   return "기타";
@@ -48,6 +50,7 @@ function toDescription(tags: Record<string, string> | undefined, stationName: st
   const parts: string[] = [];
   if (tags.office) parts.push(`office=${tags.office}`);
   if (tags.shop) parts.push(`shop=${tags.shop}`);
+  if (tags.amenity) parts.push(`amenity=${tags.amenity}`);
   if (tags.industrial) parts.push(`industrial=${tags.industrial}`);
   const detail = parts.length > 0 ? parts.join(", ") : "업종 정보 없음";
   return `${stationName} 반경 1km 기업 정보 (${detail}) · ${sourceHint}`;
@@ -56,9 +59,16 @@ function toDescription(tags: Record<string, string> | undefined, stationName: st
 function toCompany(stationName: "서울숲역" | "여의도역", el: OverpassElement): CrawledCompany | null {
   const tags = el.tags ?? {};
   const name = tags.name?.trim();
-  if (!name) return null;
+  const brand = tags.brand?.trim();
+  const nameKo = tags["name:ko"]?.trim();
+  /** OSM에서 편의점·프랜차이즈는 name 없이 brand만 있는 경우가 많음 */
+  const label = name || nameKo || brand;
+  if (!label) return null;
 
-  const listed = resolveListedKrx(name);
+  const listed = resolveListedKrx(label, {
+    brand,
+    operator: tags.operator?.trim(),
+  });
   if (!listed) return null;
 
   const lat = el.lat ?? el.center?.lat;
@@ -67,7 +77,7 @@ function toCompany(stationName: "서울숲역" | "여의도역", el: OverpassEle
 
   return {
     source_place_id: `${stationName}:${el.type}:${el.id}`,
-    name,
+    name: label,
     lat,
     lng,
     sector: listed.sector ?? inferSector(tags),
@@ -83,7 +93,7 @@ async function crawlCompaniesAroundStations(): Promise<CrawledCompany[]> {
     STATIONS.map(async (station) => {
       try {
         const query = `
-[out:json][timeout:30];
+[out:json][timeout:60];
 (
   node(around:1000,${station.lat},${station.lng})["office"]["name"];
   way(around:1000,${station.lat},${station.lng})["office"]["name"];
@@ -94,6 +104,18 @@ async function crawlCompaniesAroundStations(): Promise<CrawledCompany[]> {
   node(around:1000,${station.lat},${station.lng})["industrial"]["name"];
   way(around:1000,${station.lat},${station.lng})["industrial"]["name"];
   relation(around:1000,${station.lat},${station.lng})["industrial"]["name"];
+  node(around:1000,${station.lat},${station.lng})["amenity"="cafe"];
+  way(around:1000,${station.lat},${station.lng})["amenity"="cafe"];
+  relation(around:1000,${station.lat},${station.lng})["amenity"="cafe"];
+  node(around:1000,${station.lat},${station.lng})["shop"="convenience"];
+  way(around:1000,${station.lat},${station.lng})["shop"="convenience"];
+  relation(around:1000,${station.lat},${station.lng})["shop"="convenience"];
+  node(around:1000,${station.lat},${station.lng})["amenity"="fast_food"];
+  way(around:1000,${station.lat},${station.lng})["amenity"="fast_food"];
+  relation(around:1000,${station.lat},${station.lng})["amenity"="fast_food"];
+  node(around:1000,${station.lat},${station.lng})["shop"="bakery"];
+  way(around:1000,${station.lat},${station.lng})["shop"="bakery"];
+  relation(around:1000,${station.lat},${station.lng})["shop"="bakery"];
 );
 out center;
 `;

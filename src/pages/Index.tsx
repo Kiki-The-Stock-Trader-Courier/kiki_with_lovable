@@ -4,7 +4,7 @@ import StepCounter from "@/components/StepCounter";
 import StockInfoSheet from "@/components/StockInfoSheet";
 import TrendingSection from "@/components/TrendingSection";
 import BottomNav from "@/components/BottomNav";
-import { MOCK_STOCKS, MOCK_TRENDING, DEFAULT_CENTER, DEFAULT_RADIUS_M } from "@/data/mockStocks";
+import { MOCK_TRENDING, DEFAULT_CENTER, DEFAULT_RADIUS_M } from "@/data/mockStocks";
 import type { StockPin } from "@/types/stock";
 import { LocateFixed, MapPin, MessageCircle } from "lucide-react";
 import { useUserLocation } from "@/hooks/useUserLocation";
@@ -22,9 +22,10 @@ const Index = () => {
   const [selectedStock, setSelectedStock] = useState<StockPin | null>(null);
   const [showTrending, setShowTrending] = useState(false);
   const { center, accuracyM, status, refreshLocation } = useUserLocation(DEFAULT_CENTER);
-  const [stocks, setStocks] = useState<StockPin[]>(MOCK_STOCKS);
+  /** API로 주변 상장사만 채움 — 빈 배열이면 지도에 핀 없음(춘천 목업 좌표가 남지 않도록) */
+  const [stocks, setStocks] = useState<StockPin[]>([]);
   const { walk, addSteps, setGoalSteps } = useUserData();
-  const stocksRef = useRef<StockPin[]>(MOCK_STOCKS);
+  const stocksRef = useRef<StockPin[]>([]);
   const prevCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const gravityRef = useRef(9.8);
   const lastStepAtRef = useRef(0);
@@ -49,10 +50,9 @@ const Index = () => {
       try {
         const data = await fetchNearbyCompanies(center, DEFAULT_RADIUS_M);
         if (aborted) return;
-        // DB 조회 결과가 있을 때만 교체, 비어 있으면 기존 mock 유지
-        if (data.length > 0) setStocks(data);
+        setStocks(data);
       } catch {
-        // API 장애 시 기존 mock 유지
+        // API 장애 시 이전 마커 유지 (첫 로드 실패 시 빈 지도)
       }
     };
     void loadNearby();

@@ -66,20 +66,94 @@ const RULES: Rule[] = [
   {
     ticker: "139480",
     defaultLabel: "이마트",
-    terms: sortTermsLongFirst(["이마트", "e-mart", "emart"]),
+    terms: sortTermsLongFirst(["이마트24", "이마트 에브리데이", "이마트", "e-mart", "emart"]),
     sector: "유통",
   },
   {
     ticker: "004170",
     defaultLabel: "신세계",
-    terms: sortTermsLongFirst(["신세계백화점", "신세계", "SSG", "ssg닷컴"]),
+    terms: sortTermsLongFirst([
+      "코스트코",
+      "Costco",
+      "스타필드",
+      "Starfield",
+      "신세계백화점",
+      "신세계",
+      "SSG",
+      "ssg닷컴",
+    ]),
     sector: "유통",
+    mapLabel: (raw) => {
+      const n = normalize(raw);
+      if (n.includes("코스트코") || /costco/i.test(raw)) return "코스트코 신세계";
+      if (n.includes("스타필드") || /starfield/i.test(raw)) return "스타필드 신세계";
+      return "신세계";
+    },
   },
   {
     ticker: "023530",
     defaultLabel: "롯데지주",
-    terms: sortTermsLongFirst(["롯데백화점", "롯데마트", "롯데", "LOTTE"]),
+    terms: sortTermsLongFirst([
+      "세븐일레븐",
+      "7-Eleven",
+      "7 eleven",
+      "7eleven",
+      "코리아세븐",
+      "롯데리아",
+      "롯데백화점",
+      "롯데마트",
+      "롯데",
+      "LOTTE",
+    ]),
     sector: "유통",
+    mapLabel: (raw) => {
+      const n = normalize(raw);
+      if (n.includes("세븐") || /7[\s-]?eleven/i.test(raw)) return "세븐일레븐 롯데";
+      if (n.includes("롯데리아")) return "롯데리아 롯데";
+      return "롯데";
+    },
+  },
+  /** SPC그룹 — 베이커리·외식 브랜드 */
+  {
+    ticker: "005610",
+    defaultLabel: "SPC삼립",
+    terms: sortTermsLongFirst([
+      "파리바게뜨",
+      "Paris Baguette",
+      "파스쿠찌",
+      "던킨도너츠",
+      "던킨",
+      "Dunkin",
+      "배스킨라빈스",
+      "Baskin",
+      "베스킨",
+      "SPC",
+      "삼립",
+    ]),
+    sector: "유통",
+    mapLabel: (raw) => {
+      const n = normalize(raw);
+      if (n.includes("파리") || /paris/i.test(raw)) return "파리바게뜨 SPC삼립";
+      if (n.includes("던킨") || /dunkin/i.test(raw)) return "던킨 SPC삼립";
+      if (n.includes("배스킨") || n.includes("베스킨") || /baskin/i.test(raw)) return "배스킨라빈스 SPC삼립";
+      return "SPC삼립";
+    },
+  },
+  /** 더본코리아 — 빽다방 등 */
+  {
+    ticker: "475560",
+    defaultLabel: "더본코리아",
+    terms: sortTermsLongFirst(["빽다방", "Paik's", "Paik", "더본", "The Born"]),
+    sector: "유통",
+    mapLabel: () => "빽다방 더본코리아",
+  },
+  /** CJ프레시웨이 — 뚜레쥬르 등 */
+  {
+    ticker: "035760",
+    defaultLabel: "CJ프레시웨이",
+    terms: sortTermsLongFirst(["뚜레쥬르", "Tous les Jours", "빕스", "VIPS"]),
+    sector: "유통",
+    mapLabel: (raw) => (normalize(raw).includes("뚜레") ? "뚜레쥬르 CJ프레시웨이" : "CJ프레시웨이"),
   },
   {
     ticker: "005930",
@@ -318,9 +392,14 @@ const RULES: Rule[] = [
   },
 ];
 
-export function resolveListedKrx(osmName: string): ListedResolve | null {
+/** OSM name·brand·operator를 합쳐 매칭 (편의점은 brand만 있는 경우가 많음) */
+export function resolveListedKrx(
+  osmName: string,
+  ctx?: { brand?: string; operator?: string },
+): ListedResolve | null {
   const raw = osmName.trim();
-  const n = normalize(raw);
+  const blob = [raw, ctx?.brand, ctx?.operator].filter(Boolean).join(" ");
+  const n = normalize(blob);
   if (!n) return null;
 
   let best: { len: number; ruleIndex: number; termIndex: number; rule: Rule } | null = null;
@@ -345,7 +424,7 @@ export function resolveListedKrx(osmName: string): ListedResolve | null {
 
   if (!best) return null;
 
-  const mapDisplayName = best.rule.mapLabel ? best.rule.mapLabel(raw) : best.rule.defaultLabel;
+  const mapDisplayName = best.rule.mapLabel ? best.rule.mapLabel(raw || ctx?.brand || "") : best.rule.defaultLabel;
 
   return {
     ticker: best.rule.ticker,
