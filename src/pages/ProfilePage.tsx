@@ -20,7 +20,7 @@ const ProfilePage = () => {
           </div>
           <div className="min-w-0">
             <h1 className="font-display text-lg font-bold tracking-tight text-foreground">{nickname}</h1>
-            <p className="text-sm text-muted-foreground">캐시워크 투자 3일차 🎉</p>
+            <p className="text-sm text-muted-foreground">워키포인트 투자 3일차 🎉</p>
           </div>
         </div>
 
@@ -69,9 +69,9 @@ const ProfilePage = () => {
       <div className="space-y-2 p-4">
         {[
           { icon: Wallet, label: "키움증권 계좌 연결", desc: "계좌를 연결하고 실제 투자하기" },
-          { icon: Link2, label: "캐시워크 연동", desc: "걸음수 자동 동기화" },
+          { icon: Link2, label: "워키포인트 연동", desc: "걸음수 자동 동기화" },
           { icon: Shield, label: "보안 설정", desc: "생체인증, PIN 설정" },
-          { icon: Settings, label: "앱 설정", desc: "알림, 반경, 언어" },
+          { icon: Settings, label: "앱 설정", desc: "닉네임 변경, 알림, 반경 및 언어 설정" },
         ].map(({ icon: Icon, label, desc }) => (
           <button
             key={label}

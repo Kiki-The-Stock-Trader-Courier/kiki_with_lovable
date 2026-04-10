@@ -73,7 +73,7 @@ const WalkPage = () => {
             <button
               type="button"
               onClick={() => navigate("/holdings")}
-              className="absolute bottom-0 left-1/2 z-10 flex size-9 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-gradient-to-b from-primary via-[hsl(193,16%,48%)] to-[hsl(195,12%,32%)] text-[15px] font-bold leading-none text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.38),inset_0_-3px_6px_rgba(0,0,0,0.22),0_4px_10px_rgba(15,23,42,0.28)] ring-1 ring-black/10 transition-transform active:scale-95"
+              className="absolute left-1/2 top-[115px] z-10 flex size-9 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-gradient-to-b from-primary via-[hsl(193,16%,48%)] to-[hsl(195,12%,32%)] text-[15px] font-bold leading-none text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.38),inset_0_-3px_6px_rgba(0,0,0,0.22),0_4px_10px_rgba(15,23,42,0.28)] ring-1 ring-black/10 transition-transform active:scale-95"
               aria-label="보유 종목에서 캐시 확인"
             >
               <span className="drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">₩</span>
