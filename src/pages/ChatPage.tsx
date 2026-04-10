@@ -23,8 +23,8 @@ const INITIAL_MESSAGE: ChatMessage = {
 
 const RECENT_3DAY_STEPS = [4880, 5720, 3247];
 
-/** 첫 화면 인사는 2~3초 후 표시 (즉시 노출 방지) */
-const GREETING_DELAY_MS = 2500;
+/** 첫 화면 인사는 1.5초 후 표시 (즉시 노출 방지) */
+const GREETING_DELAY_MS = 1500;
 
 const ChatPage = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
