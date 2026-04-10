@@ -126,9 +126,9 @@
 }
 
 .map-canvas {
-  border-radius: 24px;
+  border-radius: 0;
   border: none;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: none;
   overflow: hidden;
 }
 

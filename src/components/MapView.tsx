@@ -167,7 +167,7 @@ const MapView = ({
   );
 
   return (
-    <div className="absolute inset-0 z-0 min-h-0 w-full p-6 md:p-8" data-testid="map-wrapper">
+    <div className="absolute inset-0 z-0 min-h-0 w-full" data-testid="map-wrapper">
       <MapContainer
         center={[center.lat, center.lng]}
         zoom={DEFAULT_MAP_ZOOM}
