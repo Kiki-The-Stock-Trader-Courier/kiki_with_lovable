@@ -4,10 +4,9 @@ import StepCounter from "@/components/StepCounter";
 import StockInfoSheet from "@/components/StockInfoSheet";
 import TrendingSection from "@/components/TrendingSection";
 import BottomNav from "@/components/BottomNav";
-import GlobalChatSheet from "@/components/GlobalChatSheet";
 import { MOCK_TRENDING, DEFAULT_CENTER, DEFAULT_RADIUS_M } from "@/data/mockStocks";
 import type { StockPin } from "@/types/stock";
-import { LocateFixed, MapPin, MessageCircle } from "lucide-react";
+import { LocateFixed, MapPin } from "lucide-react";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { Capacitor } from "@capacitor/core";
 import { StepTracker } from "@/plugins/stepTracker";
@@ -25,7 +24,6 @@ const Index = () => {
   const { isAuthenticated } = useAuth();
   const [selectedStock, setSelectedStock] = useState<StockPin | null>(null);
   const [showTrending, setShowTrending] = useState(false);
-  const [showChatSheet, setShowChatSheet] = useState(false);
   /** 「내 위치」 버튼 — 지도 뷰 중심을 사용자 마커 좌표로 맞춤 (token 은 클릭마다 증가) */
   const [userRecenterTarget, setUserRecenterTarget] = useState<{
     lat: number;
@@ -333,46 +331,11 @@ const Index = () => {
         </button>
       </div>
 
-      {/* Center chatbot FAB (emphasized) */}
-      <button
-        type="button"
-        onClick={() => {
-          if (!isAuthenticated) {
-            navigate("/login");
-            return;
-          }
-          setShowChatSheet(true);
-        }}
-        className="map-chat-fab pointer-events-auto absolute z-[1350] flex h-14 w-14 items-center justify-center rounded-full transition-transform active:scale-95"
-        style={{ left: "359px", top: "708px" }}
-        aria-label="챗봇 열기, 읽지 않은 알림 2건"
-      >
-        <MessageCircle className="h-6 w-6 text-white" aria-hidden />
-        <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-10 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#F44336] px-0.5 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
-          2
-        </span>
-      </button>
-
       {/* Trending section */}
       {showTrending && (
         <div className="animate-slide-up absolute bottom-[88px] left-[max(1rem,env(safe-area-inset-left))] right-[calc(4.5rem+max(0px,env(safe-area-inset-right)))] z-[1200] max-w-[min(100%,20rem)] sm:max-w-none">
           <TrendingSection stocks={MOCK_TRENDING} />
         </div>
-      )}
-
-      {/* Global chat bottom sheet */}
-      {showChatSheet && (
-        <>
-          <button
-            type="button"
-            className="animate-fade-in absolute inset-0 z-[1250] bg-black/35"
-            onClick={() => setShowChatSheet(false)}
-            aria-label="챗봇 닫기 배경"
-          />
-          <div className="absolute inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] z-[1400] h-[50dvh] max-h-[50dvh]">
-            <GlobalChatSheet onClose={() => setShowChatSheet(false)} />
-          </div>
-        </>
       )}
 
       {/* Stock detail sheet */}

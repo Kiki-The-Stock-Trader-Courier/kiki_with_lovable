@@ -1,4 +1,4 @@
-import { Map, Footprints, BriefcaseBusiness, User } from "lucide-react";
+import { Map, Footprints, BriefcaseBusiness, User, MessageCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 interface NavItem {
@@ -17,6 +17,11 @@ const NAV_ITEMS: NavItem[] = [
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const showCenterChatFab =
+    location.pathname === "/" ||
+    location.pathname === "/walk" ||
+    location.pathname === "/holdings" ||
+    location.pathname === "/profile";
 
   return (
     <nav
@@ -25,28 +30,59 @@ const BottomNav = () => {
       aria-label="메인 내비게이션"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
-      <div className="mx-auto flex max-w-lg items-center justify-around px-4 py-2">
-        {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
-          const isActive = location.pathname === path;
-          return (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-colors ${
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground"
-              }`}
-              aria-label={label}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-              <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>
-                {label}
-              </span>
-            </button>
-          );
-        })}
+      {showCenterChatFab && (
+        <button
+          type="button"
+          onClick={() => navigate("/chat")}
+          className="map-chat-fab pointer-events-auto absolute left-1/2 top-0 z-[1400] flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full transition-transform active:scale-95"
+          aria-label="챗봇 열기"
+        >
+          <MessageCircle className="h-6 w-6 text-white" aria-hidden />
+        </button>
+      )}
+
+      <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-2">
+        <div className="flex items-center gap-1">
+          {NAV_ITEMS.slice(0, 2).map(({ path, label, icon: Icon }) => {
+            const isActive = location.pathname === path;
+            return (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-colors ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`}
+                aria-label={label}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+                <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="w-14" aria-hidden />
+
+        <div className="flex items-center gap-1">
+          {NAV_ITEMS.slice(2).map(({ path, label, icon: Icon }) => {
+            const isActive = location.pathname === path;
+            return (
+              <button
+                key={path}
+                onClick={() => navigate(path)}
+                className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-colors ${
+                  isActive ? "text-primary" : "text-muted-foreground"
+                }`}
+                aria-label={label}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+                <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
