@@ -172,13 +172,13 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
       </div>
 
       <div className="border-t border-border/80 p-3">
-        <div className="no-scrollbar mb-2 flex gap-1.5 overflow-x-auto">
+        <div className="no-scrollbar mb-2 flex flex-nowrap gap-1.5 overflow-x-auto whitespace-nowrap snap-x snap-mandatory">
           {QUICK_ACTIONS.map((action) => (
             <button
               key={action}
               type="button"
               onClick={() => sendMessage(action)}
-              className="shrink-0 rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground"
+              className="shrink-0 snap-start rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground"
             >
               {action}
             </button>
