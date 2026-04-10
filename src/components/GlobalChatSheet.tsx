@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bot, PanelLeft, Plus, Send, X } from "lucide-react";
+import { PanelLeft, Plus, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/types/stock";
 import { askGlobalAssistant } from "@/lib/openaiChat";
@@ -238,8 +238,12 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
           >
             <PanelLeft className="h-4 w-4" />
           </button>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-            <Bot className="h-4 w-4 text-primary" />
+          <div className="h-8 w-8 overflow-hidden rounded-full ring-1 ring-border/60">
+            <img
+              src="/kiki-chat-avatar.png"
+              alt="키키 아바타"
+              className="h-full w-full object-cover"
+            />
           </div>
           <p className="text-sm font-semibold text-foreground">키키</p>
         </div>
