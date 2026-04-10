@@ -300,11 +300,18 @@ const Index = () => {
       >
         <button
           type="button"
-          onClick={() => navigate(isAuthenticated ? "/chat" : "/login")}
+          onClick={() => {
+            if (!isAuthenticated) {
+              navigate("/login");
+              return;
+            }
+            setShowTrending(!showTrending);
+          }}
           className="map-icon-btn flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
-          aria-label="챗봇 열기"
+          aria-label="근처 인기 종목 보기"
+          aria-pressed={showTrending}
         >
-          <MessageCircle className="h-5 w-5" />
+          <MapPin className="h-5 w-5" />
         </button>
         <button
           type="button"
@@ -324,18 +331,11 @@ const Index = () => {
         </button>
         <button
           type="button"
-          onClick={() => {
-            if (!isAuthenticated) {
-              navigate("/login");
-              return;
-            }
-            setShowTrending(!showTrending);
-          }}
+          onClick={() => navigate(isAuthenticated ? "/chat" : "/login")}
           className="map-icon-btn flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
-          aria-label="근처 인기 종목 보기"
-          aria-pressed={showTrending}
+          aria-label="챗봇 열기"
         >
-          <MapPin className="h-5 w-5" />
+          <MessageCircle className="h-5 w-5" />
         </button>
       </div>
 
