@@ -333,9 +333,14 @@ const Index = () => {
           type="button"
           onClick={() => navigate(isAuthenticated ? "/chat" : "/login")}
           className="map-icon-btn flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
-          aria-label="챗봇 열기"
+          aria-label="챗봇 열기, 읽지 않은 알림 2건"
         >
-          <MessageCircle className="h-5 w-5" />
+          <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center" aria-hidden>
+            <MessageCircle className="h-5 w-5" />
+            <span className="pointer-events-none absolute -right-1 -top-1 z-10 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#F44336] px-0.5 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
+              2
+            </span>
+          </span>
         </button>
       </div>
 
