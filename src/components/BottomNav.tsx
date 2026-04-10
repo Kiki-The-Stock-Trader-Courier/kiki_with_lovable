@@ -81,7 +81,7 @@ const BottomNav = () => {
             onClick={() => setShowChatSheet(false)}
             aria-label="챗봇 닫기 배경"
           />
-          <div className="fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] left-1/2 z-[1500] h-[50dvh] w-full max-w-lg -translate-x-1/2">
+          <div className="fixed inset-x-0 bottom-0 left-1/2 z-[1500] h-[50dvh] w-full max-w-lg -translate-x-1/2">
             <GlobalChatSheet onClose={() => setShowChatSheet(false)} />
           </div>
         </>

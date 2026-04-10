@@ -236,6 +236,29 @@
   scrollbar-width: none;
 }
 
+/* Global chat body scrollbar (visible, right side) */
+.chat-scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.5) transparent;
+}
+
+.chat-scroll-area::-webkit-scrollbar {
+  width: 8px;
+}
+
+.chat-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.chat-scroll-area::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.45);
+  border-radius: 999px;
+}
+
+.chat-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.7);
+}
+
 /* Leaflet: 동일 건물 복수 종목 클러스터 팝업 — 흰 카드·둥근 모서리(참고 UI) */
 .stock-cluster-leaflet-popup .leaflet-popup-content-wrapper {
   padding: 0;

@@ -253,7 +253,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
         </button>
       </header>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 no-scrollbar">
+      <div ref={scrollRef} className="chat-scroll-area min-h-0 flex-1 space-y-3 overflow-y-auto p-4 pr-3">
         {activeMessages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
@@ -313,7 +313,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
             onClick={() => setShowHistory(false)}
             aria-label="대화 기록 닫기"
           />
-          <aside className="absolute left-0 top-0 z-40 flex h-full w-[240px] flex-col border-r border-border/60 bg-card/98 shadow-xl">
+          <aside className="absolute left-0 top-0 z-40 flex h-full w-[240px] flex-col border-r border-border/60 bg-muted shadow-xl">
             <div className="px-3 pb-2 pt-3">
               <button
                 type="button"
