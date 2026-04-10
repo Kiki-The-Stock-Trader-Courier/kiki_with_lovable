@@ -85,12 +85,12 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
 }
 
 const createPinIcon = (stock: StockPinType, isOwned: boolean, isOutOfRadius: boolean) => {
-  /** 기본은 티얼, 보유 종목은 연보라, 반경 밖은 비활성 회색 */
+  /** 기본은 더스티 블루, 보유는 슬레이트, 반경 밖은 비활성 회색 */
   const color = isOutOfRadius
     ? "#9CA3AF"
     : isOwned
-      ? "#C4A8E8"
-      : "#3FB39A";
+      ? "#5B6E74"
+      : "#819FA7";
   const inner = logoOrSectorInner(stock, color);
 
   return L.divIcon({

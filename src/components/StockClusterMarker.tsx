@@ -4,9 +4,9 @@ import L from "leaflet";
 import { TrendingUp } from "lucide-react";
 import type { StockPin } from "@/types/stock";
 
-/** 참고 UI: 주황빨강 원 + 흰 숫자 + 흰 테두리 */
+/** 소프트 블루 팔레트: 액센트 원 + 흰 숫자 + 흰 테두리 */
 function createClusterIcon(count: number, muted: boolean) {
-  const bg = muted ? "#9CA3AF" : "#E85D4C";
+  const bg = muted ? "#9CA3AF" : "#819FA7";
   return L.divIcon({
     className: "stock-cluster-marker-icon",
     html: `<div style="width:36px;height:36px;border-radius:9999px;background:${bg};color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,.2);border:2px solid #fff;">${count}</div>`,
