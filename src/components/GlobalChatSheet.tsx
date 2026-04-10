@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Bot, Send, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Bot, PanelLeft, Plus, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/types/stock";
 import { askGlobalAssistant } from "@/lib/openaiChat";
@@ -12,13 +12,14 @@ const QUICK_ACTIONS = [
   "걸음 목표 업데이트해줘",
 ];
 
-const INITIAL_MESSAGE: ChatMessage = {
-  id: "welcome",
-  role: "assistant",
-  content:
-    "안녕하세요! 워키 포인트의 든든한 정보통, 키키입니다! 제가 주가 예측부터 기업 정보까지 싹~ 다 알려드릴 테니까, 여러분은 즐겁게 걷기만 하세요! 참, 주식 퀴즈도 준비되어 있는데... 혹시 요즘 뉴스 안 보고 오신 건 아니겠죠?",
-  timestamp: new Date(),
-};
+const STORAGE_KEY = "global_chat_sheet_history_v1";
+
+interface Conversation {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  updatedAt: number;
+}
 
 const RECENT_3DAY_STEPS = [4880, 5720, 3247];
 
@@ -26,27 +27,123 @@ interface GlobalChatSheetProps {
   onClose: () => void;
 }
 
+function buildInitialMessage(): ChatMessage {
+  return {
+    id: "welcome",
+    role: "assistant",
+    content:
+      "안녕하세요! 워키 포인트의 든든한 정보통, 키키입니다! 제가 주가 예측부터 기업 정보까지 싹~ 다 알려드릴 테니까, 여러분은 즐겁게 걷기만 하세요! 참, 주식 퀴즈도 준비되어 있는데... 혹시 요즘 뉴스 안 보고 오신 건 아니겠죠?",
+    timestamp: new Date(),
+  };
+}
+
+function createConversation(): Conversation {
+  const id = `c-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  return {
+    id,
+    title: "New chat",
+    messages: [],
+    updatedAt: Date.now(),
+  };
+}
+
+function makeTitleFromInput(input: string): string {
+  const compact = input.replace(/\s+/g, " ").trim();
+  return compact.length > 22 ? `${compact.slice(0, 22)}…` : compact;
+}
+
 export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string>("");
+  const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
   const { walk, setGoalSteps } = useUserData();
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages]);
+  const activeConversation = useMemo(
+    () => conversations.find((c) => c.id === activeConversationId) ?? null,
+    [conversations, activeConversationId],
+  );
+  const activeMessages = activeConversation?.messages ?? [];
+
+  const appendAssistantMessage = (content: string) => {
+    if (!activeConversationId) return;
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === activeConversationId
+          ? {
+              ...c,
+              messages: [
+                ...c.messages,
+                { id: (Date.now() + 1).toString(), role: "assistant", content, timestamp: new Date() },
+              ],
+              updatedAt: Date.now(),
+            }
+          : c,
+      ),
+    );
+  };
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setMessages([INITIAL_MESSAGE]);
-    }, 1000);
-    return () => window.clearTimeout(timer);
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) {
+        const initial = createConversation();
+        setConversations([initial]);
+        setActiveConversationId(initial.id);
+        return;
+      }
+      const parsed = JSON.parse(raw) as Conversation[];
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        const initial = createConversation();
+        setConversations([initial]);
+        setActiveConversationId(initial.id);
+        return;
+      }
+      setConversations(parsed);
+      setActiveConversationId(parsed[0].id);
+    } catch {
+      const initial = createConversation();
+      setConversations([initial]);
+      setActiveConversationId(initial.id);
+    }
   }, []);
 
+  useEffect(() => {
+    if (conversations.length === 0) return;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+  }, [conversations]);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [activeMessages]);
+
+  useEffect(() => {
+    if (!activeConversation || activeConversation.messages.length > 0) return;
+    const timer = window.setTimeout(() => {
+      appendAssistantMessage(buildInitialMessage().content);
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [activeConversationId, activeConversation?.messages.length]);
+
+  const startNewChat = () => {
+    const next = createConversation();
+    setConversations((prev) => [next, ...prev]);
+    setActiveConversationId(next.id);
+    setAwaitingGoalChoice(false);
+    setShowHistory(false);
+  };
+
+  const switchConversation = (conversationId: string) => {
+    setActiveConversationId(conversationId);
+    setAwaitingGoalChoice(false);
+    setShowHistory(false);
+  };
+
   const sendMessage = async (text: string) => {
-    if (!text.trim() || isLoading) return;
+    if (!text.trim() || isLoading || !activeConversationId) return;
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -55,8 +152,19 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
       timestamp: new Date(),
     };
 
-    const historyAfterUser = [...messages, userMsg];
-    setMessages((prev) => [...prev, userMsg]);
+    const historyAfterUser = [...activeMessages, userMsg];
+    setConversations((prev) =>
+      prev.map((c) =>
+        c.id === activeConversationId
+          ? {
+              ...c,
+              title: c.title === "New chat" ? makeTitleFromInput(text) : c.title,
+              messages: [...c.messages, userMsg],
+              updatedAt: Date.now(),
+            }
+          : c,
+      ),
+    );
     setInput("");
 
     const avg3 =
@@ -82,10 +190,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
       } else {
         goalReply = `입력을 이해하지 못했어요.\n\n다시 선택해 주세요:\n1) 평균으로 변경 (${avg3.toLocaleString()}보)\n2) 직접 입력 (예: 7000보)`;
       }
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), role: "assistant", content: goalReply, timestamp: new Date() },
-      ]);
+      appendAssistantMessage(goalReply);
       return;
     }
 
@@ -105,40 +210,34 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
         setAwaitingGoalChoice(true);
         goalReply = `현재 목표: ${walk.goalSteps.toLocaleString()}보\n최근 3일 평균: ${avg3.toLocaleString()}보\n\n원하는 방식으로 답장해 주세요:\n1) 평균으로 바꿔줘\n2) 7000보로 변경`;
       }
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), role: "assistant", content: goalReply, timestamp: new Date() },
-      ]);
+      appendAssistantMessage(goalReply);
       return;
     }
 
     setIsLoading(true);
     try {
       const reply = await askGlobalAssistant(historyAfterUser);
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), role: "assistant", content: reply, timestamp: new Date() },
-      ]);
+      appendAssistantMessage(reply);
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: "일시적으로 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.",
-          timestamp: new Date(),
-        },
-      ]);
+      appendAssistantMessage("일시적으로 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="animate-slide-up flex h-full flex-col rounded-t-3xl bg-card shadow-2xl">
+    <div className="animate-slide-up relative flex h-full flex-col rounded-t-3xl bg-card shadow-2xl">
       <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted-foreground/30" />
       <header className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowHistory(true)}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60"
+            aria-label="대화 기록 열기"
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
             <Bot className="h-4 w-4 text-primary" />
           </div>
@@ -155,7 +254,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
       </header>
 
       <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto p-4 no-scrollbar">
-        {messages.map((msg) => (
+        {activeMessages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs ${
@@ -203,6 +302,45 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
           </Button>
         </form>
       </div>
+
+      {showHistory && (
+        <>
+          <button
+            type="button"
+            className="absolute inset-0 z-30 bg-black/15"
+            onClick={() => setShowHistory(false)}
+            aria-label="대화 기록 닫기"
+          />
+          <aside className="absolute left-0 top-0 z-40 flex h-full w-[240px] flex-col border-r border-border/60 bg-card/98 shadow-xl">
+            <div className="px-3 pb-2 pt-3">
+              <button
+                type="button"
+                onClick={startNewChat}
+                className="flex w-full items-center gap-2 rounded-xl border border-border/70 bg-muted/40 px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/70"
+              >
+                <Plus className="h-4 w-4" />
+                New chat
+              </button>
+            </div>
+            <div className="no-scrollbar flex-1 overflow-y-auto px-2 pb-3">
+              {conversations.map((conv) => (
+                <button
+                  key={conv.id}
+                  type="button"
+                  onClick={() => switchConversation(conv.id)}
+                  className={`mb-1.5 w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
+                    conv.id === activeConversationId
+                      ? "bg-muted font-medium text-foreground"
+                      : "text-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  {conv.title}
+                </button>
+              ))}
+            </div>
+          </aside>
+        </>
+      )}
     </div>
   );
 }
