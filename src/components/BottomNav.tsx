@@ -1,5 +1,8 @@
 import { Map, Footprints, BriefcaseBusiness, User, MessageCircle } from "lucide-react";
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import GlobalChatSheet from "@/components/GlobalChatSheet";
 
 interface NavItem {
   path: string;
@@ -17,6 +20,8 @@ const NAV_ITEMS: NavItem[] = [
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
+  const [showChatSheet, setShowChatSheet] = useState(false);
   const showCenterChatFab =
     location.pathname === "/" ||
     location.pathname === "/walk" ||
@@ -33,7 +38,13 @@ const BottomNav = () => {
       {showCenterChatFab && (
         <button
           type="button"
-          onClick={() => navigate("/chat")}
+          onClick={() => {
+            if (!isAuthenticated) {
+              navigate("/login");
+              return;
+            }
+            setShowChatSheet(true);
+          }}
           className="map-chat-fab pointer-events-auto absolute left-1/2 top-0 z-[1400] flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full transition-transform active:scale-95"
           aria-label="챗봇 열기"
         >
@@ -61,6 +72,20 @@ const BottomNav = () => {
           );
         })}
       </div>
+
+      {showChatSheet && (
+        <>
+          <button
+            type="button"
+            className="animate-fade-in fixed inset-0 z-[1450] bg-black/35"
+            onClick={() => setShowChatSheet(false)}
+            aria-label="챗봇 닫기 배경"
+          />
+          <div className="fixed inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] left-1/2 z-[1500] h-[50dvh] w-full max-w-lg -translate-x-1/2">
+            <GlobalChatSheet onClose={() => setShowChatSheet(false)} />
+          </div>
+        </>
+      )}
     </nav>
   );
 };
