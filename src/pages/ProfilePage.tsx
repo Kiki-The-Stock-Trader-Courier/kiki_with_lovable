@@ -1,9 +1,11 @@
 import { User, Wallet, Link2, Settings, ChevronRight, Shield } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
+import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
 import { useState } from "react";
 
 const ProfilePage = () => {
+  const { signOut } = useAuth();
   const { walk, nickname, setNickname, holdings } = useUserData();
   const [nicknameInput, setNicknameInput] = useState("");
   const totalValue = holdings.reduce((sum, h) => sum + h.currentPrice * h.shares, 0);
@@ -87,6 +89,18 @@ const ProfilePage = () => {
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </button>
         ))}
+      </div>
+
+      {/* 앱 설정 카드 하단 — 목업과 동일: 카드 밖 가운데 밑줄 텍스트 링크 */}
+      <div className="flex justify-center px-4 pb-4 pt-6">
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="text-sm font-medium text-foreground underline decoration-foreground underline-offset-[5px] transition-colors hover:text-foreground/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+          aria-label="로그아웃"
+        >
+          로그아웃
+        </button>
       </div>
 
       <BottomNav />
