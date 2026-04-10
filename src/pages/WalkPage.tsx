@@ -49,7 +49,8 @@ const WalkPage = () => {
 
         {/* Circular progress */}
         <div className="flex flex-col items-center">
-          <div className="relative flex h-40 w-40 items-center justify-center">
+          {/* 하단 코인이 링 밖으로 살짝 나와도 통계와 겹치지 않도록 여유 */}
+          <div className="relative mb-5 flex h-40 w-40 items-center justify-center">
             <svg className="absolute h-full w-full -rotate-90" viewBox="0 0 160 160" aria-hidden>
               <circle cx="80" cy="80" r="70" fill="none" stroke="hsl(var(--secondary))" strokeWidth="10" />
               <circle
@@ -68,6 +69,15 @@ const WalkPage = () => {
               <p className="text-3xl font-bold text-foreground">{walk.todaySteps.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">/ {walk.goalSteps.toLocaleString()} 걸음</p>
             </div>
+            {/* 참고 UI: 링 하단 중앙 · 금속감 코인(앱 톤의 슬레이트 블루) — 첫 번째 레퍼보다 작은 크기 */}
+            <button
+              type="button"
+              onClick={() => navigate("/holdings")}
+              className="absolute bottom-0 left-1/2 z-10 flex size-9 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-gradient-to-b from-primary via-[hsl(193,16%,48%)] to-[hsl(195,12%,32%)] text-[15px] font-bold leading-none text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.38),inset_0_-3px_6px_rgba(0,0,0,0.22),0_4px_10px_rgba(15,23,42,0.28)] ring-1 ring-black/10 transition-transform active:scale-95"
+              aria-label="보유 종목에서 캐시 확인"
+            >
+              <span className="drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">₩</span>
+            </button>
           </div>
         </div>
 
