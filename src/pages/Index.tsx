@@ -367,7 +367,7 @@ const Index = () => {
             onClick={() => setShowChatSheet(false)}
             aria-label="챗봇 닫기 배경"
           />
-          <div className="absolute inset-x-0 bottom-0 z-[1300] h-[50dvh] max-h-[50dvh]">
+          <div className="absolute inset-x-0 bottom-[calc(72px+env(safe-area-inset-bottom,0px))] z-[1400] h-[50dvh] max-h-[50dvh]">
             <GlobalChatSheet onClose={() => setShowChatSheet(false)} />
           </div>
         </>
