@@ -15,7 +15,7 @@ function buildWelcomeMessage(stock: StockPin): ChatMessage {
   return {
     id: `welcome-${stock.id}`,
     role: "assistant",
-    content: `${stock.name}(${stock.ticker})에 대해 물어보세요.\n\n업종: ${stock.sector}`,
+    content: `${stock.name}(${stock.ticker})에 대해 물어보세요.`,
     timestamp: new Date(),
   };
 }
