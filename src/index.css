@@ -4,51 +4,49 @@
 
 @layer base {
   :root {
-    /*
-     * 브랜드 팔레트 (차트 기준)
-     * 라이트 라벤더 #F3E9F3 → 배경 계열
-     * 더스트 퍼플 #9A8BA7 → primary / 강조
-     * 딥 퍼플 그레이 #665F74 → 본문·테두리
-     */
-    --background: 300 24% 93%;
-    --foreground: 263 10% 41%;
+    /* Map-inspired palette: coral pins on light blue */
+    --background: 210 25% 95%;
+    --foreground: 220 20% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 263 10% 41%;
+    --card-foreground: 220 20% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 263 10% 41%;
+    --popover-foreground: 220 20% 15%;
 
-    --primary: 283 14% 60%;
-    --primary-foreground: 300 25% 98%;
+    /* Coral/salmon - the pin color */
+    --primary: 167 48% 47%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 280 16% 91%;
-    --secondary-foreground: 263 10% 41%;
+    /* Soft blue - map roads/accents */
+    --secondary: 155 42% 89%;
+    --secondary-foreground: 220 20% 15%;
 
-    --muted: 280 14% 92%;
-    --muted-foreground: 263 9% 46%;
+    --muted: 210 20% 92%;
+    --muted-foreground: 215 15% 50%;
 
-    --accent: 283 14% 60%;
-    --accent-foreground: 300 25% 98%;
+    /* Blue accent for interactive elements */
+    --accent: 167 48% 47%;
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 52%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 280 12% 86%;
-    --input: 280 12% 86%;
-    --ring: 283 18% 48%;
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 12 78% 57%;
 
     --radius: 16px;
 
-    /* 지도·핀·캐시 등 앱 전용 토큰 */
-    --color-pin: 283 14% 52%;
-    --color-pin-active: 263 12% 36%;
-    --color-map-bg: 280 18% 92%;
+    /* Custom tokens */
+    --color-pin: 12 78% 57%;
+    --color-pin-active: 12 85% 50%;
+    --color-map-bg: 206 18% 93%;
     --color-map-road: 0 0% 100%;
-    --color-map-water: 280 22% 88%;
-    --color-success: 152 35% 42%;
-    --color-warning: 38 88% 52%;
-    --color-cash: 283 16% 45%;
+    --color-map-water: 207 49% 81%;
+    --color-success: 145 60% 45%;
+    --color-warning: 38 92% 55%;
+    --color-cash: 145 65% 42%;
 
     /* Spacing (4pt grid) */
     --space-1: 4px;
@@ -68,19 +66,19 @@
     --font-mono: 'JetBrains Mono', monospace;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px hsl(263 15% 20% / 0.06);
-    --shadow-md: 0 4px 12px hsl(263 15% 20% / 0.09);
-    --shadow-lg: 0 8px 24px hsl(263 15% 20% / 0.12);
-    --shadow-sheet: 0 -4px 24px hsl(263 15% 20% / 0.12);
+    --shadow-sm: 0 1px 2px hsl(220 20% 15% / 0.05);
+    --shadow-md: 0 4px 12px hsl(220 20% 15% / 0.08);
+    --shadow-lg: 0 8px 24px hsl(220 20% 15% / 0.12);
+    --shadow-sheet: 0 -4px 24px hsl(220 20% 15% / 0.12);
 
-    --sidebar-background: 300 22% 96%;
-    --sidebar-foreground: 263 10% 41%;
-    --sidebar-primary: 283 14% 60%;
-    --sidebar-primary-foreground: 300 25% 98%;
-    --sidebar-accent: 280 14% 92%;
-    --sidebar-accent-foreground: 263 10% 41%;
-    --sidebar-border: 280 12% 88%;
-    --sidebar-ring: 283 18% 48%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -118,12 +116,12 @@
 
 /* Leaflet overrides */
 .leaflet-container {
-  background: hsl(var(--color-map-bg)) !important;
+  background: #e9eef1 !important;
   font-family: var(--font-body) !important;
 }
 
 .map-screen-shell {
-  background: linear-gradient(135deg, #f3e9f3 0%, #d8cfe0 45%, #c4b8d4 100%);
+  background: linear-gradient(135deg, #a8d5c2 0%, #6fbfaf 100%);
 }
 
 .map-canvas {
@@ -178,7 +176,7 @@
 
 .map-icon-btn:hover {
   background: #f9fafb;
-  color: #9a8ba7;
+  color: #3fb39a;
 }
 
 .leaflet-control-zoom {
