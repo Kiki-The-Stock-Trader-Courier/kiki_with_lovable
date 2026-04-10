@@ -189,18 +189,20 @@ export default function StockSheetChat({ stock, isScrapped, onToggleScrap }: Sto
         )}
       </div>
 
-      <div className="mb-2 flex flex-wrap gap-1.5">
-        {QUICK_PROMPTS.map((q) => (
-          <button
-            key={q}
-            type="button"
-            onClick={() => send(q)}
-            disabled={isLoading}
-            className="rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/80 disabled:opacity-50"
-          >
-            {q}
-          </button>
-        ))}
+      <div className="no-scrollbar mb-2 w-full overflow-x-auto overflow-y-hidden [touch-action:pan-x]">
+        <div className="inline-flex min-w-max items-center gap-1.5 whitespace-nowrap pr-1">
+          {QUICK_PROMPTS.map((q) => (
+            <button
+              key={q}
+              type="button"
+              onClick={() => send(q)}
+              disabled={isLoading}
+              className="flex-none whitespace-nowrap rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/80 disabled:opacity-50"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
       </div>
 
       <form
