@@ -15,7 +15,7 @@ function buildWelcomeMessage(stock: StockPin): ChatMessage {
   return {
     id: `welcome-${stock.id}`,
     role: "assistant",
-    content: `${stock.name}(${stock.ticker})에 대해 물어보세요.\n\n한줄 소개: ${stock.description}\n업종: ${stock.sector}`,
+    content: `${stock.name}(${stock.ticker})에 대해 물어보세요.\n\n업종: ${stock.sector}`,
     timestamp: new Date(),
   };
 }
@@ -156,20 +156,6 @@ export default function StockSheetChat({ stock, isScrapped, onToggleScrap }: Sto
         </div>
       </div>
 
-      <div className="mb-2 flex flex-wrap gap-1.5">
-        {QUICK_PROMPTS.map((q) => (
-          <button
-            key={q}
-            type="button"
-            onClick={() => send(q)}
-            disabled={isLoading}
-            className="rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/80 disabled:opacity-50"
-          >
-            {q}
-          </button>
-        ))}
-      </div>
-
       <div
         ref={scrollRef}
         className="mb-3 max-h-80 space-y-2 overflow-y-auto rounded-xl border border-border/50 bg-muted/30 p-3 pr-2"
@@ -201,6 +187,20 @@ export default function StockSheetChat({ stock, isScrapped, onToggleScrap }: Sto
             </div>
           </div>
         )}
+      </div>
+
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {QUICK_PROMPTS.map((q) => (
+          <button
+            key={q}
+            type="button"
+            onClick={() => send(q)}
+            disabled={isLoading}
+            className="rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-muted/80 disabled:opacity-50"
+          >
+            {q}
+          </button>
+        ))}
       </div>
 
       <form
