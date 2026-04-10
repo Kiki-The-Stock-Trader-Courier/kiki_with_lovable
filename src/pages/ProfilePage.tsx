@@ -2,12 +2,10 @@ import { User, Wallet, Link2, Settings, ChevronRight, Shield } from "lucide-reac
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
-import { useState } from "react";
 
 const ProfilePage = () => {
   const { signOut } = useAuth();
-  const { walk, nickname, setNickname, holdings } = useUserData();
-  const [nicknameInput, setNicknameInput] = useState("");
+  const { walk, nickname, holdings } = useUserData();
   const totalValue = holdings.reduce((sum, h) => sum + h.currentPrice * h.shares, 0);
 
   return (
@@ -22,30 +20,6 @@ const ProfilePage = () => {
             <h1 className="font-display text-lg font-bold tracking-tight text-foreground">{nickname}</h1>
             <p className="text-sm text-muted-foreground">워키포인트 투자 3일차 🎉</p>
           </div>
-        </div>
-
-        <div className="mt-4 flex items-center gap-2">
-          <input
-            id="profile-nickname"
-            name="nickname"
-            value={nicknameInput}
-            onChange={(e) => setNicknameInput(e.target.value)}
-            placeholder="닉네임 입력"
-            className="h-10 flex-1 rounded-lg border border-border/70 bg-background px-3 text-sm"
-            aria-label="닉네임 입력"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (!nicknameInput.trim()) return;
-              setNickname(nicknameInput);
-              setNicknameInput("");
-            }}
-            className="h-10 rounded-lg bg-primary px-3 text-sm font-semibold text-primary-foreground"
-            aria-label="닉네임 저장"
-          >
-            저장
-          </button>
         </div>
 
         {/* Summary cards */}
