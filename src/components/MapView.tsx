@@ -2,6 +2,7 @@ import { MapContainer, TileLayer, Circle, CircleMarker, Marker, useMap } from "r
 import L from "leaflet";
 import { useEffect, useMemo, useRef } from "react";
 import StockPinMarker from "./StockPin";
+import StockClusterMarker from "./StockClusterMarker";
 import type { StockPin } from "@/types/stock";
 import { normalizeKrxTickerKey } from "@/lib/quoteApi";
 
@@ -120,6 +121,22 @@ function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number):
   return 2 * R * Math.atan2(Math.sqrt(p), Math.sqrt(1 - p));
 }
 
+/** 동일 건물(같은 좌표) — 소수 5자리 기준 그룹 */
+function locationKey(lat: number, lng: number): string {
+  return `${lat.toFixed(5)},${lng.toFixed(5)}`;
+}
+
+function groupStocksByLocation(stocks: StockPin[]): StockPin[][] {
+  const m = new Map<string, StockPin[]>();
+  for (const s of stocks) {
+    const k = locationKey(s.lat, s.lng);
+    const arr = m.get(k) ?? [];
+    arr.push(s);
+    m.set(k, arr);
+  }
+  return Array.from(m.values());
+}
+
 const MapView = ({
   center,
   radius,
@@ -131,6 +148,8 @@ const MapView = ({
   userLocationStatus = "pending",
   userRecenterTarget = null,
 }: MapViewProps) => {
+  const stockGroups = useMemo(() => groupStocksByLocation(stocks), [stocks]);
+
   /** 내 위치 핀 — 종목 핀과 구분되는 티얼 마커 */
   const userLocationIcon = useMemo(
     () =>
@@ -226,18 +245,38 @@ const MapView = ({
           </>
         )}
 
-        {/* 주식 핀 */}
-        {stocks.map((stock) => {
-          const tickerKey = normalizeKrxTickerKey(stock.ticker);
-          const isOwned = tickerKey ? ownedTickerSet?.has(tickerKey) ?? false : false;
-          const isOutOfRadius = distanceMeters(center.lat, center.lng, stock.lat, stock.lng) > radius;
+        {/* 주식 핀 — 동일 좌표는 묶어 숫자 마커 + 목록 팝업 */}
+        {stockGroups.map((group) => {
+          const first = group[0]!;
+          const clusterKey = `loc-${locationKey(first.lat, first.lng)}`;
+
+          if (group.length === 1) {
+            const stock = first;
+            const tickerKey = normalizeKrxTickerKey(stock.ticker);
+            const isOwned = tickerKey ? ownedTickerSet?.has(tickerKey) ?? false : false;
+            const isOutOfRadius = distanceMeters(center.lat, center.lng, stock.lat, stock.lng) > radius;
+            return (
+              <StockPinMarker
+                key={stock.id}
+                stock={stock}
+                isOwned={isOwned}
+                isOutOfRadius={isOutOfRadius}
+                onSelect={onSelectStock}
+              />
+            );
+          }
+
+          const isMuted = group.every(
+            (s) => distanceMeters(center.lat, center.lng, s.lat, s.lng) > radius,
+          );
           return (
-            <StockPinMarker
-              key={stock.id}
-              stock={stock}
-              isOwned={isOwned}
-              isOutOfRadius={isOutOfRadius}
-              onSelect={onSelectStock}
+            <StockClusterMarker
+              key={clusterKey}
+              stocks={group}
+              lat={first.lat}
+              lng={first.lng}
+              isMuted={isMuted}
+              onSelectStock={onSelectStock}
             />
           );
         })}
