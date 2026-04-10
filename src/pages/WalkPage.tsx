@@ -83,7 +83,7 @@ const WalkPage = () => {
               className="absolute left-1/2 top-[93.75%] z-10 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-primary/70 bg-primary p-1.5 text-primary-foreground shadow-md ring-2 ring-background transition hover:scale-105 hover:bg-primary/90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               aria-label="최근 1주 걸음수 보기"
             >
-              <WalkSneakerIcon className="h-8 w-auto shrink-0 aspect-[34/42] max-h-8" />
+              <WalkSneakerIcon />
             </button>
           </div>
         </div>
