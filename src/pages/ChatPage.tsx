@@ -161,7 +161,7 @@ const ChatPage = () => {
             <Bot className="h-5 w-5 text-primary" aria-hidden />
           </div>
           <div className="min-w-0">
-            <h1 className="font-display text-base font-bold tracking-tight text-foreground">주식 도우미</h1>
+            <h1 className="font-display text-base font-bold tracking-tight text-foreground">키키</h1>
             <p className="text-xs text-muted-foreground">종목 정보 · 퀴즈 · 걸음 설정</p>
           </div>
         </div>
