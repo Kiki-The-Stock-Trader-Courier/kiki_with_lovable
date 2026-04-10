@@ -332,14 +332,13 @@ const Index = () => {
         <button
           type="button"
           onClick={() => navigate(isAuthenticated ? "/chat" : "/login")}
-          className="map-icon-btn flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
+          className="map-icon-btn relative flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
           aria-label="챗봇 열기, 읽지 않은 알림 2건"
         >
-          <span className="relative inline-flex h-5 w-5 shrink-0 items-center justify-center" aria-hidden>
-            <MessageCircle className="h-5 w-5" />
-            <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-10 flex size-[9px] items-center justify-center rounded-full bg-[#F44336] text-[7px] font-bold leading-none text-white ring-1 ring-white">
-              2
-            </span>
+          <MessageCircle className="h-5 w-5" aria-hidden />
+          {/* FAB 전체(48px) 기준 우측 상단 — 이전(9px) 대비 약 2배 크기 */}
+          <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-10 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#F44336] px-0.5 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
+            2
           </span>
         </button>
       </div>
