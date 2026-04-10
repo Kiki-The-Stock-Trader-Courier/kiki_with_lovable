@@ -54,43 +54,22 @@ function makeTitleFromInput(input: string): string {
 }
 
 function summarizeConversationTitle(messages: ChatMessage[]): string {
-  const userTexts = messages
-    .filter((m) => m.role === "user")
-    .map((m) => m.content)
-    .join(" ");
-  const tokens = userTexts
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((t) => t.length >= 2);
+  const userMessages = messages.filter((m) => m.role === "user").map((m) => m.content.trim()).filter(Boolean);
+  if (userMessages.length === 0) return "New chat";
 
-  const stopwords = new Set([
-    "이거",
-    "저거",
-    "그거",
-    "그리고",
-    "근데",
-    "좀",
-    "해줘",
-    "알려줘",
-    "주세요",
-    "please",
-    "stock",
-    "chat",
-  ]);
+  // 가장 최근 사용자 질문을 자연스러운 제목으로 정리
+  const latest = userMessages[userMessages.length - 1]
+    .replace(/\s+/g, " ")
+    .replace(/[^\p{L}\p{N}\s?!.,]/gu, "")
+    .trim();
 
-  const counts = new Map<string, number>();
-  for (const token of tokens) {
-    if (stopwords.has(token)) continue;
-    counts.set(token, (counts.get(token) ?? 0) + 1);
-  }
+  const softened = latest.replace(
+    /(알려줘|알려주세요|해줘|해주세요|부탁해|부탁드립니다|좀 알려줘|좀|요)\s*$/u,
+    "",
+  );
 
-  const keywords = [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || b[0].length - a[0].length)
-    .slice(0, 3)
-    .map(([word]) => word);
-
-  if (keywords.length > 0) return makeTitleFromInput(keywords.join(" · "));
+  const normalized = softened.length > 0 ? softened : latest;
+  if (normalized.length > 0) return makeTitleFromInput(normalized);
   return "New chat";
 }
 
@@ -401,8 +380,8 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
                   onClick={() => switchConversation(conv.id)}
                   className={`mb-1.5 w-full rounded-xl px-3 py-2 text-left text-sm transition-colors ${
                     conv.id === activeConversationId
-                      ? "bg-muted font-medium text-foreground"
-                      : "text-foreground hover:bg-muted/60"
+                      ? "border border-border/70 bg-muted font-medium text-foreground"
+                      : "border border-border/60 bg-background/60 text-foreground hover:bg-muted/60"
                   }`}
                 >
                   {conv.title}
