@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Bookmark, TrendingUp } from "lucide-react";
+import { BriefcaseBusiness, Bookmark } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useUserData } from "@/hooks/useUserData";
 
@@ -45,14 +45,6 @@ const HoldingsPage = () => {
             })}
           </div>
         )}
-
-        <div className="mt-6 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
-          <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            요약
-          </p>
-          <p className="text-xs text-muted-foreground">향후 실데이터(체결/평가손익) 연동 시 자동 갱신됩니다.</p>
-        </div>
 
         {/* 요청사항: 보유 종목 탭에서 보유 종목 아래 스크랩 목록 표시 */}
         <div className="mt-6 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
