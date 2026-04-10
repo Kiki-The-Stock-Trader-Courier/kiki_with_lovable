@@ -13,6 +13,8 @@ const QUICK_ACTIONS = [
 ];
 
 const STORAGE_KEY = "global_chat_sheet_history_v1";
+const WELCOME_TEXT =
+  "안녕하세요! 워키 포인트의 든든한 정보통, 키키입니다! 제가 주가 예측부터 기업 정보까지 싹~ 다 알려드릴 테니까, 여러분은 즐겁게 걷기만 하세요! 참, 주식 퀴즈도 준비되어 있는데... 혹시 요즘 뉴스 안 보고 오신 건 아니겠죠?";
 
 interface Conversation {
   id: string;
@@ -31,8 +33,7 @@ function buildInitialMessage(): ChatMessage {
   return {
     id: `welcome-${Date.now()}`,
     role: "assistant",
-    content:
-      "안녕하세요! 워키 포인트의 든든한 정보통, 키키입니다! 제가 주가 예측부터 기업 정보까지 싹~ 다 알려드릴 테니까, 여러분은 즐겁게 걷기만 하세요! 참, 주식 퀴즈도 준비되어 있는데... 혹시 요즘 뉴스 안 보고 오신 건 아니겠죠?",
+    content: WELCOME_TEXT,
     timestamp: new Date(),
   };
 }
@@ -52,6 +53,47 @@ function makeTitleFromInput(input: string): string {
   return compact.length > 22 ? `${compact.slice(0, 22)}…` : compact;
 }
 
+function summarizeConversationTitle(messages: ChatMessage[]): string {
+  const userTexts = messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content)
+    .join(" ");
+  const tokens = userTexts
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length >= 2);
+
+  const stopwords = new Set([
+    "이거",
+    "저거",
+    "그거",
+    "그리고",
+    "근데",
+    "좀",
+    "해줘",
+    "알려줘",
+    "주세요",
+    "please",
+    "stock",
+    "chat",
+  ]);
+
+  const counts = new Map<string, number>();
+  for (const token of tokens) {
+    if (stopwords.has(token)) continue;
+    counts.set(token, (counts.get(token) ?? 0) + 1);
+  }
+
+  const keywords = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || b[0].length - a[0].length)
+    .slice(0, 3)
+    .map(([word]) => word);
+
+  if (keywords.length > 0) return makeTitleFromInput(keywords.join(" · "));
+  return "New chat";
+}
+
 export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string>("");
@@ -59,6 +101,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
+  const [showWelcomeBubble, setShowWelcomeBubble] = useState(false);
   const { walk, setGoalSteps } = useUserData();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -139,6 +182,12 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     return () => window.clearTimeout(timer);
   }, [activeConversationId, activeConversation?.messages.length]);
 
+  useEffect(() => {
+    setShowWelcomeBubble(false);
+    const timer = window.setTimeout(() => setShowWelcomeBubble(true), 1000);
+    return () => window.clearTimeout(timer);
+  }, [activeConversationId]);
+
   const startNewChat = () => {
     const next = createConversation();
     setConversations((prev) => [next, ...prev]);
@@ -169,8 +218,8 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
         c.id === activeConversationId
           ? {
               ...c,
-              title: c.title === "New chat" ? makeTitleFromInput(text) : c.title,
               messages: [...c.messages, userMsg],
+              title: summarizeConversationTitle([...c.messages, userMsg]),
               updatedAt: Date.now(),
             }
           : c,
@@ -269,21 +318,25 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
       </header>
 
       <div ref={scrollRef} className="chat-scroll-area min-h-0 flex-1 space-y-3 overflow-y-auto p-4 pr-3">
-        {activeMessages.map((msg) => (
+        {activeMessages.map((msg, index) => {
+          const isWelcomeBubble = msg.role === "assistant" && msg.content === WELCOME_TEXT && index === 0;
+          if (isWelcomeBubble && !showWelcomeBubble) return null;
+          return (
           <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
               className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs ${
                 msg.role === "user"
                   ? "rounded-br-md bg-primary text-primary-foreground"
                   : `rounded-bl-md border border-border/50 bg-background text-foreground ${
-                      msg.id.startsWith("welcome-") ? "animate-fade-in" : ""
+                      isWelcomeBubble ? "animate-fade-in" : ""
                     }`
               }`}
             >
               {msg.content}
             </div>
           </div>
-        ))}
+          );
+        })}
         {isLoading && <p className="text-xs text-muted-foreground">생각하는 중...</p>}
       </div>
 
