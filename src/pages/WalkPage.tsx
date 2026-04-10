@@ -97,24 +97,14 @@ const WalkPage = () => {
             <BarChart3 className="h-4 w-4 text-primary" />
             최근 1주 걸음수
           </h2>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={shareToFriend}
-              className="rounded-full border border-border/70 bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground transition-colors hover:bg-muted/70"
-              aria-label="친구 초대 공유"
-            >
-              친구초대
-            </button>
-            <button
-              type="button"
-              onClick={shareToFriend}
-              className="rounded-full border border-border/70 bg-accent px-2.5 py-1 text-[11px] font-semibold text-accent-foreground transition-opacity hover:opacity-90"
-              aria-label="카카오톡으로 친구에게 공유"
-            >
-              친구에게 공유
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={shareToFriend}
+            className="rounded-full border border-border/70 bg-accent px-2.5 py-1 text-[11px] font-semibold text-accent-foreground transition-opacity hover:opacity-90"
+            aria-label="카카오톡으로 친구에게 공유"
+          >
+            친구에게 공유
+          </button>
         </div>
         <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
           <div className="flex h-40 items-end justify-between gap-2">
