@@ -121,7 +121,6 @@ function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number):
   return 2 * R * Math.atan2(Math.sqrt(p), Math.sqrt(1 - p));
 }
 
-/** 동일 건물(같은 좌표) — 소수 5자리 기준 그룹 */
 function locationKey(lat: number, lng: number): string {
   return `${lat.toFixed(5)},${lng.toFixed(5)}`;
 }
@@ -245,10 +244,10 @@ const MapView = ({
           </>
         )}
 
-        {/* 주식 핀 — 동일 좌표는 묶어 숫자 마커 + 목록 팝업 */}
+        {/* 주식 핀 — 동일 좌표는 클러스터 + 목록 팝업 */}
         {stockGroups.map((group) => {
           const first = group[0]!;
-          const clusterKey = `loc-${locationKey(first.lat, first.lng)}`;
+          const clusterKey = `cluster-${locationKey(first.lat, first.lng)}`;
 
           if (group.length === 1) {
             const stock = first;
