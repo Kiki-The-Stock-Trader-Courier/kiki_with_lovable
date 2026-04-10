@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Footprints, Target, Coins, BarChart3, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
@@ -6,6 +7,8 @@ import { useNavigate } from "react-router-dom";
 
 const WalkPage = () => {
   const navigate = useNavigate();
+  /** 원형 진행률 아래 운동화 버튼 → 주간 걸음 차트로 스크롤 */
+  const weeklySectionRef = useRef<HTMLDivElement>(null);
   const { walk, weeklySteps } = useUserData();
   const progress = Math.min((walk.todaySteps / walk.goalSteps) * 100, 100);
   const appShareUrl = "https://universal-layout-main.vercel.app/";
@@ -35,6 +38,10 @@ const WalkPage = () => {
     }
   };
 
+  const scrollToWeeklyChart = () => {
+    weeklySectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div
       className="mx-auto min-h-[100dvh] w-full max-w-lg bg-background pb-24"
@@ -47,7 +54,7 @@ const WalkPage = () => {
         {/* Circular progress */}
         <div className="flex flex-col items-center">
           <div className="relative flex h-40 w-40 items-center justify-center">
-            <svg className="absolute h-full w-full -rotate-90" viewBox="0 0 160 160">
+            <svg className="absolute h-full w-full -rotate-90" viewBox="0 0 160 160" aria-hidden>
               <circle cx="80" cy="80" r="70" fill="none" stroke="hsl(var(--secondary))" strokeWidth="10" />
               <circle
                 cx="80" cy="80" r="70"
@@ -60,11 +67,30 @@ const WalkPage = () => {
                 className="transition-all duration-700"
               />
             </svg>
-            <div className="text-center">
+            <div className="relative z-0 text-center">
               <Footprints className="mx-auto mb-1 h-6 w-6 text-primary" />
               <p className="text-3xl font-bold text-foreground">{walk.todaySteps.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">/ {walk.goalSteps.toLocaleString()} 걸음</p>
             </div>
+            {/*
+              원(viewBox 160×160, 중심 80·반지름 70) 하단 중앙 (80, 150) — 컨테이너 높이 대비 93.75%
+              버튼 중심을 그 점에 두고 -translate-y-1/2 로 둘레에 반쯝 걸치게 배치
+            */}
+            <button
+              type="button"
+              onClick={scrollToWeeklyChart}
+              className="absolute left-1/2 top-[93.75%] z-10 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-background p-1.5 shadow-md ring-2 ring-background transition hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              aria-label="최근 1주 걸음수 보기"
+            >
+              <img
+                src="/walk-sneaker-icon.png"
+                alt=""
+                width={32}
+                height={32}
+                className="h-8 w-8 object-contain"
+                decoding="async"
+              />
+            </button>
           </div>
         </div>
 
@@ -95,7 +121,7 @@ const WalkPage = () => {
       </div>
 
       {/* Weekly steps chart */}
-      <div className="px-4 pb-2 pt-2">
+      <div ref={weeklySectionRef} id="walk-weekly-chart" className="scroll-mt-4 px-4 pb-2 pt-2">
         <div className="mb-3 flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-2 font-display text-base font-bold text-foreground">
             <BarChart3 className="h-4 w-4 text-primary" />
