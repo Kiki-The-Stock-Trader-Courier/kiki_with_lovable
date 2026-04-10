@@ -29,7 +29,7 @@ interface GlobalChatSheetProps {
 
 function buildInitialMessage(): ChatMessage {
   return {
-    id: "welcome",
+    id: `welcome-${Date.now()}`,
     role: "assistant",
     content:
       "안녕하세요! 워키 포인트의 든든한 정보통, 키키입니다! 제가 주가 예측부터 기업 정보까지 싹~ 다 알려드릴 테니까, 여러분은 즐겁게 걷기만 하세요! 참, 주식 퀴즈도 준비되어 있는데... 혹시 요즘 뉴스 안 보고 오신 건 아니겠죠?",
@@ -123,7 +123,18 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   useEffect(() => {
     if (!activeConversation || activeConversation.messages.length > 0) return;
     const timer = window.setTimeout(() => {
-      appendAssistantMessage(buildInitialMessage().content);
+      const welcomeMessage = buildInitialMessage();
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === activeConversation.id
+            ? {
+                ...c,
+                messages: [...c.messages, welcomeMessage],
+                updatedAt: Date.now(),
+              }
+            : c,
+        ),
+      );
     }, 1000);
     return () => window.clearTimeout(timer);
   }, [activeConversationId, activeConversation?.messages.length]);
@@ -264,7 +275,9 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
               className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs ${
                 msg.role === "user"
                   ? "rounded-br-md bg-primary text-primary-foreground"
-                  : "rounded-bl-md border border-border/50 bg-background text-foreground"
+                  : `rounded-bl-md border border-border/50 bg-background text-foreground ${
+                      msg.id.startsWith("welcome-") ? "animate-fade-in" : ""
+                    }`
               }`}
             >
               {msg.content}
