@@ -15,7 +15,8 @@ const QUICK_ACTIONS = [
 const INITIAL_MESSAGE: ChatMessage = {
   id: "welcome",
   role: "assistant",
-  content: "안녕하세요! 👋 캐시워크 주식 도우미입니다.\n무엇이든 물어보세요.",
+  content:
+    "안녕하세요! 워키 포인트의 든든한 정보통, 키키입니다! 제가 주가 예측부터 기업 정보까지 싹~ 다 알려드릴 테니까, 여러분은 즐겁게 걷기만 하세요! 참, 주식 퀴즈도 준비되어 있는데... 혹시 요즘 뉴스 안 보고 오신 건 아니겠죠?",
   timestamp: new Date(),
 };
 
@@ -26,7 +27,7 @@ interface GlobalChatSheetProps {
 }
 
 export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
@@ -36,6 +37,13 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setMessages([INITIAL_MESSAGE]);
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
@@ -134,7 +142,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
             <Bot className="h-4 w-4 text-primary" />
           </div>
-          <p className="text-sm font-semibold text-foreground">주식 도우미</p>
+          <p className="text-sm font-semibold text-foreground">키키</p>
         </div>
         <button
           type="button"
