@@ -315,6 +315,11 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
       <div ref={scrollRef} className="chat-scroll-area min-h-0 flex-1 space-y-3 overflow-y-auto p-4 pr-3">
         {activeMessages.map((msg, index) => {
           const isWelcomeBubble = msg.role === "assistant" && msg.content === WELCOME_TEXT && index === 0;
+          const shouldAnimateWelcome =
+            isWelcomeBubble &&
+            msg.id === animatedWelcomeId &&
+            activeMessages.length === 1 &&
+            !activeMessages.some((m) => m.role === "user");
           return (
           <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
@@ -322,7 +327,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
                 msg.role === "user"
                   ? "rounded-br-md bg-primary text-primary-foreground"
                   : `rounded-bl-md border border-border/50 bg-background text-foreground ${
-                      isWelcomeBubble && msg.id === animatedWelcomeId ? "animate-fade-in" : ""
+                      shouldAnimateWelcome ? "animate-fade-in" : ""
                     }`
               }`}
             >
