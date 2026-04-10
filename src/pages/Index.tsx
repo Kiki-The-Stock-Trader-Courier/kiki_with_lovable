@@ -343,7 +343,8 @@ const Index = () => {
           }
           setShowChatSheet(true);
         }}
-        className="map-chat-fab pointer-events-auto absolute bottom-[calc(72px+env(safe-area-inset-bottom,0px)-12px)] left-1/2 z-[1350] flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full transition-transform active:scale-95"
+        className="map-chat-fab pointer-events-auto absolute z-[1350] flex h-14 w-14 items-center justify-center rounded-full transition-transform active:scale-95"
+        style={{ left: "359px", top: "708px" }}
         aria-label="챗봇 열기, 읽지 않은 알림 2건"
       >
         <MessageCircle className="h-6 w-6 text-white" aria-hidden />
