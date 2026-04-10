@@ -2,6 +2,7 @@ import { useRef } from "react";
 import { Footprints, Target, Coins, BarChart3, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
+import { WalkSneakerIcon } from "@/components/WalkSneakerIcon";
 import { useUserData } from "@/hooks/useUserData";
 import { useNavigate } from "react-router-dom";
 
@@ -79,17 +80,10 @@ const WalkPage = () => {
             <button
               type="button"
               onClick={scrollToWeeklyChart}
-              className="absolute left-1/2 top-[93.75%] z-10 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border/80 bg-background p-1.5 shadow-md ring-2 ring-background transition hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="absolute left-1/2 top-[93.75%] z-10 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-primary/70 bg-primary p-1.5 text-primary-foreground shadow-md ring-2 ring-background transition hover:scale-105 hover:bg-primary/90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               aria-label="최근 1주 걸음수 보기"
             >
-              <img
-                src="/walk-sneaker-icon.png"
-                alt=""
-                width={32}
-                height={32}
-                className="h-8 w-8 object-contain"
-                decoding="async"
-              />
+              <WalkSneakerIcon className="h-7 w-7 shrink-0" />
             </button>
           </div>
         </div>
