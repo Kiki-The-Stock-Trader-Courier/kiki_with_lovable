@@ -1,13 +1,10 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Send, Bot, Menu } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Send, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import BottomNav from "@/components/BottomNav";
-import { ChatSidebar } from "@/components/ChatSidebar";
-import type { ChatMessage, ChatSession } from "@/types/stock";
+import type { ChatMessage } from "@/types/stock";
 import { askGlobalAssistant } from "@/lib/openaiChat";
 import { useUserData } from "@/hooks/useUserData";
-import { loadChatSessions, saveChatSessions } from "@/lib/chatSessionsStorage";
 
 const QUICK_ACTIONS = [
   "500보로 살 수 있는 주식은?",
@@ -16,97 +13,30 @@ const QUICK_ACTIONS = [
   "걸음 목표 업데이트해줘",
 ];
 
-const WELCOME_CONTENT =
-  "안녕하세요! 👋 캐시워크 주식 도우미입니다.\n\n걸음수로 매수 가능한 종목을 알아보거나, 근처 기업 정보를 검색해보세요. 주식 퀴즈도 풀 수 있어요!";
+const INITIAL_MESSAGE: ChatMessage = {
+  id: "welcome",
+  role: "assistant",
+  content:
+    "안녕하세요! 👋 캐시워크 주식 도우미입니다.\n\n걸음수로 매수 가능한 종목을 알아보거나, 근처 기업 정보를 검색해보세요. 주식 퀴즈도 풀 수 있어요!",
+  timestamp: new Date(),
+};
 
 const RECENT_3DAY_STEPS = [4880, 5720, 3247];
 
-function createWelcomeMessage(sessionId: string): ChatMessage {
-  return {
-    id: `welcome-${sessionId}`,
-    role: "assistant",
-    content: WELCOME_CONTENT,
-    timestamp: new Date(),
-  };
-}
-
-function deriveSessionTitle(messages: ChatMessage[]): string {
-  const firstUser = messages.find((m) => m.role === "user");
-  if (!firstUser) return "새 채팅";
-  const t = firstUser.content.trim().replace(/\s+/g, " ");
-  if (t.length <= 40) return t;
-  return `${t.slice(0, 37)}...`;
-}
-
-function makeNewSession(): ChatSession {
-  const id = crypto.randomUUID();
-  return {
-    id,
-    title: "새 채팅",
-    messages: [createWelcomeMessage(id)],
-    updatedAt: Date.now(),
-  };
-}
-
-function getInitialChatState(): { sessions: ChatSession[]; activeId: string } {
-  const loaded = loadChatSessions();
-  if (loaded && loaded.length > 0) {
-    return { sessions: loaded, activeId: loaded[0]!.id };
-  }
-  const s = makeNewSession();
-  return { sessions: [s], activeId: s.id };
-}
-
 const ChatPage = () => {
-  const initRef = useRef(getInitialChatState());
-  const [sessions, setSessions] = useState<ChatSession[]>(() => initRef.current.sessions);
-  const [activeSessionId, setActiveSessionId] = useState(() => initRef.current.activeId);
+  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [myItemsActive, setMyItemsActive] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { walk, setGoalSteps } = useUserData();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const activeSessionIdRef = useRef(activeSessionId);
-  activeSessionIdRef.current = activeSessionId;
-
-  const activeSession = useMemo(
-    () => sessions.find((s) => s.id === activeSessionId),
-    [sessions, activeSessionId],
-  );
-  const messages = activeSession?.messages ?? [];
-
-  useEffect(() => {
-    saveChatSessions(sessions);
-  }, [sessions]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const appendMessage = useCallback((msg: ChatMessage) => {
-    const sid = activeSessionIdRef.current;
-    setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id !== sid) return s;
-        const nextMsgs = [...s.messages, msg];
-        return {
-          ...s,
-          messages: nextMsgs,
-          updatedAt: Date.now(),
-          title: deriveSessionTitle(nextMsgs),
-        };
-      }),
-    );
-  }, []);
-
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading) return;
-
-    const sid = activeSessionIdRef.current;
-    const current = sessions.find((s) => s.id === sid)?.messages ?? [];
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
@@ -115,22 +45,9 @@ const ChatPage = () => {
       timestamp: new Date(),
     };
 
-    const historyAfterUser = [...current, userMsg];
-
-    setSessions((prev) =>
-      prev.map((s) => {
-        if (s.id !== sid) return s;
-        const nextMsgs = [...s.messages, userMsg];
-        return {
-          ...s,
-          messages: nextMsgs,
-          updatedAt: Date.now(),
-          title: deriveSessionTitle(nextMsgs),
-        };
-      }),
-    );
+    const historyAfterUser = [...messages, userMsg];
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
-    setMyItemsActive(false);
 
     const avg3 =
       Math.round(RECENT_3DAY_STEPS.reduce((sum, v) => sum + v, 0) / RECENT_3DAY_STEPS.length / 10) * 10;
@@ -169,7 +86,7 @@ const ChatPage = () => {
         content: goalReply,
         timestamp: new Date(),
       };
-      appendMessage(botMsg);
+      setMessages((prev) => [...prev, botMsg]);
       return;
     }
 
@@ -203,7 +120,7 @@ const ChatPage = () => {
         content: goalReply,
         timestamp: new Date(),
       };
-      appendMessage(botMsg);
+      setMessages((prev) => [...prev, botMsg]);
       return;
     }
 
@@ -217,7 +134,7 @@ const ChatPage = () => {
         content: reply,
         timestamp: new Date(),
       };
-      appendMessage(botMsg);
+      setMessages((prev) => [...prev, botMsg]);
     } catch {
       const botMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -225,7 +142,7 @@ const ChatPage = () => {
         content: `${getMockResponse(text)}\n\n— OpenAI 연결 없이 데모 답변이에요. .env에 OPENAI_API_KEY를 설정해 보세요.`,
         timestamp: new Date(),
       };
-      appendMessage(botMsg);
+      setMessages((prev) => [...prev, botMsg]);
     } finally {
       setIsLoading(false);
     }
@@ -236,148 +153,85 @@ const ChatPage = () => {
     void sendMessage(input);
   };
 
-  const handleNewChat = () => {
-    const s = makeNewSession();
-    setSessions((prev) => [s, ...prev]);
-    setActiveSessionId(s.id);
-    setAwaitingGoalChoice(false);
-    setMyItemsActive(false);
-  };
-
-  const handleSelectSession = (id: string) => {
-    setActiveSessionId(id);
-    setAwaitingGoalChoice(false);
-    setMyItemsActive(false);
-  };
-
-  const sidebarSessions = useMemo(
-    () =>
-      [...sessions]
-        .sort((a, b) => b.updatedAt - a.updatedAt)
-        .map((s) => ({ id: s.id, title: s.title, updatedAt: s.updatedAt })),
-    [sessions],
-  );
-
-  const sidebarProps = {
-    sessions: sidebarSessions,
-    activeSessionId,
-    searchQuery,
-    onSearchChange: setSearchQuery,
-    onNewChat: handleNewChat,
-    onSelectSession: handleSelectSession,
-    myItemsActive,
-    onMyItemsClick: () => setMyItemsActive(true),
-    onGemsClick: () => undefined,
-    className: "md:border-r md:pt-0" as const,
-  };
-
   return (
-    <div
-      className="mx-auto flex h-[100dvh] w-full max-w-5xl flex-col bg-background"
-      data-testid="chat-screen"
-    >
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col md:flex-row">
-        {/* 데스크톱 사이드바 */}
-        <aside className="hidden min-h-0 w-[min(100%,280px)] shrink-0 md:flex md:flex-col">
-          <ChatSidebar {...sidebarProps} />
-        </aside>
-
-        {/* 모바일 드로어 */}
-        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetContent side="left" className="w-[min(100%,280px)] border-r border-slate-200/80 p-0">
-            <ChatSidebar {...sidebarProps} onClose={() => setSidebarOpen(false)} />
-          </SheetContent>
-        </Sheet>
-
-        {/* 메인 채팅 열 */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-border/80 bg-card/90 px-3 pb-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] backdrop-blur-md supports-[backdrop-filter]:bg-card/75 md:px-4">
-          <button
-            type="button"
-            onClick={() => setSidebarOpen(true)}
-            className="rounded-lg p-2 text-foreground hover:bg-muted/80 md:hidden"
-            aria-label="메뉴 열기"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
-              <Bot className="h-5 w-5 text-primary" aria-hidden />
-            </div>
-            <div className="min-w-0">
-              <h1 className="font-display text-base font-bold tracking-tight text-foreground">주식 도우미</h1>
-              <p className="text-xs text-muted-foreground">종목 정보 · 퀴즈 · 걸음 설정</p>
-            </div>
+    <div className="mx-auto flex h-[100dvh] max-w-lg flex-col bg-background" data-testid="chat-screen">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-card/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] backdrop-blur-md supports-[backdrop-filter]:bg-card/75">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
+            <Bot className="h-5 w-5 text-primary" aria-hidden />
           </div>
-        </header>
-
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-4 pb-4 no-scrollbar">
-          <div className="mx-auto max-w-lg space-y-4">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${
-                    msg.role === "user"
-                      ? "rounded-br-md bg-primary text-primary-foreground"
-                      : "rounded-bl-md border border-border/50 bg-card text-card-foreground"
-                  }`}
-                >
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="flex items-center gap-2 rounded-2xl border border-border/50 bg-card px-4 py-3 shadow-sm">
-                  <span className="text-sm text-muted-foreground">생각하는 중...</span>
-                </div>
-              </div>
-            )}
+          <div className="min-w-0">
+            <h1 className="font-display text-base font-bold tracking-tight text-foreground">주식 도우미</h1>
+            <p className="text-xs text-muted-foreground">종목 정보 · 퀴즈 · 걸음 설정</p>
           </div>
         </div>
+      </header>
 
-        <div className="shrink-0 border-t border-border/80 bg-card/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-card/85">
-          <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-0.5 pl-0.5">
-            {QUICK_ACTIONS.map((action) => (
-              <button
-                key={action}
-                type="button"
-                onClick={() => void sendMessage(action)}
-                className="min-h-[36px] shrink-0 rounded-full border border-border/70 bg-muted/40 px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/80 active:scale-[0.98]"
-              >
-                {action}
-              </button>
-            ))}
-          </div>
-
-          <form
-            onSubmit={handleSubmit}
-            className="flex items-center gap-2 pb-[calc(env(safe-area-inset-bottom,0px)+72px)]"
-          >
-            <input
-              id="chat-page-message"
-              name="chatMessage"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="궁금한 종목이나 걸음 설정을 물어보세요"
-              className="min-h-[48px] flex-1 rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="메시지 입력"
-            />
-            <Button
-              type="submit"
-              size="icon"
-              className="h-12 w-12 shrink-0 rounded-xl"
-              disabled={!input.trim() || isLoading}
-              aria-label="메시지 전송"
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-4 pb-4 no-scrollbar">
+        <div className="mx-auto max-w-lg space-y-4">
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
-              <Send className="h-5 w-5" />
-            </Button>
-          </form>
+              <div
+                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${
+                  msg.role === "user"
+                    ? "rounded-br-md bg-primary text-primary-foreground"
+                    : "rounded-bl-md border border-border/50 bg-card text-card-foreground"
+                }`}
+              >
+                {msg.content}
+              </div>
+            </div>
+          ))}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="flex items-center gap-2 rounded-2xl border border-border/50 bg-card px-4 py-3 shadow-sm">
+                <span className="text-sm text-muted-foreground">생각하는 중...</span>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
+
+      <div className="border-t border-border/80 bg-card/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-card/85">
+        <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-0.5 pl-0.5">
+          {QUICK_ACTIONS.map((action) => (
+            <button
+              key={action}
+              type="button"
+              onClick={() => void sendMessage(action)}
+              className="min-h-[36px] shrink-0 rounded-full border border-border/70 bg-muted/40 px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/80 active:scale-[0.98]"
+            >
+              {action}
+            </button>
+          ))}
         </div>
+
+        <form
+          onSubmit={handleSubmit}
+          className="flex items-center gap-2 pb-[calc(env(safe-area-inset-bottom,0px)+72px)]"
+        >
+          <input
+            id="chat-page-message"
+            name="chatMessage"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="궁금한 종목이나 걸음 설정을 물어보세요"
+            className="min-h-[48px] flex-1 rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="메시지 입력"
+          />
+          <Button
+            type="submit"
+            size="icon"
+            className="h-12 w-12 shrink-0 rounded-xl"
+            disabled={!input.trim() || isLoading}
+            aria-label="메시지 전송"
+          >
+            <Send className="h-5 w-5" />
+          </Button>
+        </form>
       </div>
 
       <BottomNav />
