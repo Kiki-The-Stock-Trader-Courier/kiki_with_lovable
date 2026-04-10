@@ -1,14 +1,13 @@
 import { useRef } from "react";
-import { Footprints, Target, Coins, BarChart3, Award } from "lucide-react";
+import { Footprints, Target, Coins, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
-import { WalkSneakerIcon } from "@/components/WalkSneakerIcon";
 import { useUserData } from "@/hooks/useUserData";
 import { useNavigate } from "react-router-dom";
 
 const WalkPage = () => {
   const navigate = useNavigate();
-  /** 원형 진행률 아래 운동화 버튼 → 주간 걸음 차트로 스크롤 */
+  /** 주간 걸음 차트 섹션 앵커 */
   const weeklySectionRef = useRef<HTMLDivElement>(null);
   const { walk, weeklySteps } = useUserData();
   const progress = Math.min((walk.todaySteps / walk.goalSteps) * 100, 100);
@@ -37,10 +36,6 @@ const WalkPage = () => {
     } catch {
       window.prompt("아래 링크를 복사해 카카오톡으로 공유해 주세요.", appShareUrl);
     }
-  };
-
-  const scrollToWeeklyChart = () => {
-    weeklySectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
@@ -73,43 +68,24 @@ const WalkPage = () => {
               <p className="text-3xl font-bold text-foreground">{walk.todaySteps.toLocaleString()}</p>
               <p className="text-xs text-muted-foreground">/ {walk.goalSteps.toLocaleString()} 걸음</p>
             </div>
-            {/*
-              원(viewBox 160×160, 중심 80·반지름 70) 하단 중앙 (80, 150) — 컨테이너 높이 대비 93.75%
-              버튼 중심을 그 점에 두고 -translate-y-1/2 로 둘레에 반쯝 걸치게 배치
-            */}
-            <button
-              type="button"
-              onClick={scrollToWeeklyChart}
-              className="absolute left-1/2 top-[93.75%] z-10 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-primary/70 bg-primary p-1.5 text-primary-foreground shadow-md ring-2 ring-background transition hover:scale-105 hover:bg-primary/90 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              aria-label="최근 1주 걸음수 보기"
-            >
-              <WalkSneakerIcon />
-            </button>
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="mt-6 flex justify-around">
-          <div className="text-center">
-            <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+        {/* 통계: 달성률 · 캐시 — 두 열 가운데 정렬 */}
+        <div className="mt-6 flex max-w-sm mx-auto justify-center gap-16 sm:gap-24">
+          <div className="flex min-w-[100px] flex-col items-center text-center">
+            <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
               <Target className="h-5 w-5 text-primary" />
             </div>
-            <p className="text-lg font-bold text-foreground">{Math.round(progress)}%</p>
+            <p className="text-lg font-bold tabular-nums text-foreground">{Math.round(progress)}%</p>
             <p className="text-xs text-muted-foreground">달성률</p>
           </div>
-          <div className="text-center">
-            <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-xl bg-cash/10">
+          <div className="flex min-w-[100px] flex-col items-center text-center">
+            <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-cash/10">
               <Coins className="h-5 w-5 text-cash" />
             </div>
-            <p className="text-lg font-bold text-foreground">{walk.cashBalance.toLocaleString()}</p>
+            <p className="text-lg font-bold tabular-nums text-foreground">{walk.cashBalance.toLocaleString()}</p>
             <p className="text-xs text-muted-foreground">캐시 (원)</p>
-          </div>
-          <div className="text-center">
-            <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10">
-              <Award className="h-5 w-5 text-accent" />
-            </div>
-            <p className="text-lg font-bold text-foreground">{Math.floor(walk.todaySteps * walk.cashPerStep)}</p>
-            <p className="text-xs text-muted-foreground">오늘 적립</p>
           </div>
         </div>
       </div>
