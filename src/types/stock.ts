@@ -61,6 +61,14 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+/** 사이드바·저장용 대화 세션 */
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  updatedAt: number;
+}
+
 /** 주변 인기 종목 (다른 동네) */
 export interface TrendingStock {
   ticker: string;
