@@ -271,17 +271,19 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
       </div>
 
       <div className="border-t border-border/80 p-3">
-        <div className="no-scrollbar mb-2 flex w-full flex-nowrap items-center gap-1.5 overflow-x-auto overflow-y-hidden whitespace-nowrap snap-x snap-mandatory [touch-action:pan-x]">
-          {QUICK_ACTIONS.map((action) => (
-            <button
-              key={action}
-              type="button"
-              onClick={() => sendMessage(action)}
-              className="flex-none snap-start whitespace-nowrap rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground"
-            >
-              {action}
-            </button>
-          ))}
+        <div className="no-scrollbar mb-2 w-full overflow-x-auto overflow-y-hidden [touch-action:pan-x]">
+          <div className="inline-flex min-w-max items-center gap-1.5 whitespace-nowrap pr-1">
+            {QUICK_ACTIONS.map((action) => (
+              <button
+                key={action}
+                type="button"
+                onClick={() => sendMessage(action)}
+                className="flex-none whitespace-nowrap rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground"
+              >
+                {action}
+              </button>
+            ))}
+          </div>
         </div>
         <form
           onSubmit={(e) => {
