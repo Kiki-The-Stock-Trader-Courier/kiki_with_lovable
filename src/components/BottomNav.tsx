@@ -41,48 +41,25 @@ const BottomNav = () => {
         </button>
       )}
 
-      <div className="mx-auto flex max-w-lg items-center justify-between px-4 py-2">
-        <div className="flex items-center gap-1">
-          {NAV_ITEMS.slice(0, 2).map(({ path, label, icon: Icon }) => {
-            const isActive = location.pathname === path;
-            return (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
-                className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
-                aria-label={label}
-                aria-current={isActive ? "page" : undefined}
-              >
-                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-                <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>{label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="w-14" aria-hidden />
-
-        <div className="flex items-center gap-1">
-          {NAV_ITEMS.slice(2).map(({ path, label, icon: Icon }) => {
-            const isActive = location.pathname === path;
-            return (
-              <button
-                key={path}
-                onClick={() => navigate(path)}
-                className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-colors ${
-                  isActive ? "text-primary" : "text-muted-foreground"
-                }`}
-                aria-label={label}
-                aria-current={isActive ? "page" : undefined}
-              >
-                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
-                <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>{label}</span>
-              </button>
-            );
-          })}
-        </div>
+      <div className="mx-auto grid max-w-lg grid-cols-5 items-center px-4 py-2">
+        {NAV_ITEMS.map(({ path, label, icon: Icon }, idx) => {
+          const isActive = location.pathname === path;
+          const colClass = idx === 2 ? "col-start-4" : idx === 3 ? "col-start-5" : "";
+          return (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-colors ${
+                isActive ? "text-primary" : "text-muted-foreground"
+              } ${colClass}`}
+              aria-label={label}
+              aria-current={isActive ? "page" : undefined}
+            >
+              <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+              <span className={`text-[10px] ${isActive ? "font-bold" : "font-medium"}`}>{label}</span>
+            </button>
+          );
+        })}
       </div>
     </nav>
   );
