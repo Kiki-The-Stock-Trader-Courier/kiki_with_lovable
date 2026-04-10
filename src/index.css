@@ -180,6 +180,18 @@
   color: #819fa7;
 }
 
+.map-chat-fab {
+  background: radial-gradient(circle at 35% 30%, #4c7cff 0%, #285bff 55%, #2848df 100%);
+  box-shadow:
+    0 8px 20px rgba(56, 97, 255, 0.45),
+    0 0 0 8px rgba(82, 121, 255, 0.12),
+    -4px 6px 14px rgba(236, 72, 153, 0.18);
+}
+
+.map-chat-fab:hover {
+  filter: brightness(1.05);
+}
+
 .leaflet-control-zoom {
   border: none !important;
   box-shadow: var(--shadow-md) !important;

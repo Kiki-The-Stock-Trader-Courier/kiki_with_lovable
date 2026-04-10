@@ -331,25 +331,26 @@ const Index = () => {
         >
           <LocateFixed className="h-5 w-5" strokeWidth={1.5} aria-hidden />
         </button>
-        <button
-          type="button"
-          onClick={() => {
-            if (!isAuthenticated) {
-              navigate("/login");
-              return;
-            }
-            setShowChatSheet(true);
-          }}
-          className="map-icon-btn relative flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
-          aria-label="챗봇 열기, 읽지 않은 알림 2건"
-        >
-          <MessageCircle className="h-5 w-5" aria-hidden />
-          {/* FAB 전체(48px) 기준 우측 상단 — 이전(9px) 대비 약 2배 크기 */}
-          <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-10 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#F44336] px-0.5 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
-            2
-          </span>
-        </button>
       </div>
+
+      {/* Center chatbot FAB (emphasized) */}
+      <button
+        type="button"
+        onClick={() => {
+          if (!isAuthenticated) {
+            navigate("/login");
+            return;
+          }
+          setShowChatSheet(true);
+        }}
+        className="map-chat-fab pointer-events-auto absolute bottom-[calc(72px+env(safe-area-inset-bottom,0px)-12px)] left-1/2 z-[1350] flex h-14 w-14 -translate-x-1/2 items-center justify-center rounded-full transition-transform active:scale-95"
+        aria-label="챗봇 열기, 읽지 않은 알림 2건"
+      >
+        <MessageCircle className="h-6 w-6 text-white" aria-hidden />
+        <span className="pointer-events-none absolute -right-0.5 -top-0.5 z-10 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#F44336] px-0.5 text-[10px] font-bold leading-none text-white shadow-sm ring-2 ring-white">
+          2
+        </span>
+      </button>
 
       {/* Trending section */}
       {showTrending && (
