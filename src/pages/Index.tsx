@@ -4,6 +4,7 @@ import StepCounter from "@/components/StepCounter";
 import StockInfoSheet from "@/components/StockInfoSheet";
 import TrendingSection from "@/components/TrendingSection";
 import BottomNav from "@/components/BottomNav";
+import GlobalChatSheet from "@/components/GlobalChatSheet";
 import { MOCK_TRENDING, DEFAULT_CENTER, DEFAULT_RADIUS_M } from "@/data/mockStocks";
 import type { StockPin } from "@/types/stock";
 import { LocateFixed, MapPin, MessageCircle } from "lucide-react";
@@ -24,6 +25,7 @@ const Index = () => {
   const { isAuthenticated } = useAuth();
   const [selectedStock, setSelectedStock] = useState<StockPin | null>(null);
   const [showTrending, setShowTrending] = useState(false);
+  const [showChatSheet, setShowChatSheet] = useState(false);
   /** 「내 위치」 버튼 — 지도 뷰 중심을 사용자 마커 좌표로 맞춤 (token 은 클릭마다 증가) */
   const [userRecenterTarget, setUserRecenterTarget] = useState<{
     lat: number;
@@ -331,7 +333,13 @@ const Index = () => {
         </button>
         <button
           type="button"
-          onClick={() => navigate(isAuthenticated ? "/chat" : "/login")}
+          onClick={() => {
+            if (!isAuthenticated) {
+              navigate("/login");
+              return;
+            }
+            setShowChatSheet(true);
+          }}
           className="map-icon-btn relative flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
           aria-label="챗봇 열기, 읽지 않은 알림 2건"
         >
@@ -348,6 +356,21 @@ const Index = () => {
         <div className="animate-slide-up absolute bottom-[88px] left-[max(1rem,env(safe-area-inset-left))] right-[calc(4.5rem+max(0px,env(safe-area-inset-right)))] z-[1200] max-w-[min(100%,20rem)] sm:max-w-none">
           <TrendingSection stocks={MOCK_TRENDING} />
         </div>
+      )}
+
+      {/* Global chat bottom sheet */}
+      {showChatSheet && (
+        <>
+          <button
+            type="button"
+            className="animate-fade-in absolute inset-0 z-[1250] bg-black/35"
+            onClick={() => setShowChatSheet(false)}
+            aria-label="챗봇 닫기 배경"
+          />
+          <div className="absolute inset-x-0 bottom-0 z-[1300] h-[50dvh] max-h-[50dvh]">
+            <GlobalChatSheet onClose={() => setShowChatSheet(false)} />
+          </div>
+        </>
       )}
 
       {/* Stock detail sheet */}
