@@ -101,7 +101,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
-  const [showWelcomeBubble, setShowWelcomeBubble] = useState(false);
+  const [animatedWelcomeId, setAnimatedWelcomeId] = useState<string | null>(null);
   const { walk, setGoalSteps } = useUserData();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -167,6 +167,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     if (!activeConversation || activeConversation.messages.length > 0) return;
     const timer = window.setTimeout(() => {
       const welcomeMessage = buildInitialMessage();
+      setAnimatedWelcomeId(welcomeMessage.id);
       setConversations((prev) =>
         prev.map((c) =>
           c.id === activeConversation.id
@@ -181,12 +182,6 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     }, 1000);
     return () => window.clearTimeout(timer);
   }, [activeConversationId, activeConversation?.messages.length]);
-
-  useEffect(() => {
-    setShowWelcomeBubble(false);
-    const timer = window.setTimeout(() => setShowWelcomeBubble(true), 1000);
-    return () => window.clearTimeout(timer);
-  }, [activeConversationId]);
 
   const startNewChat = () => {
     const next = createConversation();
@@ -320,7 +315,6 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
       <div ref={scrollRef} className="chat-scroll-area min-h-0 flex-1 space-y-3 overflow-y-auto p-4 pr-3">
         {activeMessages.map((msg, index) => {
           const isWelcomeBubble = msg.role === "assistant" && msg.content === WELCOME_TEXT && index === 0;
-          if (isWelcomeBubble && !showWelcomeBubble) return null;
           return (
           <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
@@ -328,7 +322,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
                 msg.role === "user"
                   ? "rounded-br-md bg-primary text-primary-foreground"
                   : `rounded-bl-md border border-border/50 bg-background text-foreground ${
-                      isWelcomeBubble ? "animate-fade-in" : ""
+                      isWelcomeBubble && msg.id === animatedWelcomeId ? "animate-fade-in" : ""
                     }`
               }`}
             >
