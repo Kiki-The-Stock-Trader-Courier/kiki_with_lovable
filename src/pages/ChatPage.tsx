@@ -23,13 +23,23 @@ const INITIAL_MESSAGE: ChatMessage = {
 
 const RECENT_3DAY_STEPS = [4880, 5720, 3247];
 
+/** 첫 화면 인사는 2~3초 후 표시 (즉시 노출 방지) */
+const GREETING_DELAY_MS = 2500;
+
 const ChatPage = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
   const { walk, setGoalSteps } = useUserData();
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setMessages((prev) => (prev.length === 0 ? [INITIAL_MESSAGE] : prev));
+    }, GREETING_DELAY_MS);
+    return () => window.clearTimeout(id);
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
