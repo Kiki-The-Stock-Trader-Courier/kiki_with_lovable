@@ -89,10 +89,9 @@ const createPinIcon = (stock: StockPinType, isOwned: boolean, isOutOfRadius: boo
   const color = isOutOfRadius
     ? "#9CA3AF"
     : isOwned
-      ? "#FF008E"
-      : "#6A2C91";
-  /** 진한 핀 위 아이콘은 흰 선으로 대비 */
-  const inner = logoOrSectorInner(stock, isOutOfRadius ? color : "#ffffff");
+      ? "#2563EB"
+      : "#FACC15";
+  const inner = logoOrSectorInner(stock, color);
 
   return L.divIcon({
     className: "stock-pin-icon",

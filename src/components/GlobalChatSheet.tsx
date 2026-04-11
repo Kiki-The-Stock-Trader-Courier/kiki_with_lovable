@@ -360,8 +360,8 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   };
 
   return (
-    <div className="animate-slide-up relative flex h-full flex-col rounded-t-3xl bg-chat-sheet shadow-2xl">
-      <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-gradient-to-r from-brand-purple/50 via-pop/60 to-brand-purple/50" />
+    <div className="animate-slide-up relative flex h-full flex-col rounded-t-3xl bg-card shadow-2xl">
+      <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted-foreground/30" />
       <header className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <button
@@ -409,7 +409,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
               className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs ${
                 msg.role === "user"
                   ? "whitespace-pre-wrap rounded-br-md bg-primary text-primary-foreground"
-                  : `rounded-bl-md border border-border/50 bg-card text-card-foreground ${
+                  : `rounded-bl-md border border-border/50 bg-background text-foreground ${
                       shouldAnimateWelcome ? "animate-fade-in" : ""
                     }`
               }`}
@@ -434,7 +434,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
                 key={action}
                 type="button"
                 onClick={() => sendMessage(action)}
-                className="flex-none whitespace-nowrap rounded-full border border-pop/35 bg-pop-soft/90 px-2.5 py-1 text-[11px] font-semibold text-foreground shadow-sm transition-all hover:border-brand-purple/40 hover:bg-accent hover:shadow-md active:scale-[0.98]"
+                className="flex-none whitespace-nowrap rounded-full border border-border/70 bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground"
               >
                 {action}
               </button>

@@ -52,13 +52,6 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        /** 연한 분홍 채팅·시트 배경 */
-        "chat-sheet": "hsl(var(--chat-sheet-bg))",
-        pop: "hsl(var(--pop))",
-        "pop-soft": "hsl(var(--pop-soft))",
-        brand: {
-          purple: "hsl(var(--purple))",
-        },
         pin: {
           DEFAULT: "hsl(var(--color-pin))",
           active: "hsl(var(--color-pin-active))",

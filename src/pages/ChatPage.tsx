@@ -165,11 +165,11 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="mx-auto flex h-[100dvh] max-w-lg flex-col bg-chat-sheet" data-testid="chat-screen">
-      <header className="sticky top-0 z-10 border-b border-border/80 bg-chat-sheet/95 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] backdrop-blur-md supports-[backdrop-filter]:bg-chat-sheet/90">
+    <div className="mx-auto flex h-[100dvh] max-w-lg flex-col bg-background" data-testid="chat-screen">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-card/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] backdrop-blur-md supports-[backdrop-filter]:bg-card/75">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent ring-1 ring-primary/15">
-            <Bot className="h-5 w-5 text-accent-foreground" aria-hidden />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
+            <Bot className="h-5 w-5 text-primary" aria-hidden />
           </div>
           <div className="min-w-0">
             <h1 className="font-display text-base font-bold tracking-tight text-foreground">키키</h1>
@@ -210,14 +210,14 @@ const ChatPage = () => {
         </div>
       </div>
 
-      <div className="border-t border-border/80 bg-chat-sheet/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-chat-sheet/88">
+      <div className="border-t border-border/80 bg-card/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-card/85">
         <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-0.5 pl-0.5">
           {QUICK_ACTIONS.map((action) => (
             <button
               key={action}
               type="button"
               onClick={() => void sendMessage(action)}
-              className="min-h-[36px] shrink-0 rounded-full border border-pop/35 bg-pop-soft/90 px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-all hover:border-brand-purple/40 hover:bg-accent hover:shadow-md active:scale-[0.98]"
+              className="min-h-[36px] shrink-0 rounded-full border border-border/70 bg-muted/40 px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/80 active:scale-[0.98]"
             >
               {action}
             </button>
