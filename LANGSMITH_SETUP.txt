@@ -24,8 +24,10 @@
 
   2) 환경 변수 (서버에만 — 브라우저에 넣지 마세요)
 
-     LANGSMITH_TRACING=true
-     LANGSMITH_API_KEY=lsv2_pt_xxxxxxxx
+     LANGSMITH_API_KEY=lsv2_pt_xxxxxxxx   … 필수(추적에 쓰는 키)
+
+     LANGSMITH_TRACING=true              … 생략 가능: 키만 있어도 서버에서 추적 켬
+     LANGSMITH_TRACING=false             … 키가 있어도 추적 끄기
 
      선택:
      LANGSMITH_PROJECT=원하는-프로젝트-이름
@@ -46,8 +48,8 @@
 
 ■ 4. 비활성화
 --------------------------------------------------------------------------------
-  LANGSMITH_TRACING 을 제거하거나 false 로 두거나,
-  LANGSMITH_API_KEY 를 비우면 wrapOpenAI 가 적용되지 않고 일반 OpenAI 클라이언트만 사용합니다.
+  LANGSMITH_API_KEY 를 비우면 wrapOpenAI 가 적용되지 않습니다.
+  키는 있는데 추적만 끄려면 LANGSMITH_TRACING=false (또는 LANGCHAIN_TRACING=false).
 
 
 ■ 5. 구현 위치 (코드)
