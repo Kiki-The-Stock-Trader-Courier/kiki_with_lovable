@@ -1,4 +1,4 @@
-import { Map, Footprints, BriefcaseBusiness, User, MessageCircle } from "lucide-react";
+import { Map, Footprints, BriefcaseBusiness, User } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,7 +48,16 @@ const BottomNav = () => {
           className="map-chat-fab pointer-events-auto absolute left-1/2 top-0 z-[1400] flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full"
           aria-label="챗봇 열기"
         >
-          <MessageCircle className="h-6 w-6 text-white" aria-hidden />
+          <img
+            src="/kiki-chat-fab-cat.png"
+            alt=""
+            width={40}
+            height={40}
+            decoding="async"
+            draggable={false}
+            className="pointer-events-none h-10 w-10 select-none object-contain drop-shadow-sm"
+            aria-hidden
+          />
         </button>
       )}
 
