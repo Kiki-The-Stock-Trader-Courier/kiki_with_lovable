@@ -1,5 +1,6 @@
 import type { StockAssistPayload } from "./ddgSearchCore.js";
 import { buildStockDdgQuery, duckDuckGoWebContext } from "./ddgSearchCore.js";
+import { fetchNaverNewsContext } from "./naverNewsSearch.js";
 
 type ChatMsg = { role: string; content: string };
 
@@ -13,7 +14,7 @@ function lastUserContent(messages: ChatMsg[]): string {
 }
 
 /**
- * 종목 챗 요청 시: 시스템 프롬프트에 DuckDuckGo 웹 검색 스니펫을 덧붙입니다.
+ * 종목 챗: 네이버 뉴스 API(우선) + DuckDuckGo 스니펫을 시스템 프롬프트에 합칩니다.
  */
 export async function mergeStockAssistWithDdg(
   messages: ChatMsg[],
@@ -24,16 +25,37 @@ export async function mergeStockAssistWithDdg(
 
   const lastUser = lastUserContent(msgs);
   const query = buildStockDdgQuery(stockAssist, lastUser);
-  const ddg = await duckDuckGoWebContext(query, 4000, stockAssist.ticker);
 
-  const block = ddg
-    ? [
-        "",
-        "---",
-        "[웹 검색 참고 — DuckDuckGo. 시세·뉴스·사실관계는 출처·시점과 다를 수 있으니, 답변 시 반드시 ‘검색 스니펫 기준’임을 안내하고, 불확실하면 추측하지 말 것.]",
+  const [naver, ddg] = await Promise.all([
+    fetchNaverNewsContext(stockAssist, lastUser, 3800),
+    duckDuckGoWebContext(query, 3200, stockAssist.ticker),
+  ]);
+
+  const sections: string[] = [];
+  if (naver) {
+    sections.push(naver);
+  }
+  if (ddg) {
+    sections.push(
+      [
+        "[웹 검색 참고 — DuckDuckGo. 시세·사실관계는 출처·시점과 다를 수 있음.]",
         ddg,
-      ].join("\n")
-    : "\n---\n[웹 검색 참고: 서버에서 DuckDuckGo 자동 검색 결과를 가져오지 못했습니다(데이터센터 IP 차단 등 가능). 앱에 표시된 시세·설명 위주로 답하고, 최신 뉴스·공시는 금융감독원 DART·거래소 공시·신뢰할 수 있는 언론 원문 확인을 안내하세요.]";
+      ].join("\n"),
+    );
+  }
+
+  let block: string;
+  if (sections.length > 0) {
+    block = [
+      "",
+      "---",
+      "[외부 검색·뉴스 스니펫 — 아래 내용을 우선 근거로 답하세요. 네이버 뉴스가 있으면 최근 이슈를 요약·인용하고, 없으면 DuckDuckGo만 사용. 스니펫에 없는 사실은 추측하지 말고 ‘확인 필요’로 안내.]",
+      sections.join("\n\n---\n\n"),
+    ].join("\n");
+  } else {
+    block =
+      "\n---\n[외부 뉴스/검색: NAVER_CLIENT_ID·NAVER_CLIENT_SECRET이 없거나 검색 결과가 비었고, DuckDuckGo도 실패했습니다. 앱에 표시된 시세·설명 위주로 답하고, 공시·뉴스 원문은 DART·거래소·언론 사이트 직접 확인을 권장한다고 짧게 안내하세요.]";
+  }
 
   const sysIdx = msgs.findIndex((m) => m.role === "system");
   if (sysIdx >= 0) {
