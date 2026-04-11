@@ -372,11 +372,15 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
           >
             <PanelLeft className="h-4 w-4" />
           </button>
-          <div className="h-8 w-8 overflow-hidden rounded-full ring-1 ring-border/60">
+          <div className="relative size-8 shrink-0 overflow-hidden rounded-full ring-1 ring-border/60">
             <img
               src="/kiki-chat-avatar.png"
               alt="키키 아바타"
-              className="h-full w-full object-cover"
+              width={32}
+              height={32}
+              decoding="async"
+              draggable={false}
+              className="absolute inset-0 size-full rounded-full object-cover object-center"
             />
           </div>
           <p className="text-sm font-semibold text-foreground">키키</p>
