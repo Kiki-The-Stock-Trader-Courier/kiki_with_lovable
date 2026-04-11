@@ -53,8 +53,8 @@
 ■ 5. 구현 위치 (코드)
 --------------------------------------------------------------------------------
   lib-server/openaiClient.ts     … getOpenAIClient(), LangSmith 래핑 여부,
-                                   awaitLangSmithPendingTraces() (Vercel 서버리스에서
-                                   응답 전 트레이스 전송 완료 대기 — Runs 가 비어 있을 때 필수)
+                                   awaitLangSmithPendingTraces() → RunTree.getSharedClient()
+                                   로 플러시(wrapOpenAI 와 동일 Client 인스턴스 — new Client() 금지)
   lib-server/routes/chat.ts      … 채팅 completion + langsmithExtra + 위 flush
   lib-server/routes/quizHybrid.ts … 퀴즈 completion + langsmithExtra + 위 flush
   vite.config.ts                   … 로컬 프록시 동일 패턴 + env 주입 + 위 flush

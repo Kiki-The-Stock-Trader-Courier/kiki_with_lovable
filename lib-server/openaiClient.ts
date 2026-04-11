@@ -7,7 +7,7 @@
  * 각 API 핸들러 끝에서 awaitLangSmithPendingTraces() 로 전송 완료를 기다립니다.
  */
 import OpenAI from "openai";
-import { Client } from "langsmith";
+import { RunTree } from "langsmith";
 import { wrapOpenAI } from "langsmith/wrappers/openai";
 
 let singleton: OpenAI | null = null;
@@ -17,12 +17,15 @@ function shouldUseLangSmith(): boolean {
   return !!(process.env.LANGSMITH_API_KEY?.trim() || process.env.LANGCHAIN_API_KEY?.trim());
 }
 
-/** 서버리스에서 트레이스가 LangSmith까지 나가도록 대기 (wrapOpenAI 사용 시 권장) */
+/**
+ * 서버리스에서 트레이스가 LangSmith까지 나가도록 대기.
+ * traceable/wrapOpenAI 가 쓰는 배치 큐는 RunTree.getSharedClient() 와 동일 인스턴스여야 함
+ * (new Client() 로 flush 하면 빈 큐만 기다려 추적이 UI에 안 보였음).
+ */
 export async function awaitLangSmithPendingTraces(): Promise<void> {
   if (!shouldUseLangSmith()) return;
   try {
-    const client = new Client();
-    await client.awaitPendingTraceBatches();
+    await RunTree.getSharedClient().awaitPendingTraceBatches();
   } catch (e) {
     console.warn("[langsmith] awaitPendingTraceBatches:", e);
   }
