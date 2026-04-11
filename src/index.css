@@ -4,47 +4,43 @@
 
 @layer base {
   :root {
-    /*
-     * Soft Navy, Purple & Pink palette (참고 카드)
-     * #FFF9F0 크림 · #B8C0D4 슬레이트 블루 · #D4C0D9 라벤더
-     * #FFE0E6 페일 핑크 · #5C6378 네이비 차콜
-     */
-    --background: 36 100% 97%;
+    /* 흰·슬레이트 중심 (핑크/라벤더/크림 제거) */
+    --background: 0 0% 100%;
     --foreground: 225 13% 42%;
 
-    --card: 348 100% 94%;
+    --card: 0 0% 100%;
     --card-foreground: 225 13% 42%;
 
-    --popover: 36 80% 99%;
+    --popover: 0 0% 100%;
     --popover-foreground: 225 13% 42%;
 
     --primary: 225 13% 42%;
-    --primary-foreground: 36 100% 98%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 223 25% 78%;
+    --secondary: 220 14% 96%;
     --secondary-foreground: 225 13% 36%;
 
-    --muted: 288 22% 94%;
+    --muted: 220 14% 96%;
     --muted-foreground: 225 11% 46%;
 
-    --accent: 288 25% 82%;
+    --accent: 220 14% 96%;
     --accent-foreground: 225 13% 38%;
 
     --destructive: 350 72% 48%;
-    --destructive-foreground: 36 100% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 223 22% 86%;
-    --input: 223 22% 86%;
-    --ring: 288 30% 62%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 215 16% 47%;
 
     --radius: 16px;
 
     /* 지도·핀 등 */
     --color-pin: 223 26% 58%;
     --color-pin-active: 225 13% 34%;
-    --color-map-bg: 288 18% 93%;
-    --color-map-road: 36 100% 99%;
-    --color-map-water: 223 32% 88%;
+    --color-map-bg: 220 14% 96%;
+    --color-map-road: 0 0% 100%;
+    --color-map-water: 220 14% 93%;
     --color-success: 152 38% 40%;
     --color-warning: 38 88% 52%;
     --color-cash: 225 13% 48%;
@@ -72,14 +68,14 @@
     --shadow-lg: 0 8px 24px hsl(225 13% 18% / 0.11);
     --shadow-sheet: 0 -4px 24px hsl(225 13% 18% / 0.12);
 
-    --sidebar-background: 288 18% 94%;
+    --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 225 13% 42%;
     --sidebar-primary: 225 13% 42%;
-    --sidebar-primary-foreground: 36 100% 98%;
-    --sidebar-accent: 223 22% 90%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
     --sidebar-accent-foreground: 225 13% 38%;
-    --sidebar-border: 223 20% 86%;
-    --sidebar-ring: 288 30% 62%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 215 16% 47%;
   }
 }
 
@@ -122,7 +118,7 @@
 }
 
 .map-screen-shell {
-  background: linear-gradient(135deg, #fff9f0 0%, #ffe0e6 48%, #d4c0d9 100%);
+  background: hsl(0 0% 100%);
 }
 
 .map-canvas {
@@ -133,7 +129,7 @@
 }
 
 .leaflet-tile-pane {
-  filter: saturate(0.92) hue-rotate(6deg) brightness(1.04) contrast(0.94);
+  filter: saturate(1) brightness(1.02);
 }
 
 .leaflet-overlay-pane path {
@@ -170,14 +166,14 @@
 }
 
 .map-icon-btn {
-  background: #fff9f0;
-  color: #5c6378;
+  background: hsl(0 0% 100%);
+  color: hsl(225 13% 42%);
   box-shadow: 0 2px 8px hsl(225 13% 18% / 0.12);
 }
 
 .map-icon-btn:hover {
-  background: #ffe0e6;
-  color: #5c6378;
+  background: hsl(220 14% 96%);
+  color: hsl(225 13% 42%);
 }
 
 .map-chat-fab {
