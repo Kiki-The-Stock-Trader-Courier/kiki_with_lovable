@@ -15,6 +15,7 @@ import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
+import { useMapQuizSnapshot, buildMapQuizSnapshot } from "@/contexts/MapQuizContext";
 
 /** 조회는 넓게(회색 핀 확보), 강조 원은 DEFAULT_RADIUS_M 유지 */
 const MAP_QUERY_RADIUS_M = DEFAULT_RADIUS_M * 3;
@@ -35,6 +36,7 @@ const Index = () => {
   /** API로 주변 상장사만 채움 — 빈 배열이면 지도에 핀 없음(춘천 목업 좌표가 남지 않도록) */
   const [stocks, setStocks] = useState<StockPin[]>([]);
   const { walk, addSteps, setGoalSteps, holdings, buyStock, isScrapped, toggleScrap } = useUserData();
+  const { setSnapshot: setMapQuizSnapshot } = useMapQuizSnapshot();
   const stocksRef = useRef<StockPin[]>([]);
   const prevCenterRef = useRef<{ lat: number; lng: number } | null>(null);
   const gravityRef = useRef(9.8);
@@ -74,6 +76,11 @@ const Index = () => {
   useEffect(() => {
     stocksRef.current = stocks;
   }, [stocks]);
+
+  /** 챗 퀴즈용: 지도 강조 원(반경 DEFAULT_RADIUS_M) 안 종목 스냅샷 */
+  useEffect(() => {
+    setMapQuizSnapshot(buildMapQuizSnapshot(center.lat, center.lng, DEFAULT_RADIUS_M, stocks));
+  }, [center.lat, center.lng, stocks, setMapQuizSnapshot]);
 
   /** 종목 목록이 바뀔 때만 재조회 (시세 갱신으로 stocks가 바뀌어 무한 루프 나지 않음) */
   const stockTickerKey = useMemo(

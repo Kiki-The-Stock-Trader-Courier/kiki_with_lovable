@@ -19,6 +19,8 @@ interface UseUserDataResult {
   setGoalSteps: (goal: number) => void;
   setNickname: (nickname: string) => void;
   addSteps: (steps: number) => void;
+  /** 주식 퀴즈 정답 등 — 난이도별 1~10원 적립 */
+  addQuizCash: (won: number) => void;
   buyStock: (order: { ticker: string; name: string; price: number; shares: number }) => Promise<{
     ok: boolean;
     message: string;
@@ -389,6 +391,31 @@ export function useUserData(): UseUserDataResult {
     [enqueue, session?.user?.id, walk.cashBalance, walk.cashPerStep, walk.goalSteps],
   );
 
+  const addQuizCash = useCallback(
+    (won: number) => {
+      const add = Math.min(10, Math.max(1, Math.round(Number(won) || 0)));
+      if (add < 1) return;
+
+      setWalk((prev) => ({
+        ...prev,
+        cashBalance: Math.round((prev.cashBalance + add) * 10) / 10,
+      }));
+
+      if (!supabase || !session?.user?.id) return;
+      const userId = session.user.id;
+      enqueue(async () => {
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("cash_balance")
+          .eq("user_id", userId)
+          .single<{ cash_balance: number | null }>();
+        const currentCash = Number(profile?.cash_balance ?? 0);
+        await supabase.from("user_profiles").update({ cash_balance: currentCash + add }).eq("user_id", userId);
+      });
+    },
+    [enqueue, session?.user?.id],
+  );
+
   const buyStock = useCallback(
     async (order: { ticker: string; name: string; price: number; shares: number }) => {
       const ticker = normalizeTicker(order.ticker);
@@ -502,11 +529,26 @@ export function useUserData(): UseUserDataResult {
       setGoalSteps,
       setNickname,
       addSteps,
+      addQuizCash,
       buyStock,
       toggleScrap,
       isScrapped,
       isReady,
     }),
-    [walk, nickname, weeklySteps, holdings, scraps, setGoalSteps, setNickname, addSteps, buyStock, toggleScrap, isScrapped, isReady],
+    [
+      walk,
+      nickname,
+      weeklySteps,
+      holdings,
+      scraps,
+      setGoalSteps,
+      setNickname,
+      addSteps,
+      addQuizCash,
+      buyStock,
+      toggleScrap,
+      isScrapped,
+      isReady,
+    ],
   );
 }

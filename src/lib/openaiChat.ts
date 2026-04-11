@@ -8,14 +8,25 @@ function chatApiUrl(): string {
 
 export type OpenAIChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
-export async function postChatCompletion(messages: OpenAIChatMessage[]): Promise<string> {
+/** 서버에서 DuckDuckGo 검색 보강에 사용 (종목 시트 챗 전용) */
+export type StockAssistPayload = {
+  name: string;
+  ticker: string;
+  sector?: string;
+};
+
+export async function postChatCompletion(
+  messages: OpenAIChatMessage[],
+  options?: { maxTokens?: number; stockAssist?: StockAssistPayload },
+): Promise<string> {
   const res = await fetch(chatApiUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "gpt-4o-mini",
       messages,
-      max_tokens: 900,
+      max_tokens: options?.maxTokens ?? 900,
+      ...(options?.stockAssist ? { stockAssist: options.stockAssist } : {}),
     }),
   });
 
@@ -57,7 +68,14 @@ export async function askStockAssistant(stock: StockPin, history: ChatMessage[])
     })),
   ];
 
-  return postChatCompletion(msgs);
+  return postChatCompletion(msgs, {
+    maxTokens: 1100,
+    stockAssist: {
+      name: stock.name,
+      ticker: stock.ticker,
+      sector: stock.sector,
+    },
+  });
 }
 
 export async function askGlobalAssistant(history: ChatMessage[]): Promise<string> {

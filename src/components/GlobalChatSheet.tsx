@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/types/stock";
 import { askGlobalAssistant } from "@/lib/openaiChat";
 import { useUserData } from "@/hooks/useUserData";
+import { useMapQuizSnapshot } from "@/contexts/MapQuizContext";
+import { requestHybridQuiz, type HybridQuizQuestion } from "@/lib/quizHybridApi";
 
 const QUICK_ACTIONS = [
   "500보로 살 수 있는 주식은?",
@@ -73,6 +75,18 @@ function summarizeConversationTitle(messages: ChatMessage[]): string {
   return "New chat";
 }
 
+function sortQuizChoices(q: HybridQuizQuestion["choices"]) {
+  return [...q].sort((a, b) => a.key.localeCompare(b.key));
+}
+
+/** 하이브리드 퀴즈: 한 문제씩 표시용 블록 */
+function formatQuizBlock(intro: string | null, q: HybridQuizQuestion, idx: number, total: number): string {
+  const oc = sortQuizChoices(q.choices);
+  const lines = oc.map((c, i) => `${i + 1}) ${c.text}`);
+  const head = intro ? `${intro}\n\n` : "";
+  return `${head}【문제 ${idx + 1}/${total}】\n${q.prompt}\n\n${lines.join("\n")}\n\n답은 1~4 숫자로 보내 주세요.`;
+}
+
 export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string>("");
@@ -81,7 +95,12 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
   const [animatedWelcomeId, setAnimatedWelcomeId] = useState<string | null>(null);
-  const { walk, setGoalSteps } = useUserData();
+  const { walk, setGoalSteps, addQuizCash } = useUserData();
+  const { snapshot: mapQuizSnapshot } = useMapQuizSnapshot();
+  const [quizSession, setQuizSession] = useState<{ intro: string; questions: HybridQuizQuestion[] } | null>(
+    null,
+  );
+  const [quizIndex, setQuizIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const activeConversation = useMemo(
@@ -167,12 +186,16 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     setConversations((prev) => [next, ...prev]);
     setActiveConversationId(next.id);
     setAwaitingGoalChoice(false);
+    setQuizSession(null);
+    setQuizIndex(0);
     setShowHistory(false);
   };
 
   const switchConversation = (conversationId: string) => {
     setActiveConversationId(conversationId);
     setAwaitingGoalChoice(false);
+    setQuizSession(null);
+    setQuizIndex(0);
     setShowHistory(false);
   };
 
@@ -225,6 +248,82 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
         goalReply = `입력을 이해하지 못했어요.\n\n다시 선택해 주세요:\n1) 평균으로 변경 (${avg3.toLocaleString()}보)\n2) 직접 입력 (예: 7000보)`;
       }
       appendAssistantMessage(goalReply);
+      return;
+    }
+
+    /** 하이브리드 주식 퀴즈 (진행 중: 1~4 답 / 종료) */
+    if (quizSession) {
+      const stopQuiz = /^(그만|종료|중지|스톱|stop)$/i.test(normalized.trim());
+      if (stopQuiz) {
+        setQuizSession(null);
+        setQuizIndex(0);
+        appendAssistantMessage("퀴즈를 종료했어요. 다음에 또 도전해 보세요!");
+        return;
+      }
+      const digit = normalized.match(/^[1-4]$/);
+      if (digit) {
+        const q = quizSession.questions[quizIndex];
+        if (!q) {
+          setQuizSession(null);
+          setQuizIndex(0);
+          appendAssistantMessage("퀴즈 상태가 어긋났어요. 다시 시작해 주세요.");
+          return;
+        }
+        const oc = sortQuizChoices(q.choices);
+        const pick = oc[parseInt(digit[0], 10) - 1];
+        const correct = pick?.key === q.correctKey;
+        let reply = correct ? "정답이에요! 👏" : (q.feedbackWrong?.trim() || "아쉽어요!");
+        if (correct) {
+          const level = Math.min(10, Math.max(1, Math.round(Number(q.difficulty) || 5)));
+          addQuizCash(level);
+          reply += `\n\n+${level.toLocaleString()}원 캐시 적립! (문제 난이도 ${level}/10)`;
+        }
+        if (!correct) {
+          const right = oc.find((c) => c.key === q.correctKey);
+          if (right) reply += `\n정답은「${right.text}」이에요.`;
+        }
+        const nextIdx = quizIndex + 1;
+        if (nextIdx < quizSession.questions.length) {
+          setQuizIndex(nextIdx);
+          reply += `\n\n${formatQuizBlock(null, quizSession.questions[nextIdx], nextIdx, quizSession.questions.length)}`;
+        } else {
+          setQuizSession(null);
+          setQuizIndex(0);
+          reply += "\n\n모든 문제를 마쳤어요! 수고했어요 🎉";
+        }
+        appendAssistantMessage(reply);
+        return;
+      }
+      appendAssistantMessage(
+        "퀴즈 중이에요. 답은 1~4 숫자만 보내 주세요. 끝내려면「그만」이라고 입력해 주세요.",
+      );
+      return;
+    }
+
+    const wantsQuiz = /오늘의 주식 퀴즈|주식\s*퀴즈|퀴즈\s*시작|퀴즈\s*해줘|^퀴즈!$/i.test(normalized.trim());
+    if (wantsQuiz) {
+      if (!mapQuizSnapshot || mapQuizSnapshot.stocks.length < 2) {
+        appendAssistantMessage(
+          "지도 원(반경 1km) 안에 상장 종목이 2곳 이상일 때 퀴즈를 만들 수 있어요.\n지도 탭에서 핀이 보이도록 잠시 기다렸다가 다시 눌러 주세요.",
+        );
+        return;
+      }
+      setIsLoading(true);
+      setAwaitingGoalChoice(false);
+      try {
+        const data = await requestHybridQuiz(mapQuizSnapshot);
+        setQuizSession({ intro: data.intro, questions: data.questions });
+        setQuizIndex(0);
+        appendAssistantMessage(
+          formatQuizBlock(data.intro, data.questions[0], 0, data.questions.length),
+        );
+      } catch (e) {
+        appendAssistantMessage(
+          e instanceof Error ? e.message : "퀴즈를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 

@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { MapQuizProvider } from "@/contexts/MapQuizContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import WalkPage from "./pages/WalkPage";
@@ -21,6 +22,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
+        <MapQuizProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
@@ -32,6 +34,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </MapQuizProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

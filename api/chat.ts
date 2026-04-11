@@ -1,8 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { mergeStockAssistWithDdg } from "./stockChatAssist.js";
 
 /**
  * OpenAI Chat Completions 프록시 — API 키는 서버(Vercel 환경 변수)에만 둡니다.
  * 로컬: Vite dev 미들웨어가 동일 경로를 처리합니다.
+ *
+ * `stockAssist`가 있으면 DuckDuckGo 웹 검색 스니펫을 시스템 메시지에 합쳐 종목 최신 맥락을 보강합니다.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -29,12 +32,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     messages?: { role: string; content: string }[];
     model?: string;
     max_tokens?: number;
+    stockAssist?: { name: string; ticker: string; sector?: string };
   };
 
   const messages = body.messages;
   if (!Array.isArray(messages) || messages.length === 0) {
     res.status(400).json({ error: { message: "messages array required" } });
     return;
+  }
+
+  let outbound = messages;
+  if (body.stockAssist?.name && body.stockAssist?.ticker) {
+    try {
+      outbound = await mergeStockAssistWithDdg(messages, body.stockAssist);
+    } catch (e) {
+      console.warn("[api/chat] stockAssist DDG merge failed:", e);
+    }
   }
 
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -45,8 +58,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     },
     body: JSON.stringify({
       model: body.model ?? "gpt-4o-mini",
-      messages,
-      max_tokens: body.max_tokens ?? 900,
+      messages: outbound,
+      max_tokens: body.max_tokens ?? 1100,
     }),
   });
 

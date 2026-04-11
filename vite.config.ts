@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { getKrxQuotesFromYahoo, parseTickersQuery } from "./api/yahooKrxQuotesCore";
+import { mergeStockAssistWithDdg } from "./api/stockChatAssist";
 
 /** 로컬 `npm run dev`에서만 — OpenAI 호출을 프록시 (키는 서버 쪽 env에만) */
 function openaiChatProxy(openaiKey: string | undefined): Plugin {
@@ -37,7 +38,20 @@ function openaiChatProxy(openaiKey: string | undefined): Plugin {
               );
               return;
             }
-            const json = JSON.parse(body || "{}");
+            const json = JSON.parse(body || "{}") as {
+              messages?: { role: string; content: string }[];
+              model?: string;
+              max_tokens?: number;
+              stockAssist?: { name: string; ticker: string; sector?: string };
+            };
+            let outbound = json.messages ?? [];
+            if (json.stockAssist?.name && json.stockAssist?.ticker && Array.isArray(outbound)) {
+              try {
+                outbound = await mergeStockAssistWithDdg(outbound, json.stockAssist);
+              } catch (e) {
+                console.warn("[vite] stockAssist DDG merge failed:", e);
+              }
+            }
             const r = await fetch("https://api.openai.com/v1/chat/completions", {
               method: "POST",
               headers: {
@@ -46,8 +60,8 @@ function openaiChatProxy(openaiKey: string | undefined): Plugin {
               },
               body: JSON.stringify({
                 model: json.model ?? "gpt-4o-mini",
-                messages: json.messages,
-                max_tokens: json.max_tokens ?? 900,
+                messages: outbound,
+                max_tokens: json.max_tokens ?? 1100,
               }),
             });
             const text = await r.text();
