@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type OpenAI from "openai";
-import { getOpenAIClient } from "../openaiClient.js";
+import { awaitLangSmithPendingTraces, getOpenAIClient } from "../openaiClient.js";
 import { getKrxQuotesFromYahoo } from "../yahooKrxQuotesCore.js";
 
 /**
@@ -221,6 +221,8 @@ export async function handleQuizHybrid(req: VercelRequest, res: VercelResponse) 
       detail: e instanceof Error ? e.message : String(e),
     });
     return;
+  } finally {
+    await awaitLangSmithPendingTraces();
   }
 
   let intro: string | undefined;

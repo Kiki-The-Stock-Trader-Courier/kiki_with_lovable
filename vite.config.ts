@@ -5,7 +5,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import type OpenAI from "openai";
 import { getKrxQuotesFromYahoo, parseTickersQuery } from "./lib-server/yahooKrxQuotesCore";
-import { getOpenAIClient } from "./lib-server/openaiClient";
+import { awaitLangSmithPendingTraces, getOpenAIClient } from "./lib-server/openaiClient";
 import { mergeStockAssistWithDdg } from "./lib-server/stockChatAssist";
 
 /** 로컬 `npm run dev`에서만 — OpenAI 호출을 프록시 (키는 서버 쪽 env에만) */
@@ -76,6 +76,7 @@ function openaiChatProxy(openaiKey: string | undefined): Plugin {
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(completion));
             } finally {
+              await awaitLangSmithPendingTraces();
               if (prevKey !== undefined) process.env.OPENAI_API_KEY = prevKey;
               else delete process.env.OPENAI_API_KEY;
             }

@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import type OpenAI from "openai";
-import { getOpenAIClient } from "../openaiClient.js";
+import { awaitLangSmithPendingTraces, getOpenAIClient } from "../openaiClient.js";
 import { mergeStockAssistWithDdg } from "../stockChatAssist.js";
 
 /**
@@ -81,5 +81,7 @@ export async function handleChat(req: VercelRequest, res: VercelResponse) {
         error: { message: e instanceof Error ? e.message : "OpenAI request failed" },
       }),
     );
+  } finally {
+    await awaitLangSmithPendingTraces();
   }
 }
