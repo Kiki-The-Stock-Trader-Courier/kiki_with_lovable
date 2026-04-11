@@ -25,7 +25,6 @@ type QuizQuestion = {
   choices: QuizChoice[];
   correctKey: string;
   feedbackWrong?: string;
-  /** 1(쉬움)~10(어려움) — 정답 시 동일 원 단위 캐시 적립 */
   difficulty?: number;
 };
 
@@ -64,14 +63,13 @@ function validateQuestions(
         const t = normalizeTicker(c.ticker);
         if (!t || !allowed.has(t)) return { ok: false, reason: `invalid ticker in choice: ${c.ticker}` };
       }
-      /** ticker 없으면 텍스트만으로 출제된 것으로 보고 통과(재시도 유도는 상위에서) */
     }
     if (!keys.has(q.correctKey)) return { ok: false, reason: `correctKey ${q.correctKey} not in choices` };
   }
   return { ok: true };
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handleQuizHybrid(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");

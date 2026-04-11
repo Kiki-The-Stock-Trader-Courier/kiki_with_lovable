@@ -6,7 +6,7 @@ import { repairEmptyTickers } from "./tickerRepair.js";
  * DB에 ticker가 비어 있는 nearby_companies 행을 name·map_display_name·description 기준으로 채움.
  * POST /api/companies/backfill-tickers  (헤더: x-sync-token — sync와 동일)
  */
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handleCompaniesBackfillTickers(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-sync-token");

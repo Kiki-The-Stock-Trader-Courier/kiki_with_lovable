@@ -1,11 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/**/*": {
+    "api/gw.ts": {
       "maxDuration": 60
     }
   },
   "rewrites": [
+    { "source": "/api/chat", "destination": "/api/gw?__r=chat" },
+    { "source": "/api/quotes", "destination": "/api/gw?__r=quotes" },
+    { "source": "/api/quiz/hybrid", "destination": "/api/gw?__r=quizHybrid" },
+    { "source": "/api/companies/nearby", "destination": "/api/gw?__r=companiesNearby" },
+    { "source": "/api/companies/sync", "destination": "/api/gw?__r=companiesSync" },
+    { "source": "/api/companies/backfill-tickers", "destination": "/api/gw?__r=companiesBackfillTickers" },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"

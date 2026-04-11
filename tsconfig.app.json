@@ -31,7 +31,7 @@
   },
   "include": [
     "src",
-    "api/companies/krxListedMatch.ts",
-    "api/yahooKrxQuotesCore.ts"
+    "lib-server/companies/krxListedMatch.ts",
+    "lib-server/yahooKrxQuotesCore.ts"
   ]
 }

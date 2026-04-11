@@ -3,8 +3,8 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import { getKrxQuotesFromYahoo, parseTickersQuery } from "./api/yahooKrxQuotesCore";
-import { mergeStockAssistWithDdg } from "./api/stockChatAssist";
+import { getKrxQuotesFromYahoo, parseTickersQuery } from "./lib-server/yahooKrxQuotesCore";
+import { mergeStockAssistWithDdg } from "./lib-server/stockChatAssist";
 
 /** 로컬 `npm run dev`에서만 — OpenAI 호출을 프록시 (키는 서버 쪽 env에만) */
 function openaiChatProxy(openaiKey: string | undefined): Plugin {

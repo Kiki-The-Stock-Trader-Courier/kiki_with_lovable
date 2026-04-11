@@ -1,9 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-/**
- * Yahoo·네이버 시세 로직은 동적 import — 모듈 로드 실패 시에도 200+빈 배열로 응답.
- * (정적 import 시 번들/초기화 오류가 나면 Vercel 이 500 을 반환할 수 있음)
- */
 function sendJson(res: VercelResponse, status: number, body: unknown) {
   if (res.writableEnded) return;
   const payload = JSON.stringify(body);
@@ -14,7 +10,7 @@ function sendJson(res: VercelResponse, status: number, body: unknown) {
   res.end(payload);
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handleQuotes(req: VercelRequest, res: VercelResponse) {
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -30,7 +26,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const yahoo = await import("./yahooKrxQuotesCore.js");
+    const yahoo = await import("../yahooKrxQuotesCore.js");
     const raw = String(req.query.tickers ?? "");
     const uniqTickers = yahoo.parseTickersQuery(raw);
     if (uniqTickers.length === 0) {

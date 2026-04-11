@@ -114,7 +114,7 @@ function sendJson(res: VercelResponse, status: number, body: unknown) {
   }
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handleCompaniesNearby(req: VercelRequest, res: VercelResponse) {
   if (req.method === "OPTIONS") {
     res.statusCode = 204;
     res.setHeader("Access-Control-Allow-Origin", "*");

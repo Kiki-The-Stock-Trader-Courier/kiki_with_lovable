@@ -1,13 +1,11 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { mergeStockAssistWithDdg } from "./stockChatAssist.js";
+import { mergeStockAssistWithDdg } from "../stockChatAssist.js";
 
 /**
  * OpenAI Chat Completions 프록시 — API 키는 서버(Vercel 환경 변수)에만 둡니다.
- * 로컬: Vite dev 미들웨어가 동일 경로를 처리합니다.
- *
  * `stockAssist`가 있으면 DuckDuckGo 웹 검색 스니펫을 시스템 메시지에 합쳐 종목 최신 맥락을 보강합니다.
  */
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export async function handleChat(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
