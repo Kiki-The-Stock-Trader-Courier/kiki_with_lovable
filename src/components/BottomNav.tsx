@@ -45,18 +45,21 @@ const BottomNav = () => {
             }
             setShowChatSheet(true);
           }}
-          className="map-chat-fab pointer-events-auto absolute z-[1400] relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full"
+          className="map-chat-fab pointer-events-auto absolute z-[1400] flex h-14 w-14 items-center justify-center rounded-full"
           aria-label="챗봇 열기"
         >
-          {/* PNG는 보라 원+고양이만(투명 바깥). 아래 CSS 그라데이션이 투명 부분·가장자리에 비침 */}
-          <img
-            src="/kiki-chat-fab-cat.png"
-            alt=""
-            decoding="async"
-            draggable={false}
-            className="pointer-events-none relative z-[1] max-h-[94%] max-w-[94%] select-none object-contain object-center"
-            aria-hidden
-          />
+          <span className="pointer-events-none size-10 shrink-0 overflow-hidden rounded-lg bg-white/15 ring-1 ring-white/30 shadow-inner">
+            <img
+              src="/kiki-chat-fab-cat.png"
+              alt=""
+              width={40}
+              height={40}
+              decoding="async"
+              draggable={false}
+              className="size-full select-none object-cover object-center"
+              aria-hidden
+            />
+          </span>
         </button>
       )}
 
