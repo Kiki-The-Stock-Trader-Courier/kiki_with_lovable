@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">캐시워크주식</string>
+    <string name="title_activity_main">캐시워크주식</string>
+    <string name="package_name">kr.cashwalk.stockmap</string>
+    <string name="custom_url_scheme">kr.cashwalk.stockmap</string>
+</resources>
