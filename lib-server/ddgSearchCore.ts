@@ -43,13 +43,13 @@ function flattenRelated(topics: DdgRelatedTopic[] | undefined, out: string[], de
   }
 }
 
-/** HTML 검색 결과에서 제목·스니펫·URL 추출 */
+/** HTML 검색 결과에서 제목·스니펫·URL 추출 (표준 HTML 버전) */
 export function extractDdgHtmlResults(html: string, maxResults: number): string[] {
   const parts = html.split('class="links_main links_deep result__body"');
   const out: string[] = [];
   for (let i = 1; i < parts.length && out.length < maxResults; i++) {
     const block = parts[i] ?? "";
-    const titleM = block.match(/class="result__a"[^>]*href="([^"]*)"[^>]*>([^<]*)</);
+    const titleM = block.match(/class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/);
     const snipM = block.match(/class="result__snippet"[^>]*href="[^"]*"[^>]*>([\s\S]*?)<\/a>/);
     const url = titleM?.[1]?.trim() ?? "";
     const title = titleM?.[2] ? decodeBasicEntities(stripTags(titleM[2])) : "";
@@ -59,6 +59,31 @@ export function extractDdgHtmlResults(html: string, maxResults: number): string[
     out.push(line);
   }
   return out;
+}
+
+/** 차단·레이아웃 변형 시: result__a 블록만 전역 스캔 */
+function extractDdgHtmlResultsLoose(html: string, maxResults: number): string[] {
+  const out: string[] = [];
+  const re =
+    /class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]{0,800}?class="result__snippet"[^>]*href="[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null && out.length < maxResults) {
+    const url = m[1]?.trim() ?? "";
+    const title = decodeBasicEntities(stripTags(m[2] ?? ""));
+    const snippet = decodeBasicEntities(stripTags(m[3] ?? ""));
+    if (!title && !snippet) continue;
+    out.push(`• ${[title, snippet].filter(Boolean).join(" — ")}${url ? ` (${url})` : ""}`);
+  }
+  return out;
+}
+
+/** 캡차·차단 페이지만 배제. ‘검색 결과 0건’ HTML은 result__a가 없을 수 있어 여기서 막지 않습니다. */
+function looksLikeDdgBlockedOrEmpty(html: string): boolean {
+  const h = html.slice(0, 20000).toLowerCase();
+  if (h.length < 400) return true;
+  if (/captcha|unusual traffic|are you a robot|forbidden|access denied|rate limit|please enable javascript/i.test(h))
+    return true;
+  return false;
 }
 
 async function fetchInstantAnswer(query: string): Promise<string[]> {
@@ -77,21 +102,53 @@ async function fetchInstantAnswer(query: string): Promise<string[]> {
   return lines;
 }
 
-async function fetchHtmlSnippets(query: string, max: number): Promise<string[]> {
+const HTML_HEADERS = {
+  "User-Agent": UA,
+  Accept: "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7",
+  Referer: "https://duckduckgo.com/",
+} as const;
+
+async function fetchHtmlSnippetsPost(query: string, max: number): Promise<string[]> {
   const body = new URLSearchParams();
   body.set("q", query);
   const res = await fetch("https://html.duckduckgo.com/html/", {
     method: "POST",
     headers: {
-      "User-Agent": UA,
+      ...HTML_HEADERS,
       "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "text/html",
     },
     body: body.toString(),
   });
   if (!res.ok) return [];
   const html = await res.text();
-  return extractDdgHtmlResults(html, max);
+  if (looksLikeDdgBlockedOrEmpty(html)) return [];
+  let lines = extractDdgHtmlResults(html, max);
+  if (lines.length === 0) lines = extractDdgHtmlResultsLoose(html, max);
+  return lines;
+}
+
+/** 일부 IP/환경에서는 POST 대신 GET이 결과를 돌려줍니다 (Vercel 등). */
+async function fetchHtmlSnippetsGet(query: string, max: number): Promise<string[]> {
+  const u = new URL("https://html.duckduckgo.com/html/");
+  u.searchParams.set("q", query);
+  const res = await fetch(u.toString(), {
+    method: "GET",
+    headers: { ...HTML_HEADERS },
+    redirect: "follow",
+  });
+  if (!res.ok) return [];
+  const html = await res.text();
+  if (looksLikeDdgBlockedOrEmpty(html)) return [];
+  let lines = extractDdgHtmlResults(html, max);
+  if (lines.length === 0) lines = extractDdgHtmlResultsLoose(html, max);
+  return lines;
+}
+
+async function fetchHtmlSnippets(query: string, max: number): Promise<string[]> {
+  const post = await fetchHtmlSnippetsPost(query, max);
+  if (post.length > 0) return post;
+  return fetchHtmlSnippetsGet(query, max);
 }
 
 export type StockAssistPayload = {
@@ -119,27 +176,69 @@ export function buildStockDdgQuery(stock: StockAssistPayload, lastUserMessage: s
 /**
  * DuckDuckGo에서 가져온 참고 텍스트 (모델 system 보강용)
  */
-export async function duckDuckGoWebContext(searchQuery: string, maxLen = 4000): Promise<string> {
-  const q = searchQuery.trim().slice(0, 500);
-  if (!q) return "";
-
-  const chunks: string[] = [];
+/** 한 검색어에 대해 Instant Answer + HTML 스니펫 수집. HTML 스니펫을 얻으면 true. */
+async function collectSnippetsForQuery(q: string, chunks: string[]): Promise<boolean> {
+  const trimmed = q.trim().slice(0, 500);
+  if (!trimmed) return false;
 
   try {
-    const ia = await fetchInstantAnswer(q);
+    const ia = await fetchInstantAnswer(trimmed);
     if (ia.length) chunks.push(...ia);
   } catch {
     /* 무시 */
   }
 
   try {
-    const htmlLines = await fetchHtmlSnippets(q, 10);
+    const htmlLines = await fetchHtmlSnippets(trimmed, 10);
     if (htmlLines.length) {
       chunks.push("[검색 결과 스니펫 — 출처·시점은 원문 확인 필요]");
       chunks.push(...htmlLines);
+      return true;
     }
   } catch {
     /* 무시 */
+  }
+  return false;
+}
+
+/**
+ * 한국 종목은 DDG Instant/HTML이 빈 경우가 많아, 동일 호출 안에서 짧은 대체 검색어를 순차 시도합니다.
+ * @param tickerHint - 종목코드(숫자만). 검색문에 티커가 없어도 대체 쿼리에 사용합니다.
+ */
+export async function duckDuckGoWebContext(
+  searchQuery: string,
+  maxLen = 4000,
+  tickerHint?: string,
+): Promise<string> {
+  const primary = searchQuery.trim().slice(0, 500);
+  if (!primary) return "";
+
+  const chunks: string[] = [];
+  let gotHtml = await collectSnippetsForQuery(primary, chunks);
+
+  const padKrx = (raw: string | undefined): string | null => {
+    const d = String(raw ?? "").replace(/\D/g, "");
+    if (d.length < 4) return null;
+    return d.length <= 6 ? d.padStart(6, "0") : d.slice(-6);
+  };
+  const ticker6 = padKrx(tickerHint) ?? padKrx(primary.match(/(\d{4,6})/)?.[1]) ?? primary.match(/(\d{6})/)?.[1];
+
+  if (!gotHtml) {
+    const alts: string[] = [];
+    if (ticker6 && /^\d{6}$/.test(ticker6)) {
+      alts.push(`${ticker6} KRX stock news`);
+      alts.push(`${ticker6} KR stock 뉴스`);
+    }
+    if (/[가-힣]/.test(primary)) {
+      const stripped = primary.replace(/\s*주식\s*/g, " ").trim();
+      alts.push(`${stripped} site:news.naver.com`);
+      alts.push(`${stripped} news`);
+    }
+    for (const alt of alts) {
+      if (!alt.trim() || alt === primary) continue;
+      gotHtml = await collectSnippetsForQuery(alt, chunks);
+      if (gotHtml) break;
+    }
   }
 
   let out = chunks.join("\n").trim();

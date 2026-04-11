@@ -24,7 +24,7 @@ export async function mergeStockAssistWithDdg(
 
   const lastUser = lastUserContent(msgs);
   const query = buildStockDdgQuery(stockAssist, lastUser);
-  const ddg = await duckDuckGoWebContext(query);
+  const ddg = await duckDuckGoWebContext(query, 4000, stockAssist.ticker);
 
   const block = ddg
     ? [
@@ -33,7 +33,7 @@ export async function mergeStockAssistWithDdg(
         "[웹 검색 참고 — DuckDuckGo. 시세·뉴스·사실관계는 출처·시점과 다를 수 있으니, 답변 시 반드시 ‘검색 스니펫 기준’임을 안내하고, 불확실하면 추측하지 말 것.]",
         ddg,
       ].join("\n")
-    : "\n---\n[웹 검색 참고: 이번 요청에서 검색 스니펫을 가져오지 못했습니다. 앱에 표시된 시세·설명 위주로 답하고, 최신 뉴스는 공시·언론 확인을 권장한다고 안내하세요.]";
+    : "\n---\n[웹 검색 참고: 서버에서 DuckDuckGo 자동 검색 결과를 가져오지 못했습니다(데이터센터 IP 차단 등 가능). 앱에 표시된 시세·설명 위주로 답하고, 최신 뉴스·공시는 금융감독원 DART·거래소 공시·신뢰할 수 있는 언론 원문 확인을 안내하세요.]";
 
   const sysIdx = msgs.findIndex((m) => m.role === "system");
   if (sysIdx >= 0) {
