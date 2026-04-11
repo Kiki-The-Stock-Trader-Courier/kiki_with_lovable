@@ -3,6 +3,7 @@ import { Send, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
 import type { ChatMessage } from "@/types/stock";
+import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
 import { askGlobalAssistant } from "@/lib/openaiChat";
 import { useUserData } from "@/hooks/useUserData";
 
@@ -185,13 +186,17 @@ const ChatPage = () => {
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap shadow-sm ${
+                className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${
                   msg.role === "user"
-                    ? "rounded-br-md bg-primary text-primary-foreground"
+                    ? "whitespace-pre-wrap rounded-br-md bg-primary text-primary-foreground"
                     : "rounded-bl-md border border-border/50 bg-card text-card-foreground"
                 }`}
               >
-                {msg.content}
+                {msg.role === "user" ? (
+                  msg.content
+                ) : (
+                  <ChatAssistantMarkdown content={msg.content} className="text-sm leading-relaxed" />
+                )}
               </div>
             </div>
           ))}

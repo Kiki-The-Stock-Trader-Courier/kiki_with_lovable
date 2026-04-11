@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import type { ChatMessage, StockPin } from "@/types/stock";
 import { askStockAssistant } from "@/lib/openaiChat";
 import { getStockSheetChatReply } from "@/lib/stockSheetChatMock";
+import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
 
 const QUICK_PROMPTS = [
   "이 회사는 뭐 하는 곳이야?",
@@ -171,13 +172,13 @@ export default function StockSheetChat({ stock, isScrapped, onToggleScrap }: Sto
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[92%] rounded-xl px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
+              className={`max-w-[92%] rounded-xl px-3 py-2 text-xs leading-relaxed ${
                 msg.role === "user"
-                  ? "bg-primary text-primary-foreground"
+                  ? "whitespace-pre-wrap bg-primary text-primary-foreground"
                   : "border border-border/50 bg-card text-card-foreground shadow-sm"
               }`}
             >
-              {msg.content}
+              {msg.role === "user" ? msg.content : <ChatAssistantMarkdown content={msg.content} />}
             </div>
           </div>
         ))}

@@ -6,6 +6,7 @@ import { askGlobalAssistant } from "@/lib/openaiChat";
 import { useUserData } from "@/hooks/useUserData";
 import { useMapQuizSnapshot } from "@/contexts/MapQuizContext";
 import { requestHybridQuiz, type HybridQuizQuestion } from "@/lib/quizHybridApi";
+import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
 
 const QUICK_ACTIONS = [
   "500보로 살 수 있는 주식은?",
@@ -401,15 +402,19 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
           return (
           <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-xs ${
+              className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs ${
                 msg.role === "user"
-                  ? "rounded-br-md bg-primary text-primary-foreground"
+                  ? "whitespace-pre-wrap rounded-br-md bg-primary text-primary-foreground"
                   : `rounded-bl-md border border-border/50 bg-background text-foreground ${
                       shouldAnimateWelcome ? "animate-fade-in" : ""
                     }`
               }`}
             >
-              {msg.content}
+              {msg.role === "user" ? (
+                msg.content
+              ) : (
+                <ChatAssistantMarkdown content={msg.content} className="leading-relaxed" />
+              )}
             </div>
           </div>
           );
