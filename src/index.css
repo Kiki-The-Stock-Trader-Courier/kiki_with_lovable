@@ -254,18 +254,3 @@
 .chat-scroll-area::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.7);
 }
-
-/* Leaflet: 동일 건물 복수 종목 클러스터 팝업 — 흰 카드·둥근 모서리(참고 UI) */
-.stock-cluster-leaflet-popup .leaflet-popup-content-wrapper {
-  padding: 0;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.12);
-}
-.stock-cluster-leaflet-popup .leaflet-popup-content {
-  margin: 0;
-  min-width: 240px;
-}
-.stock-cluster-leaflet-popup .leaflet-popup-tip {
-  box-shadow: none;
-}
