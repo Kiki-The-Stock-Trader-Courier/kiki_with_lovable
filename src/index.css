@@ -5,57 +5,61 @@
 @layer base {
   :root {
     /*
-     * 네이비 · 보라 · 연분홍 팔레트
-     * #19193D / #6B308E / #E5DDE8
+     * 네이비 · 보라 · 핫핑크 (통통 튀는 톤)
+     * #1A1A40 / #6A2C91 / #FF008E
      */
-    --background: 284 14% 96%;
-    --foreground: 240 42% 17%;
+    --pop: 327 100% 50%;
+    --pop-soft: 327 100% 96%;
+    --purple: 277 53% 37%;
+
+    --background: 320 45% 97%;
+    --foreground: 240 42% 18%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 42% 17%;
+    --card-foreground: 240 42% 18%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 42% 17%;
+    --popover-foreground: 240 42% 18%;
 
-    --primary: 240 42% 17%;
-    --primary-foreground: 284 25% 97%;
+    --primary: 240 42% 18%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 278 28% 93%;
-    --secondary-foreground: 240 38% 22%;
+    --secondary: 277 48% 94%;
+    --secondary-foreground: 277 53% 28%;
 
-    --muted: 284 18% 91%;
-    --muted-foreground: 240 22% 38%;
+    --muted: 322 55% 94%;
+    --muted-foreground: 277 28% 36%;
 
-    --accent: 278 35% 92%;
-    --accent-foreground: 278 49% 28%;
+    --accent: 327 100% 96%;
+    --accent-foreground: 277 53% 32%;
 
     --destructive: 350 72% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 284 14% 84%;
-    --input: 284 14% 84%;
-    --ring: 278 49% 42%;
+    --border: 277 22% 86%;
+    --input: 277 22% 86%;
+    --ring: 327 100% 50%;
 
-    --radius: 16px;
+    --radius: 20px;
 
-    /* 채팅 시트·전체 채팅 페이지 배경 */
-    --chat-sheet-bg: 284 20% 89%;
+    /* 채팅 시트·전체 채팅 페이지 배경 (연한 핑크 느낌) */
+    --chat-sheet-bg: 322 80% 95%;
 
     /* 하단 내비 (남색 바) */
-    --bottom-nav-bg: 240 42% 17%;
-    --bottom-nav-border: 240 35% 26%;
-    --bottom-nav-item: 284 22% 80%;
-    --bottom-nav-item-active: 278 68% 78%;
+    --bottom-nav-bg: 240 42% 18%;
+    --bottom-nav-border: 277 40% 28%;
+    --bottom-nav-item: 277 35% 78%;
+    --bottom-nav-item-active: 327 100% 72%;
 
     /* 지도·핀 등 */
-    --color-pin: 278 45% 46%;
-    --color-pin-active: 240 42% 28%;
-    --color-map-bg: 284 12% 94%;
-    --color-map-road: 284 25% 99%;
-    --color-map-water: 278 25% 90%;
+    --color-pin: 277 53% 42%;
+    --color-pin-active: 327 85% 48%;
+    --color-map-bg: 320 40% 96%;
+    --color-map-road: 0 0% 100%;
+    --color-map-water: 277 35% 92%;
     --color-success: 152 38% 40%;
     --color-warning: 38 88% 52%;
-    --color-cash: 278 49% 37%;
+    --color-cash: 327 100% 48%;
 
     /* Spacing (4pt grid) */
     --space-1: 4px;
@@ -74,20 +78,20 @@
     --font-body: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
 
-    /* Shadows */
-    --shadow-sm: 0 1px 2px hsl(240 42% 12% / 0.07);
-    --shadow-md: 0 4px 12px hsl(240 42% 12% / 0.1);
-    --shadow-lg: 0 8px 24px hsl(240 42% 12% / 0.12);
-    --shadow-sheet: 0 -4px 24px hsl(240 42% 12% / 0.14);
+    /* Shadows — 살짝 핑크·보라 글로우 */
+    --shadow-sm: 0 2px 6px hsl(277 53% 30% / 0.08);
+    --shadow-md: 0 6px 20px hsl(327 100% 50% / 0.12), 0 2px 8px hsl(240 42% 12% / 0.06);
+    --shadow-lg: 0 12px 36px hsl(327 100% 50% / 0.14), 0 4px 12px hsl(277 53% 35% / 0.1);
+    --shadow-sheet: 0 -8px 32px hsl(327 100% 50% / 0.18), 0 -2px 12px hsl(240 42% 15% / 0.12);
 
-    --sidebar-background: 284 18% 92%;
-    --sidebar-foreground: 240 42% 17%;
-    --sidebar-primary: 240 42% 17%;
-    --sidebar-primary-foreground: 284 25% 97%;
-    --sidebar-accent: 278 32% 88%;
-    --sidebar-accent-foreground: 240 38% 22%;
-    --sidebar-border: 284 14% 82%;
-    --sidebar-ring: 278 49% 42%;
+    --sidebar-background: 322 70% 94%;
+    --sidebar-foreground: 240 42% 18%;
+    --sidebar-primary: 240 42% 18%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 277 45% 90%;
+    --sidebar-accent-foreground: 277 53% 28%;
+    --sidebar-border: 277 25% 84%;
+    --sidebar-ring: 327 100% 50%;
   }
 }
 
@@ -114,7 +118,7 @@
   }
 
   ::selection {
-    background: hsl(var(--primary) / 0.2);
+    background: hsl(var(--pop) / 0.28);
     color: hsl(var(--foreground));
   }
 
@@ -130,7 +134,13 @@
 }
 
 .map-screen-shell {
-  background: linear-gradient(165deg, hsl(var(--chat-sheet-bg)) 0%, hsl(278 28% 90%) 55%, hsl(284 16% 94%) 100%);
+  background: linear-gradient(
+    168deg,
+    hsl(var(--chat-sheet-bg)) 0%,
+    hsl(277 55% 93%) 38%,
+    hsl(var(--pop-soft)) 72%,
+    hsl(320 60% 96%) 100%
+  );
 }
 
 .map-canvas {
@@ -141,7 +151,7 @@
 }
 
 .leaflet-tile-pane {
-  filter: saturate(1) brightness(1.02);
+  filter: saturate(1.08) brightness(1.03) hue-rotate(-4deg);
 }
 
 .leaflet-overlay-pane path {
@@ -179,24 +189,43 @@
 
 .map-icon-btn {
   background: hsl(0 0% 100%);
-  color: hsl(var(--foreground));
-  box-shadow: 0 2px 8px hsl(240 42% 12% / 0.12);
+  color: hsl(var(--purple));
+  box-shadow: var(--shadow-md);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
 }
 
 .map-icon-btn:hover {
-  background: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
+  background: hsl(var(--pop-soft));
+  color: hsl(327 100% 38%);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px) scale(1.03);
 }
 
 .map-chat-fab {
-  background: hsl(var(--primary));
+  background: linear-gradient(155deg, hsl(var(--primary)) 0%, hsl(var(--purple)) 100%);
+  color: #fff;
   box-shadow:
-    0 8px 20px hsl(var(--primary) / 0.35),
-    0 0 0 8px hsl(var(--primary) / 0.12);
+    0 10px 28px hsl(var(--pop) / 0.45),
+    0 0 0 6px hsl(var(--purple) / 0.22);
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
 
 .map-chat-fab:hover {
-  background: hsl(var(--primary) / 0.9);
+  filter: brightness(1.08);
+  box-shadow:
+    0 14px 36px hsl(var(--pop) / 0.5),
+    0 0 0 8px hsl(var(--pop) / 0.18);
+  transform: scale(1.06);
+}
+
+.map-chat-fab:active {
+  transform: scale(0.96);
 }
 
 .leaflet-control-zoom {
@@ -247,7 +276,7 @@
 /* Global chat body scrollbar (visible, right side) */
 .chat-scroll-area {
   scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.5) transparent;
+  scrollbar-color: hsl(var(--pop) / 0.4) transparent;
 }
 
 .chat-scroll-area::-webkit-scrollbar {
@@ -259,10 +288,10 @@
 }
 
 .chat-scroll-area::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 0.45);
+  background: hsl(var(--pop) / 0.35);
   border-radius: 999px;
 }
 
 .chat-scroll-area::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.7);
+  background: hsl(var(--pop) / 0.55);
 }

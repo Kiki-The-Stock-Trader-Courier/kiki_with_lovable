@@ -361,7 +361,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
 
   return (
     <div className="animate-slide-up relative flex h-full flex-col rounded-t-3xl bg-chat-sheet shadow-2xl">
-      <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted-foreground/30" />
+      <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-gradient-to-r from-brand-purple/50 via-pop/60 to-brand-purple/50" />
       <header className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <button
@@ -434,7 +434,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
                 key={action}
                 type="button"
                 onClick={() => sendMessage(action)}
-                className="flex-none whitespace-nowrap rounded-full border border-primary/15 bg-accent/70 px-2.5 py-1 text-[11px] font-medium text-foreground transition-colors hover:bg-accent"
+                className="flex-none whitespace-nowrap rounded-full border border-pop/35 bg-pop-soft/90 px-2.5 py-1 text-[11px] font-semibold text-foreground shadow-sm transition-all hover:border-brand-purple/40 hover:bg-accent hover:shadow-md active:scale-[0.98]"
               >
                 {action}
               </button>

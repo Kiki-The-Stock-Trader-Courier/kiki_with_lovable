@@ -217,7 +217,7 @@ const ChatPage = () => {
               key={action}
               type="button"
               onClick={() => void sendMessage(action)}
-              className="min-h-[36px] shrink-0 rounded-full border border-primary/15 bg-accent/70 px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent active:scale-[0.98]"
+              className="min-h-[36px] shrink-0 rounded-full border border-pop/35 bg-pop-soft/90 px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-sm transition-all hover:border-brand-purple/40 hover:bg-accent hover:shadow-md active:scale-[0.98]"
             >
               {action}
             </button>
