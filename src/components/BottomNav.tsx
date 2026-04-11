@@ -48,16 +48,18 @@ const BottomNav = () => {
           className="map-chat-fab pointer-events-auto absolute z-[1400] flex h-14 w-14 items-center justify-center rounded-full"
           aria-label="챗봇 열기"
         >
-          <img
-            src="/kiki-chat-fab-cat.png"
-            alt=""
-            width={40}
-            height={40}
-            decoding="async"
-            draggable={false}
-            className="pointer-events-none h-10 w-10 select-none object-contain drop-shadow-sm"
-            aria-hidden
-          />
+          <span className="pointer-events-none size-10 shrink-0 overflow-hidden rounded-lg bg-white/15 ring-1 ring-white/30 shadow-inner">
+            <img
+              src="/kiki-chat-fab-cat.png"
+              alt=""
+              width={40}
+              height={40}
+              decoding="async"
+              draggable={false}
+              className="size-full select-none object-cover object-center"
+              aria-hidden
+            />
+          </span>
         </button>
       )}
 
