@@ -3,7 +3,9 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import type OpenAI from "openai";
 import { getKrxQuotesFromYahoo, parseTickersQuery } from "./lib-server/yahooKrxQuotesCore";
+import { getOpenAIClient } from "./lib-server/openaiClient";
 import { mergeStockAssistWithDdg } from "./lib-server/stockChatAssist";
 
 /** 로컬 `npm run dev`에서만 — OpenAI 호출을 프록시 (키는 서버 쪽 env에만) */
@@ -52,22 +54,31 @@ function openaiChatProxy(openaiKey: string | undefined): Plugin {
                 console.warn("[vite] stockAssist DDG merge failed:", e);
               }
             }
-            const r = await fetch("https://api.openai.com/v1/chat/completions", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${openaiKey}`,
-              },
-              body: JSON.stringify({
-                model: json.model ?? "gpt-4o-mini",
-                messages: outbound,
-                max_tokens: json.max_tokens ?? 1100,
-              }),
-            });
-            const text = await r.text();
-            res.statusCode = r.status;
-            res.setHeader("Content-Type", "application/json");
-            res.end(text);
+            const prevKey = process.env.OPENAI_API_KEY;
+            process.env.OPENAI_API_KEY = openaiKey;
+            try {
+              const client = getOpenAIClient();
+              const completion = await client.chat.completions.create(
+                {
+                  model: json.model ?? "gpt-4o-mini",
+                  messages: outbound as OpenAI.ChatCompletionMessageParam[],
+                  max_tokens: json.max_tokens ?? 1100,
+                },
+                {
+                  langsmithExtra: {
+                    name: "chat-completions",
+                    metadata: { route: "vite-dev-proxy", stockAssist: json.stockAssist ? "yes" : "no" },
+                    tags: [json.stockAssist ? "stock-sheet-chat" : "global-chat"],
+                  },
+                } as Record<string, unknown>,
+              );
+              res.statusCode = 200;
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify(completion));
+            } finally {
+              if (prevKey !== undefined) process.env.OPENAI_API_KEY = prevKey;
+              else delete process.env.OPENAI_API_KEY;
+            }
           } catch (e) {
             res.statusCode = 500;
             res.setHeader("Content-Type", "application/json");
@@ -118,6 +129,19 @@ function quotesApiLocalPlugin(enabled: boolean): Plugin {
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
+  /** LangSmith 등: lib-server/openaiClient 가 process.env 를 읽음 */
+  for (const key of [
+    "OPENAI_API_KEY",
+    "LANGSMITH_TRACING",
+    "LANGSMITH_API_KEY",
+    "LANGSMITH_PROJECT",
+    "LANGCHAIN_TRACING_V2",
+    "LANGCHAIN_API_KEY",
+    "LANGCHAIN_PROJECT",
+  ] as const) {
+    const v = env[key];
+    if (v !== undefined && v !== "") process.env[key] = v;
+  }
   const openaiKey = env.OPENAI_API_KEY;
   /** 로컬 `npm run dev`에서 배포된 Vercel API로 /api 프록시 (예: https://xxx.vercel.app) */
   const devApiProxy = env.VITE_DEV_API_PROXY?.replace(/\/$/, "");

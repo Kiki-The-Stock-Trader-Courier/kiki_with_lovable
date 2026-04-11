@@ -1,4 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type OpenAI from "openai";
+import { getOpenAIClient } from "../openaiClient.js";
 import { getKrxQuotesFromYahoo } from "../yahooKrxQuotesCore.js";
 
 /**
@@ -185,31 +187,39 @@ export async function handleQuizHybrid(req: VercelRequest, res: VercelResponse) 
     },
   };
 
-  const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      temperature: 0.4,
-      max_tokens: 1800,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: system },
-        {
-          role: "user",
-          content: `다음 데이터만 사용해 퀴즈 JSON을 만드세요.\n${JSON.stringify(userPayload)}`,
+  let rawText: string;
+  try {
+    const client = getOpenAIClient();
+    const completion = await client.chat.completions.create(
+      {
+        model: "gpt-4o-mini",
+        temperature: 0.4,
+        max_tokens: 1800,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          {
+            role: "user",
+            content: `다음 데이터만 사용해 퀴즈 JSON을 만드세요.\n${JSON.stringify(userPayload)}`,
+          },
+        ] as OpenAI.ChatCompletionMessageParam[],
+      },
+      {
+        langsmithExtra: {
+          name: "quiz-hybrid",
+          metadata: { route: "api/quiz/hybrid", companyCount: String(deduped.length) },
+          tags: ["quiz", "hybrid"],
         },
-      ],
-    }),
-  });
-
-  const rawText = await openaiRes.text();
-  if (!openaiRes.ok) {
-    console.error("[api/quiz/hybrid] OpenAI:", rawText);
-    sendJson(res, 502, { ok: false, error: "퀴즈 생성 API 오류", detail: rawText.slice(0, 200) });
+      },
+    );
+    rawText = JSON.stringify(completion);
+  } catch (e) {
+    console.error("[api/quiz/hybrid] OpenAI:", e);
+    sendJson(res, 502, {
+      ok: false,
+      error: "퀴즈 생성 API 오류",
+      detail: e instanceof Error ? e.message : String(e),
+    });
     return;
   }
 

@@ -1,0 +1,60 @@
+================================================================================
+  LangSmith로 챗봇(OpenAI) 분석·비용 확인하기
+================================================================================
+
+■ 1. 무엇이 기록되나
+--------------------------------------------------------------------------------
+  이 프로젝트는 OpenAI 공식 SDK + langsmith 의 wrapOpenAI 를 사용합니다.
+  다음 서버 경로의 Chat Completions 호출이 LangSmith에 트레이스됩니다.
+
+    · POST /api/chat          → 이름 "chat-completions"
+        태그: global-chat | stock-sheet-chat (stockAssist 유무)
+    · POST /api/quiz/hybrid   → 이름 "quiz-hybrid"
+        태그: quiz, hybrid
+
+  로컬 npm run dev 의 /api/chat 미들웨어도 동일(이름에 vite-dev-proxy 메타 포함).
+
+  참고: LangSmith UI의 "비용"은 대시보드에서 토큰·모델 단가 기준 추정치이며,
+  OpenAI 청구서와 100% 일치하지 않을 수 있습니다.
+
+
+■ 2. 필수 설정 (Vercel + 로컬)
+--------------------------------------------------------------------------------
+  1) https://smith.langchain.com 접속 → API Key 생성
+
+  2) 환경 변수 (서버에만 — 브라우저에 넣지 마세요)
+
+     LANGSMITH_TRACING=true
+     LANGSMITH_API_KEY=lsv2_pt_xxxxxxxx
+
+     선택:
+     LANGSMITH_PROJECT=원하는-프로젝트-이름
+
+  3) Vercel: Project → Settings → Environment Variables 에 위 변수 추가 후 재배포
+
+  4) 로컬: 프로젝트 루트 .env 에 동일하게 추가 (vite.config 가 loadEnv 로 읽음)
+
+
+■ 3. 대시보드에서 보는 법
+--------------------------------------------------------------------------------
+  · Projects → 해당 프로젝트 선택
+  · Tracing / Runs: 호출별 latency, 입력·출력 길이, 태그 필터
+  · Monitoring: 기간별 사용량(플랜에 따라 토큰·비용 요약 제공)
+
+  필터 예: tags 에 "global-chat" 또는 "quiz" 로 챗 vs 퀴즈만 골라보기
+
+
+■ 4. 비활성화
+--------------------------------------------------------------------------------
+  LANGSMITH_TRACING 을 제거하거나 false 로 두거나,
+  LANGSMITH_API_KEY 를 비우면 wrapOpenAI 가 적용되지 않고 일반 OpenAI 클라이언트만 사용합니다.
+
+
+■ 5. 구현 위치 (코드)
+--------------------------------------------------------------------------------
+  lib-server/openaiClient.ts     … getOpenAIClient(), LangSmith 래핑 여부
+  lib-server/routes/chat.ts      … 채팅 completion + langsmithExtra
+  lib-server/routes/quizHybrid.ts … 퀴즈 completion + langsmithExtra
+  vite.config.ts                   … 로컬 프록시 동일 패턴 + env 주입
+
+================================================================================

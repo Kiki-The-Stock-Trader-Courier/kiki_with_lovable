@@ -1,4 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type OpenAI from "openai";
+import { getOpenAIClient } from "../openaiClient.js";
 import { mergeStockAssistWithDdg } from "../stockChatAssist.js";
 
 /**
@@ -48,21 +50,36 @@ export async function handleChat(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  const r = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`,
-    },
-    body: JSON.stringify({
-      model: body.model ?? "gpt-4o-mini",
-      messages: outbound,
-      max_tokens: body.max_tokens ?? 1100,
-    }),
-  });
-
-  const text = await r.text();
-  res.status(r.status);
-  res.setHeader("Content-Type", "application/json");
-  res.send(text);
+  try {
+    const client = getOpenAIClient();
+    const completion = await client.chat.completions.create(
+      {
+        model: body.model ?? "gpt-4o-mini",
+        messages: outbound as OpenAI.ChatCompletionMessageParam[],
+        max_tokens: body.max_tokens ?? 1100,
+      },
+      {
+        langsmithExtra: {
+          name: "chat-completions",
+          metadata: {
+            route: "api/chat",
+            stockAssist: body.stockAssist ? "yes" : "no",
+          },
+          tags: [body.stockAssist ? "stock-sheet-chat" : "global-chat"],
+        },
+      },
+    );
+    res.status(200);
+    res.setHeader("Content-Type", "application/json");
+    res.send(JSON.stringify(completion));
+  } catch (e) {
+    console.error("[api/chat] OpenAI:", e);
+    res.status(502);
+    res.setHeader("Content-Type", "application/json");
+    res.send(
+      JSON.stringify({
+        error: { message: e instanceof Error ? e.message : "OpenAI request failed" },
+      }),
+    );
+  }
 }
