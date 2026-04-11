@@ -54,6 +54,18 @@ interface HoldingRow {
   current_price: number | null;
 }
 
+/** 소수 주 매수 시 부동소수 오차 완화 */
+const SHARE_DECIMALS = 6;
+function roundShareAmount(n: number): number {
+  return Math.round(n * 10 ** SHARE_DECIMALS) / 10 ** SHARE_DECIMALS;
+}
+
+function formatSharesForMessage(shares: number): string {
+  const r = roundShareAmount(shares);
+  if (Math.abs(r - Math.round(r)) < 1e-9) return Math.round(r).toLocaleString("ko-KR");
+  return r.toLocaleString("ko-KR", { maximumFractionDigits: SHARE_DECIMALS });
+}
+
 function applyBuyToHoldings(
   prev: HoldingStock[],
   order: { ticker: string; name: string; price: number; shares: number },
@@ -419,14 +431,14 @@ export function useUserData(): UseUserDataResult {
   const buyStock = useCallback(
     async (order: { ticker: string; name: string; price: number; shares: number }) => {
       const ticker = normalizeTicker(order.ticker);
-      const shares = Math.max(0, Math.floor(order.shares));
+      const shares = roundShareAmount(Math.max(0, order.shares));
       const price = Math.max(0, Math.round(order.price));
-      const total = price * shares;
+      const total = Math.round(price * shares * 10) / 10;
 
-      if (!ticker || shares <= 0 || price <= 0) {
+      if (!ticker || shares <= 0 || !Number.isFinite(shares) || price <= 0) {
         return { ok: false, message: "매수 수량/가격이 올바르지 않습니다." };
       }
-      if (walk.cashBalance < total) {
+      if (walk.cashBalance + 1e-9 < total) {
         return { ok: false, message: "캐시가 부족합니다." };
       }
 
@@ -439,7 +451,7 @@ export function useUserData(): UseUserDataResult {
 
       // 2) 비로그인/오프라인 모드: 로컬 상태만 유지
       if (!supabase || !session?.user?.id) {
-        return { ok: true, message: `${order.name} ${shares}주를 매수했습니다.` };
+        return { ok: true, message: `${order.name} ${formatSharesForMessage(shares)}주를 매수했습니다.` };
       }
 
       // 3) DB 동기화(직렬 큐)
@@ -484,7 +496,7 @@ export function useUserData(): UseUserDataResult {
         await supabase.from("user_profiles").update({ cash_balance: nextCash }).eq("user_id", userId);
       });
 
-      return { ok: true, message: `${order.name} ${shares}주를 매수했습니다.` };
+      return { ok: true, message: `${order.name} ${formatSharesForMessage(shares)}주를 매수했습니다.` };
     },
     [enqueue, session?.user?.id, walk.cashBalance],
   );

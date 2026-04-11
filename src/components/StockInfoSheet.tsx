@@ -17,6 +17,13 @@ interface StockInfoSheetProps {
   }>;
 }
 
+/** 매수 입력란 기본값: 1주 미만이면 전액(소수 주), 이상이면 1주 */
+function defaultBuyQtyPrompt(maxShares: number): string {
+  if (maxShares <= 1e-9) return "0";
+  if (maxShares < 1) return maxShares.toFixed(6).replace(/\.?0+$/, "");
+  return "1";
+}
+
 /** 시트가 열리면 부모 state를 기다리지 않고 즉시 /api/quotes 호출 → 체감 지연 감소 */
 const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap, onBuyStock }: StockInfoSheetProps) => {
   const [sheetQuote, setSheetQuote] = useState<{ price: number; changePercent: number } | null>(null);
@@ -89,10 +96,11 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
   const changePct = sheetQuote ? sheetQuote.changePercent : stock.changePercent;
   const isUp = changePct >= 0;
   const hasPrice = price > 0;
-  const canBuy = hasPrice && cashBalance >= price;
-  /** 보유 캐시로 살 수 있는 정수 주(소수점 버림) */
-  const maxAffordableShares = hasPrice ? Math.floor(cashBalance / price) : 0;
-  const affordableShares = hasPrice ? cashBalance / price : 0;
+  /** 보유 캐시로 살 수 있는 최대 주식 수량(소수 주 포함) */
+  const maxAffordableShares = hasPrice ? cashBalance / price : 0;
+  const canBuy = hasPrice && maxAffordableShares > 1e-9;
+  /** 캐시 < 1주 가격일 때 안내용 (기존과 동일) */
+  const affordableShares = maxAffordableShares;
 
   return (
     <div className="animate-fade-in fixed inset-0 z-[1400]" data-testid="stock-info-sheet">
@@ -127,19 +135,22 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
               className="h-auto max-w-[9.5rem] shrink-0 rounded-xl px-2.5 py-2 text-xs font-bold shadow-sm sm:max-w-none sm:px-3 sm:text-sm"
               disabled={!hasPrice || !canBuy}
               onClick={() => {
-                if (!hasPrice || !canBuy || maxAffordableShares <= 0) return;
+                if (!hasPrice || !canBuy || maxAffordableShares <= 1e-9) return;
                 const raw = window.prompt(
-                  `몇 주를 매수할까요?\n(최대 ${maxAffordableShares.toLocaleString()}주)`,
-                  "1",
+                  `몇 주를 매수할까요?\n(최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주, 소수 주 가능)`,
+                  defaultBuyQtyPrompt(maxAffordableShares),
                 );
                 if (raw == null) return;
-                const qty = Number(String(raw).replace(/[^\d]/g, ""));
+                const cleaned = String(raw).replace(/,/g, "").replace(/\s/g, "").trim();
+                const qty = parseFloat(cleaned);
                 if (!Number.isFinite(qty) || qty <= 0) {
-                  window.alert("올바른 수량을 입력해 주세요.");
+                  window.alert("올바른 수량을 입력해 주세요. (예: 1, 0.5, 0.229)");
                   return;
                 }
-                if (qty > maxAffordableShares) {
-                  window.alert(`최대 ${maxAffordableShares.toLocaleString()}주까지 매수할 수 있습니다.`);
+                if (qty > maxAffordableShares + 1e-8) {
+                  window.alert(
+                    `최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주까지 매수할 수 있습니다.`,
+                  );
                   return;
                 }
                 void (async () => {
@@ -147,7 +158,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
                     ticker: stock.ticker,
                     name: stock.name,
                     price,
-                    shares: Math.floor(qty),
+                    shares: qty,
                   });
                   window.alert(result.message);
                 })();
@@ -157,7 +168,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
                 !hasPrice
                   ? "시세 확인 후 매수 가능"
                   : canBuy
-                    ? `${stock.name} 캐시로 매수, 최대 ${maxAffordableShares.toLocaleString()}주`
+                    ? `${stock.name} 캐시로 매수, 최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주`
                     : `보유 ${cashBalance.toLocaleString()}원, 구매 가능 ${affordableShares.toFixed(4)}주`
               }
             >
@@ -172,7 +183,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
                   <>
                     <span>매수하기</span>
                     <span className="text-[10px] font-normal opacity-90 sm:text-xs">
-                      최대 {maxAffordableShares.toLocaleString()}주 구매 가능
+                      최대 {maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주 구매 가능
                     </span>
                   </>
                 ) : (

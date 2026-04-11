@@ -32,7 +32,9 @@ const HoldingsPage = () => {
                 >
                   <div>
                     <p className="text-sm font-semibold text-foreground">{h.name}</p>
-                    <p className="text-xs text-muted-foreground">{h.shares}주 · 평균 {h.avgPrice.toLocaleString()}원</p>
+                    <p className="text-xs text-muted-foreground">
+                      {h.shares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주 · 평균 {h.avgPrice.toLocaleString()}원
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-foreground">{(h.currentPrice * h.shares).toLocaleString()}원</p>
