@@ -11,6 +11,7 @@ import { useUserLocation } from "@/hooks/useUserLocation";
 import { Capacitor } from "@capacitor/core";
 import { StepTracker } from "@/plugins/stepTracker";
 import { fetchNearbyCompanies } from "@/lib/companyApi";
+import { distanceMeters } from "@/lib/geoDistance";
 import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -83,6 +84,12 @@ const Index = () => {
   }, [center.lat, center.lng, stocks, setMapQuizSnapshot]);
 
   /** 종목 목록이 바뀔 때만 재조회 (시세 갱신으로 stocks가 바뀌어 무한 루프 나지 않음) */
+  /** 지도 강조 원( DEFAULT_RADIUS_M ) 안에서만 캐시 매수 — MapView 회색 핀과 동일 기준 */
+  const mapRadiusPurchaseAllowed = useMemo(() => {
+    if (!selectedStock) return true;
+    return distanceMeters(center.lat, center.lng, selectedStock.lat, selectedStock.lng) <= DEFAULT_RADIUS_M;
+  }, [center.lat, center.lng, selectedStock]);
+
   const stockTickerKey = useMemo(
     () =>
       stocks
@@ -350,6 +357,7 @@ const Index = () => {
         stock={selectedStock}
         onClose={() => setSelectedStock(null)}
         cashBalance={walk.cashBalance}
+        mapRadiusPurchaseAllowed={mapRadiusPurchaseAllowed}
         isScrapped={selectedStock ? isScrapped(selectedStock.ticker) : false}
         onToggleScrap={() => {
           if (!selectedStock) return;

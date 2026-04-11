@@ -15,6 +15,11 @@ interface StockInfoSheetProps {
     ok: boolean;
     message: string;
   }>;
+  /**
+   * 지도 강조 원(반경) 안에 있을 때만 캐시 매수 허용.
+   * false면 회색(원 밖) 핀과 동일하게 매수 버튼 비활성.
+   */
+  mapRadiusPurchaseAllowed?: boolean;
 }
 
 /** 매수 입력란 기본값: 1주 미만이면 전액(소수 주), 이상이면 1주 */
@@ -25,7 +30,19 @@ function defaultBuyQtyPrompt(maxShares: number): string {
 }
 
 /** 시트가 열리면 부모 state를 기다리지 않고 즉시 /api/quotes 호출 → 체감 지연 감소 */
-const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap, onBuyStock }: StockInfoSheetProps) => {
+/** 최소 1원 이상·너무 작은 소수 주(0.00001주 등) 매수 버튼 비활성 */
+const MIN_CASH_TO_BUY_WON = 1;
+const MIN_AFFORDABLE_SHARES = 1e-4;
+
+const StockInfoSheet = ({
+  stock,
+  onClose,
+  cashBalance,
+  isScrapped,
+  onToggleScrap,
+  onBuyStock,
+  mapRadiusPurchaseAllowed = true,
+}: StockInfoSheetProps) => {
   const [sheetQuote, setSheetQuote] = useState<{ price: number; changePercent: number } | null>(null);
   const [quoteError, setQuoteError] = useState(false);
   /** 시세 재요청 (다시 시도 버튼) */
@@ -98,7 +115,10 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
   const hasPrice = price > 0;
   /** 보유 캐시로 살 수 있는 최대 주식 수량(소수 주 포함) */
   const maxAffordableShares = hasPrice ? cashBalance / price : 0;
-  const canBuy = hasPrice && maxAffordableShares > 1e-9;
+  const withinMapRadius = mapRadiusPurchaseAllowed;
+  const hasMeaningfulSize =
+    cashBalance >= MIN_CASH_TO_BUY_WON && maxAffordableShares >= MIN_AFFORDABLE_SHARES;
+  const canBuy = hasPrice && withinMapRadius && hasMeaningfulSize;
   /** 캐시 < 1주 가격일 때 안내용 (기존과 동일) */
   const affordableShares = maxAffordableShares;
 
@@ -135,7 +155,7 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
               className="h-auto max-w-[9.5rem] shrink-0 rounded-xl px-2.5 py-2 text-xs font-bold shadow-sm sm:max-w-none sm:px-3 sm:text-sm"
               disabled={!hasPrice || !canBuy}
               onClick={() => {
-                if (!hasPrice || !canBuy || maxAffordableShares <= 1e-9) return;
+                if (!hasPrice || !canBuy || maxAffordableShares < MIN_AFFORDABLE_SHARES) return;
                 const raw = window.prompt(
                   `몇 주를 매수할까요?\n(최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주, 소수 주 가능)`,
                   defaultBuyQtyPrompt(maxAffordableShares),
@@ -167,9 +187,11 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
               aria-label={
                 !hasPrice
                   ? "시세 확인 후 매수 가능"
-                  : canBuy
-                    ? `${stock.name} 캐시로 매수, 최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주`
-                    : `보유 ${cashBalance.toLocaleString()}원, 구매 가능 ${affordableShares.toFixed(4)}주`
+                  : !withinMapRadius
+                    ? "지도 반경 밖 종목은 캐시 매수 불가"
+                    : canBuy
+                      ? `${stock.name} 캐시로 매수, 최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주`
+                      : `보유 ${cashBalance.toLocaleString()}원, 구매 가능 ${affordableShares.toFixed(4)}주`
               }
             >
               <ShoppingCart className="mr-1 h-4 w-4 shrink-0 sm:mr-1.5 sm:h-4 sm:w-4" />
@@ -178,6 +200,13 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
                   <>
                     <span>매수하기</span>
                     <span className="text-[10px] font-normal opacity-90 sm:text-xs">시세 확인 중</span>
+                  </>
+                ) : !withinMapRadius ? (
+                  <>
+                    <span>매수 불가</span>
+                    <span className="text-[10px] font-normal opacity-90 sm:text-xs">
+                      원 안 종목만 매수
+                    </span>
                   </>
                 ) : canBuy ? (
                   <>
@@ -192,7 +221,9 @@ const StockInfoSheet = ({ stock, onClose, cashBalance, isScrapped, onToggleScrap
                       보유 {cashBalance.toLocaleString()}원
                     </span>
                     <span className="text-[10px] font-normal opacity-90 sm:text-xs">
-                      구매 가능 {affordableShares.toFixed(4)}주
+                      {cashBalance < MIN_CASH_TO_BUY_WON
+                        ? "캐시 1원 이상일 때 매수"
+                        : `구매 가능 ${affordableShares.toFixed(6)}주 (0.0001주 미만)`}
                     </span>
                   </>
                 )}

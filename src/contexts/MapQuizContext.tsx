@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import type { StockPin } from "@/types/stock";
+import { distanceMeters } from "@/lib/geoDistance";
 
 /** 지도 강조 원과 동일 — 퀴즈 근거 반경 */
 export const MAP_QUIZ_RADIUS_M = 1000;
@@ -41,17 +42,6 @@ export function useMapQuizSnapshot() {
 /** Index 전용: optional hook when provider 없을 때 no-op (테스트 등) */
 export function useMapQuizSnapshotOptional() {
   return useContext(MapQuizContext);
-}
-
-function distanceMeters(aLat: number, aLng: number, bLat: number, bLng: number): number {
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const R = 6371000;
-  const dLat = toRad(bLat - aLat);
-  const dLng = toRad(bLng - aLng);
-  const p =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.atan2(Math.sqrt(p), Math.sqrt(1 - p));
 }
 
 /** 원(반경) 안 종목만 스냅샷용으로 필터 */
