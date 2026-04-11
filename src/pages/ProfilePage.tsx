@@ -9,7 +9,7 @@ const ProfilePage = () => {
   const totalValue = holdings.reduce((sum, h) => sum + h.currentPrice * h.shares, 0);
 
   return (
-    <div className="mx-auto min-h-[100dvh] w-full max-w-lg bg-background pb-24" data-testid="profile-screen">
+    <div className="app-page-shell mx-auto min-h-[100dvh] w-full max-w-lg pb-24" data-testid="profile-screen">
       {/* Header */}
       <div className="bg-card px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl sm:shadow-sm">
         <div className="flex items-center gap-4">

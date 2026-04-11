@@ -40,7 +40,7 @@ const WalkPage = () => {
 
   return (
     <div
-      className="mx-auto min-h-[100dvh] w-full max-w-lg bg-background pb-24"
+      className="app-page-shell mx-auto min-h-[100dvh] w-full max-w-lg pb-24"
       data-testid="walk-screen"
     >
       {/* Header */}

@@ -11,7 +11,7 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-6 pb-24 pt-[max(2rem,env(safe-area-inset-top))]">
+    <div className="app-page-shell flex min-h-[100dvh] flex-col items-center justify-center px-6 pb-24 pt-[max(2rem,env(safe-area-inset-top))]">
       <div className="mx-auto w-full max-w-sm text-center">
         <p className="mb-2 text-sm font-medium uppercase tracking-widest text-muted-foreground">404</p>
         <h1 className="mb-2 font-display text-2xl font-bold text-foreground">페이지를 찾을 수 없어요</h1>

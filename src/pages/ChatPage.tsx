@@ -165,7 +165,7 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="mx-auto flex h-[100dvh] max-w-lg flex-col bg-background" data-testid="chat-screen">
+    <div className="app-page-shell mx-auto flex h-[100dvh] max-w-lg flex-col" data-testid="chat-screen">
       <header className="sticky top-0 z-10 border-b border-border/80 bg-card/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] backdrop-blur-md supports-[backdrop-filter]:bg-card/75">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10">

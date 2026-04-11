@@ -5,7 +5,7 @@ import { useUserData } from "@/hooks/useUserData";
 const HoldingsPage = () => {
   const { holdings, scraps } = useUserData();
   return (
-    <div className="mx-auto min-h-[100dvh] w-full max-w-lg bg-background pb-24" data-testid="holdings-screen">
+    <div className="app-page-shell mx-auto min-h-[100dvh] w-full max-w-lg pb-24" data-testid="holdings-screen">
       <div className="bg-card px-5 pb-5 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl sm:shadow-sm">
         <h1 className="mb-2 flex items-center gap-2 font-display text-xl font-bold tracking-tight text-foreground">
           <BriefcaseBusiness className="h-5 w-5 text-primary" />

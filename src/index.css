@@ -6,7 +6,7 @@
   :root {
     /* 라벤더·마젠타·코랄 메시 그라데이션 톤 (밝은 베이스, Moonie 류의 암톤 지양) */
     --background: 275 48% 98%;
-    --foreground: 265 28% 26%;
+    --foreground: 265 30% 22%;
 
     --card: 0 0% 100%;
     --card-foreground: 265 26% 28%;
@@ -14,14 +14,15 @@
     --popover: 0 0% 100%;
     --popover-foreground: 265 26% 28%;
 
-    --primary: 318 58% 52%;
+    /* 탭 활성·링·말풍선 등 — 촌스러운 형광 대신 차분한 오키드 (본문 primary 버튼은 .btn-primary-surface) */
+    --primary: 278 36% 46%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 265 35% 95%;
     --secondary-foreground: 265 28% 32%;
 
     --muted: 265 24% 94%;
-    --muted-foreground: 265 14% 44%;
+    --muted-foreground: 265 12% 40%;
 
     --accent: 12 90% 96%;
     --accent-foreground: 330 48% 36%;
@@ -31,7 +32,7 @@
 
     --border: 265 22% 88%;
     --input: 265 22% 88%;
-    --ring: 318 58% 56%;
+    --ring: 285 42% 50%;
 
     --radius: 16px;
 
@@ -70,12 +71,54 @@
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 265 26% 28%;
-    --sidebar-primary: 318 58% 52%;
+    --sidebar-primary: 278 36% 46%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 265 32% 95%;
     --sidebar-accent-foreground: 265 26% 32%;
     --sidebar-border: 265 22% 88%;
-    --sidebar-ring: 318 58% 56%;
+    --sidebar-ring: 285 42% 50%;
+  }
+}
+
+@layer components {
+  /* 지도 외 탭 페이지 — 밝은 라벤더·블러시 메시 (맵 .map-screen-shell 과 톤만 맞춤) */
+  .app-page-shell {
+    background: linear-gradient(
+      168deg,
+      hsl(270 52% 98.4%) 0%,
+      hsl(312 36% 98.1%) 46%,
+      hsl(22 78% 98.5%) 100%
+    );
+  }
+
+  /**
+   * 본문용 primary 버튼 — FAB(#8e8cd8→#d65db1→#ff8c7a)과 같은 계열, 살짝 다듬은 그라데이션·인셋 하이라이트
+   * 원형 챗 FAB(.map-chat-fab)는 별도 유지
+   */
+  .btn-primary-surface {
+    @apply text-white;
+    background-image: linear-gradient(124deg, #9492df 0%, #c56fae 42%, #f59e88 100%);
+    border: 1px solid rgb(255 255 255 / 0.32);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.35),
+      0 6px 18px hsl(300 42% 45% / 0.22);
+    transition:
+      filter 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .btn-primary-surface:hover {
+    filter: brightness(1.05) saturate(1.04);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.42),
+      0 9px 24px hsl(312 45% 42% / 0.28);
+  }
+
+  .btn-primary-surface:active {
+    filter: brightness(0.97);
+    box-shadow:
+      inset 0 2px 4px rgb(0 0 0 / 0.12),
+      0 4px 14px hsl(300 40% 45% / 0.18);
   }
 }
 
