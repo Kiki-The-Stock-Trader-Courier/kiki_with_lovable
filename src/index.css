@@ -4,46 +4,58 @@
 
 @layer base {
   :root {
-    /* 흰·슬레이트 중심 (핑크/라벤더/크림 제거) */
-    --background: 0 0% 100%;
-    --foreground: 225 13% 42%;
+    /*
+     * 네이비 · 보라 · 연분홍 팔레트
+     * #19193D / #6B308E / #E5DDE8
+     */
+    --background: 284 14% 96%;
+    --foreground: 240 42% 17%;
 
     --card: 0 0% 100%;
-    --card-foreground: 225 13% 42%;
+    --card-foreground: 240 42% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 225 13% 42%;
+    --popover-foreground: 240 42% 17%;
 
-    --primary: 225 13% 42%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 240 42% 17%;
+    --primary-foreground: 284 25% 97%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 225 13% 36%;
+    --secondary: 278 28% 93%;
+    --secondary-foreground: 240 38% 22%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 225 11% 46%;
+    --muted: 284 18% 91%;
+    --muted-foreground: 240 22% 38%;
 
-    --accent: 220 14% 96%;
-    --accent-foreground: 225 13% 38%;
+    --accent: 278 35% 92%;
+    --accent-foreground: 278 49% 28%;
 
     --destructive: 350 72% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 215 16% 47%;
+    --border: 284 14% 84%;
+    --input: 284 14% 84%;
+    --ring: 278 49% 42%;
 
     --radius: 16px;
 
+    /* 채팅 시트·전체 채팅 페이지 배경 */
+    --chat-sheet-bg: 284 20% 89%;
+
+    /* 하단 내비 (남색 바) */
+    --bottom-nav-bg: 240 42% 17%;
+    --bottom-nav-border: 240 35% 26%;
+    --bottom-nav-item: 284 22% 80%;
+    --bottom-nav-item-active: 278 68% 78%;
+
     /* 지도·핀 등 */
-    --color-pin: 223 26% 58%;
-    --color-pin-active: 225 13% 34%;
-    --color-map-bg: 220 14% 96%;
-    --color-map-road: 0 0% 100%;
-    --color-map-water: 220 14% 93%;
+    --color-pin: 278 45% 46%;
+    --color-pin-active: 240 42% 28%;
+    --color-map-bg: 284 12% 94%;
+    --color-map-road: 284 25% 99%;
+    --color-map-water: 278 25% 90%;
     --color-success: 152 38% 40%;
     --color-warning: 38 88% 52%;
-    --color-cash: 225 13% 48%;
+    --color-cash: 278 49% 37%;
 
     /* Spacing (4pt grid) */
     --space-1: 4px;
@@ -63,19 +75,19 @@
     --font-mono: 'JetBrains Mono', monospace;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px hsl(225 13% 18% / 0.06);
-    --shadow-md: 0 4px 12px hsl(225 13% 18% / 0.09);
-    --shadow-lg: 0 8px 24px hsl(225 13% 18% / 0.11);
-    --shadow-sheet: 0 -4px 24px hsl(225 13% 18% / 0.12);
+    --shadow-sm: 0 1px 2px hsl(240 42% 12% / 0.07);
+    --shadow-md: 0 4px 12px hsl(240 42% 12% / 0.1);
+    --shadow-lg: 0 8px 24px hsl(240 42% 12% / 0.12);
+    --shadow-sheet: 0 -4px 24px hsl(240 42% 12% / 0.14);
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 225 13% 42%;
-    --sidebar-primary: 225 13% 42%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 14% 96%;
-    --sidebar-accent-foreground: 225 13% 38%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 215 16% 47%;
+    --sidebar-background: 284 18% 92%;
+    --sidebar-foreground: 240 42% 17%;
+    --sidebar-primary: 240 42% 17%;
+    --sidebar-primary-foreground: 284 25% 97%;
+    --sidebar-accent: 278 32% 88%;
+    --sidebar-accent-foreground: 240 38% 22%;
+    --sidebar-border: 284 14% 82%;
+    --sidebar-ring: 278 49% 42%;
   }
 }
 
@@ -118,7 +130,7 @@
 }
 
 .map-screen-shell {
-  background: hsl(0 0% 100%);
+  background: linear-gradient(165deg, hsl(var(--chat-sheet-bg)) 0%, hsl(278 28% 90%) 55%, hsl(284 16% 94%) 100%);
 }
 
 .map-canvas {
@@ -167,13 +179,13 @@
 
 .map-icon-btn {
   background: hsl(0 0% 100%);
-  color: hsl(225 13% 42%);
-  box-shadow: 0 2px 8px hsl(225 13% 18% / 0.12);
+  color: hsl(var(--foreground));
+  box-shadow: 0 2px 8px hsl(240 42% 12% / 0.12);
 }
 
 .map-icon-btn:hover {
-  background: hsl(220 14% 96%);
-  color: hsl(225 13% 42%);
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
 }
 
 .map-chat-fab {

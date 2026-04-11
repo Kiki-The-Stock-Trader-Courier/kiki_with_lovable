@@ -52,6 +52,8 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        /** 연한 분홍 채팅·시트 배경 (#E5DDE8 계열) */
+        "chat-sheet": "hsl(var(--chat-sheet-bg))",
         pin: {
           DEFAULT: "hsl(var(--color-pin))",
           active: "hsl(var(--color-pin-active))",

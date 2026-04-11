@@ -30,7 +30,7 @@ const BottomNav = () => {
 
   return (
     <nav
-      className="fixed bottom-0 left-1/2 z-[1300] w-full max-w-lg -translate-x-1/2 border-t border-border bg-card/95 shadow-sheet backdrop-blur-md supports-[backdrop-filter]:bg-card/80"
+      className="fixed bottom-0 left-1/2 z-[1300] w-full max-w-lg -translate-x-1/2 border-t border-[hsl(var(--bottom-nav-border))] bg-[hsl(var(--bottom-nav-bg))] shadow-[0_-8px_28px_hsl(240_42%_8%/0.35)] backdrop-blur-md supports-[backdrop-filter]:bg-[hsl(240_42%_17%/0.92)]"
       data-testid="bottom-nav"
       aria-label="메인 내비게이션"
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
@@ -61,7 +61,7 @@ const BottomNav = () => {
               key={path}
               onClick={() => navigate(path)}
               className={`flex min-h-[44px] min-w-[44px] flex-col items-center justify-center gap-1 rounded-xl px-3 py-1 transition-colors ${
-                isActive ? "text-primary" : "text-muted-foreground"
+                isActive ? "text-[hsl(var(--bottom-nav-item-active))]" : "text-[hsl(var(--bottom-nav-item))]"
               } ${colClass}`}
               aria-label={label}
               aria-current={isActive ? "page" : undefined}

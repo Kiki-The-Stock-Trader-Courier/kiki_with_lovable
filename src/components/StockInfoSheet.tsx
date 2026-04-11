@@ -133,7 +133,7 @@ const StockInfoSheet = ({
       />
 
       {/* Sheet */}
-      <div className="animate-slide-up absolute inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-2xl border border-border/50 bg-card shadow-sheet">
+      <div className="animate-slide-up absolute inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-2xl border border-border/50 bg-chat-sheet shadow-sheet">
         <div className="p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
         {/* Handle */}
         <div className="mx-auto mb-4 h-1 w-10 shrink-0 rounded-full bg-muted" />

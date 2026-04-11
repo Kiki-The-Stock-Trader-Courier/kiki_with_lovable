@@ -166,8 +166,8 @@ const MapView = ({
           center={[center.lat, center.lng]}
           radius={radius}
           pathOptions={{
-            color: "#819FA7",
-            fillColor: "#819FA7",
+            color: "#6B308E",
+            fillColor: "#6B308E",
             fillOpacity: 0.1,
             weight: 4,
             dashArray: "0",
@@ -183,8 +183,8 @@ const MapView = ({
             center={[center.lat, center.lng]}
             radius={Math.min(userAccuracyM, 400)}
             pathOptions={{
-              color: "#819FA7",
-              fillColor: "#819FA7",
+              color: "#6B308E",
+              fillColor: "#6B308E",
               fillOpacity: 0.12,
               weight: 1,
               interactive: false,
