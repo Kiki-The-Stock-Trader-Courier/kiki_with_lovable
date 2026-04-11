@@ -128,7 +128,7 @@ const MapView = ({
         className: "user-location-marker-icon",
         html: `<div class="user-location-marker-pin" role="presentation" aria-hidden="true">
 <svg width="36" height="44" viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg">
-  <path d="M18 42s14-14 14-26C32 8 26 2 18 2S4 8 4 16c0 12 14 26 14 26z" fill="#FF3B30" stroke="#FFFFFF" stroke-width="2.5"/>
+  <path d="M18 42s14-14 14-26C32 8 26 2 18 2S4 8 4 16c0 12 14 26 14 26z" fill="#E04D8C" stroke="#FFFFFF" stroke-width="2.5"/>
   <circle cx="18" cy="16" r="5" fill="#fff"/>
 </svg>
 </div>`,
@@ -166,8 +166,8 @@ const MapView = ({
           center={[center.lat, center.lng]}
           radius={radius}
           pathOptions={{
-            color: "#819FA7",
-            fillColor: "#819FA7",
+            color: "#8E8CD8",
+            fillColor: "#8E8CD8",
             fillOpacity: 0.1,
             weight: 4,
             dashArray: "0",
@@ -183,8 +183,8 @@ const MapView = ({
             center={[center.lat, center.lng]}
             radius={Math.min(userAccuracyM, 400)}
             pathOptions={{
-              color: "#819FA7",
-              fillColor: "#819FA7",
+              color: "#B854A6",
+              fillColor: "#B854A6",
               fillOpacity: 0.12,
               weight: 1,
               interactive: false,
@@ -200,7 +200,7 @@ const MapView = ({
               radius={8}
               pathOptions={{
                 color: "#ffffff",
-                fillColor: "#FF3B30",
+                fillColor: "#E04D8C",
                 fillOpacity: 1,
                 weight: 3,
                 interactive: false,

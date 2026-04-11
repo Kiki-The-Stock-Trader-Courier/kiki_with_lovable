@@ -85,12 +85,12 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
 }
 
 const createPinIcon = (stock: StockPinType, isOwned: boolean, isOutOfRadius: boolean) => {
-  /** 기본은 노란색, 보유는 파란색, 반경 밖은 비활성 회색 */
+  /** 기본 코랄, 보유 라벤더, 반경 밖은 은은한 라벤더 그레이 */
   const color = isOutOfRadius
-    ? "#9CA3AF"
+    ? "#BDB3D9"
     : isOwned
-      ? "#2563EB"
-      : "#FACC15";
+      ? "#8E8CD8"
+      : "#FF8C7A";
   const inner = logoOrSectorInner(stock, color);
 
   return L.divIcon({
