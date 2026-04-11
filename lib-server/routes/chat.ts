@@ -1,11 +1,10 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import type OpenAI from "openai";
-import { awaitLangSmithPendingTraces, getOpenAIClient } from "../openaiClient.js";
-import { mergeStockAssistWithDdg } from "../stockChatAssist.js";
+import { awaitLangSmithPendingTraces } from "../openaiClient.js";
+import { runChatPipeline } from "../chat/pipeline.js";
 
 /**
  * OpenAI Chat Completions 프록시 — API 키는 서버(Vercel 환경 변수)에만 둡니다.
- * `stockAssist`가 있으면 DuckDuckGo 웹 검색 스니펫을 시스템 메시지에 합쳐 종목 최신 맥락을 보강합니다.
+ * `lib-server/chat/pipeline` 에서 의도별 라우터·RAG(종목 시트)·모델 정책을 적용합니다.
  */
 export async function handleChat(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -41,37 +40,29 @@ export async function handleChat(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  let outbound = messages;
-  if (body.stockAssist?.name && body.stockAssist?.ticker) {
-    try {
-      outbound = await mergeStockAssistWithDdg(messages, body.stockAssist);
-    } catch (e) {
-      console.warn("[api/chat] stockAssist DDG merge failed:", e);
-    }
-  }
-
   try {
-    const client = getOpenAIClient();
-    const completion = await client.chat.completions.create(
-      {
-        model: body.model ?? "gpt-4o-mini",
-        messages: outbound as OpenAI.ChatCompletionMessageParam[],
-        max_tokens: body.max_tokens ?? 1100,
-      },
-      {
-        langsmithExtra: {
-          name: "chat-completions",
-          metadata: {
-            route: "api/chat",
-            stockAssist: body.stockAssist ? "yes" : "no",
-          },
-          tags: [body.stockAssist ? "stock-sheet-chat" : "global-chat"],
-        },
-      },
-    );
+    const result = await runChatPipeline(body);
+
+    res.setHeader("X-Chat-Intent", result.meta.intent);
+    res.setHeader("X-Chat-Model", result.meta.model);
+    res.setHeader("X-Chat-Router", result.meta.routerEnabled ? "on" : "off");
+
+    if (result.kind === "fixed") {
+      res.status(200);
+      res.setHeader("Content-Type", "application/json");
+      res.send(
+        JSON.stringify({
+          id: "chatcmpl-fixed",
+          object: "chat.completion",
+          choices: [{ index: 0, message: { role: "assistant" as const, content: result.content }, finish_reason: "stop" }],
+        }),
+      );
+      return;
+    }
+
     res.status(200);
     res.setHeader("Content-Type", "application/json");
-    res.send(JSON.stringify(completion));
+    res.send(JSON.stringify(result.completion));
   } catch (e) {
     console.error("[api/chat] OpenAI:", e);
     res.status(502);

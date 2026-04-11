@@ -3,10 +3,9 @@ import type { Plugin } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import type OpenAI from "openai";
 import { getKrxQuotesFromYahoo, parseTickersQuery } from "./lib-server/yahooKrxQuotesCore";
-import { awaitLangSmithPendingTraces, getOpenAIClient } from "./lib-server/openaiClient";
-import { mergeStockAssistWithDdg } from "./lib-server/stockChatAssist";
+import { awaitLangSmithPendingTraces } from "./lib-server/openaiClient";
+import { runChatPipeline } from "./lib-server/chat/pipeline";
 
 /** 로컬 `npm run dev`에서만 — OpenAI 호출을 프록시 (키는 서버 쪽 env에만) */
 function openaiChatProxy(openaiKey: string | undefined): Plugin {
@@ -40,41 +39,35 @@ function openaiChatProxy(openaiKey: string | undefined): Plugin {
               );
               return;
             }
-            const json = JSON.parse(body || "{}") as {
-              messages?: { role: string; content: string }[];
-              model?: string;
-              max_tokens?: number;
-              stockAssist?: { name: string; ticker: string; sector?: string };
-            };
-            let outbound = json.messages ?? [];
-            if (json.stockAssist?.name && json.stockAssist?.ticker && Array.isArray(outbound)) {
-              try {
-                outbound = await mergeStockAssistWithDdg(outbound, json.stockAssist);
-              } catch (e) {
-                console.warn("[vite] stockAssist DDG merge failed:", e);
-              }
-            }
+            const json = JSON.parse(body || "{}") as Parameters<typeof runChatPipeline>[0];
             const prevKey = process.env.OPENAI_API_KEY;
             process.env.OPENAI_API_KEY = openaiKey;
             try {
-              const client = getOpenAIClient();
-              const completion = await client.chat.completions.create(
-                {
-                  model: json.model ?? "gpt-4o-mini",
-                  messages: outbound as OpenAI.ChatCompletionMessageParam[],
-                  max_tokens: json.max_tokens ?? 1100,
-                },
-                {
-                  langsmithExtra: {
-                    name: "chat-completions",
-                    metadata: { route: "vite-dev-proxy", stockAssist: json.stockAssist ? "yes" : "no" },
-                    tags: [json.stockAssist ? "stock-sheet-chat" : "global-chat"],
-                  },
-                } as Record<string, unknown>,
-              );
-              res.statusCode = 200;
-              res.setHeader("Content-Type", "application/json");
-              res.end(JSON.stringify(completion));
+              const result = await runChatPipeline(json);
+              res.setHeader("X-Chat-Intent", result.meta.intent);
+              res.setHeader("X-Chat-Model", result.meta.model);
+              res.setHeader("X-Chat-Router", result.meta.routerEnabled ? "on" : "off");
+              if (result.kind === "fixed") {
+                res.statusCode = 200;
+                res.setHeader("Content-Type", "application/json");
+                res.end(
+                  JSON.stringify({
+                    id: "chatcmpl-fixed",
+                    object: "chat.completion",
+                    choices: [
+                      {
+                        index: 0,
+                        message: { role: "assistant" as const, content: result.content },
+                        finish_reason: "stop",
+                      },
+                    ],
+                  }),
+                );
+              } else {
+                res.statusCode = 200;
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify(result.completion));
+              }
             } finally {
               await awaitLangSmithPendingTraces();
               if (prevKey !== undefined) process.env.OPENAI_API_KEY = prevKey;
@@ -133,6 +126,8 @@ export default defineConfig(({ mode }) => {
   /** LangSmith 등: lib-server/openaiClient 가 process.env 를 읽음 */
   for (const key of [
     "OPENAI_API_KEY",
+    "CHAT_INTENT_ROUTER",
+    "CHAT_MODEL_DEEP",
     "LANGSMITH_TRACING",
     "LANGSMITH_API_KEY",
     "LANGSMITH_PROJECT",

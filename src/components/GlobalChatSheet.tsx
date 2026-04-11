@@ -352,8 +352,13 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     try {
       const reply = await askGlobalAssistant(historyAfterUser);
       appendAssistantMessage(reply);
-    } catch {
-      appendAssistantMessage("일시적으로 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.");
+    } catch (err) {
+      const detail = err instanceof Error && err.message ? err.message : "";
+      appendAssistantMessage(
+        detail
+          ? `응답에 실패했어요: ${detail}\n배포 환경에 OPENAI_API_KEY 가 있는지 확인해 주세요. (COMPANY_SYNC_TOKEN 은 챗봇과 무관합니다.)`
+          : "일시적으로 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.",
+      );
     } finally {
       setIsLoading(false);
     }

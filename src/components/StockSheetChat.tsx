@@ -126,13 +126,22 @@ export default function StockSheetChat({ stock, isScrapped, onToggleScrap }: Sto
           timestamp: new Date(),
         },
       ]);
-    } catch {
+    } catch (err) {
+      const detail = err instanceof Error && err.message ? err.message : "알 수 없는 오류";
       setMessages((prev) => [
         ...prev,
         {
           id: `a-${Date.now()}`,
           role: "assistant",
-          content: `${getStockSheetChatReply(stock, trimmed)}\n\n— OpenAI 연결 없이 규칙 기반 답변이에요. 로컬은 .env에 OPENAI_API_KEY를, Vercel은 환경 변수에 키를 넣어 주세요.`,
+          content: [
+            getStockSheetChatReply(stock, trimmed),
+            "",
+            "— 위는 규칙 기반 보조 답변이에요.",
+            `AI 연결 실패: ${detail}`,
+            "· 운영: Vercel(또는 API를 호스팅하는 곳)에 OPENAI_API_KEY 를 설정하세요.",
+            "· 로컬: 프로젝트 루트 .env 에 OPENAI_API_KEY=...",
+            "· COMPANY_SYNC_TOKEN 은 기업 데이터 동기화 API 전용이며 챗봇과 무관합니다.",
+          ].join("\n"),
           timestamp: new Date(),
         },
       ]);
