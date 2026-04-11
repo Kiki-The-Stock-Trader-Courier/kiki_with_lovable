@@ -5,49 +5,49 @@
 @layer base {
   :root {
     /*
-     * Soft Blue palette (차트)
-     * #F3F5F9 페이지 배경 · #819FA7 액센트 · #5B6E74 본문
-     * #F2F2F0 보조 면 · #0D0D0D 강조(거의 블랙)
+     * Soft Navy, Purple & Pink palette (참고 카드)
+     * #FFF9F0 크림 · #B8C0D4 슬레이트 블루 · #D4C0D9 라벤더
+     * #FFE0E6 페일 핑크 · #5C6378 네이비 차콜
      */
-    --background: 218 35% 97%;
-    --foreground: 195 12% 41%;
+    --background: 36 100% 97%;
+    --foreground: 225 13% 42%;
 
-    --card: 60 9% 95%;
-    --card-foreground: 195 12% 41%;
+    --card: 348 100% 94%;
+    --card-foreground: 225 13% 42%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 195 12% 41%;
+    --popover: 36 80% 99%;
+    --popover-foreground: 225 13% 42%;
 
-    --primary: 193 18% 58%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 225 13% 42%;
+    --primary-foreground: 36 100% 98%;
 
-    --secondary: 210 22% 93%;
-    --secondary-foreground: 195 12% 41%;
+    --secondary: 223 25% 78%;
+    --secondary-foreground: 225 13% 36%;
 
-    --muted: 60 8% 94%;
-    --muted-foreground: 195 10% 46%;
+    --muted: 288 22% 94%;
+    --muted-foreground: 225 11% 46%;
 
-    --accent: 193 18% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 288 25% 82%;
+    --accent-foreground: 225 13% 38%;
 
-    --destructive: 0 72% 52%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive: 350 72% 48%;
+    --destructive-foreground: 36 100% 98%;
 
-    --border: 210 14% 88%;
-    --input: 210 14% 88%;
-    --ring: 193 22% 48%;
+    --border: 223 22% 86%;
+    --input: 223 22% 86%;
+    --ring: 288 30% 62%;
 
     --radius: 16px;
 
     /* 지도·핀 등 */
-    --color-pin: 193 20% 51%;
-    --color-pin-active: 195 14% 34%;
-    --color-map-bg: 215 28% 93%;
-    --color-map-road: 0 0% 100%;
-    --color-map-water: 200 22% 86%;
+    --color-pin: 223 26% 58%;
+    --color-pin-active: 225 13% 34%;
+    --color-map-bg: 288 18% 93%;
+    --color-map-road: 36 100% 99%;
+    --color-map-water: 223 32% 88%;
     --color-success: 152 38% 40%;
     --color-warning: 38 88% 52%;
-    --color-cash: 193 16% 44%;
+    --color-cash: 225 13% 48%;
 
     /* Spacing (4pt grid) */
     --space-1: 4px;
@@ -67,19 +67,19 @@
     --font-mono: 'JetBrains Mono', monospace;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px hsl(195 14% 18% / 0.06);
-    --shadow-md: 0 4px 12px hsl(195 14% 18% / 0.09);
-    --shadow-lg: 0 8px 24px hsl(195 14% 18% / 0.12);
-    --shadow-sheet: 0 -4px 24px hsl(195 14% 18% / 0.12);
+    --shadow-sm: 0 1px 2px hsl(225 13% 18% / 0.06);
+    --shadow-md: 0 4px 12px hsl(225 13% 18% / 0.09);
+    --shadow-lg: 0 8px 24px hsl(225 13% 18% / 0.11);
+    --shadow-sheet: 0 -4px 24px hsl(225 13% 18% / 0.12);
 
-    --sidebar-background: 60 9% 95%;
-    --sidebar-foreground: 195 12% 41%;
-    --sidebar-primary: 0 0% 5%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 210 18% 92%;
-    --sidebar-accent-foreground: 195 12% 41%;
-    --sidebar-border: 210 12% 88%;
-    --sidebar-ring: 193 22% 48%;
+    --sidebar-background: 288 18% 94%;
+    --sidebar-foreground: 225 13% 42%;
+    --sidebar-primary: 225 13% 42%;
+    --sidebar-primary-foreground: 36 100% 98%;
+    --sidebar-accent: 223 22% 90%;
+    --sidebar-accent-foreground: 225 13% 38%;
+    --sidebar-border: 223 20% 86%;
+    --sidebar-ring: 288 30% 62%;
   }
 }
 
@@ -122,7 +122,7 @@
 }
 
 .map-screen-shell {
-  background: linear-gradient(135deg, #f3f5f9 0%, #e2eaee 45%, #c9d8de 100%);
+  background: linear-gradient(135deg, #fff9f0 0%, #ffe0e6 48%, #d4c0d9 100%);
 }
 
 .map-canvas {
@@ -170,14 +170,14 @@
 }
 
 .map-icon-btn {
-  background: #ffffff;
-  color: #6b7280;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  background: #fff9f0;
+  color: #5c6378;
+  box-shadow: 0 2px 8px hsl(225 13% 18% / 0.12);
 }
 
 .map-icon-btn:hover {
-  background: #f9fafb;
-  color: #819fa7;
+  background: #ffe0e6;
+  color: #5c6378;
 }
 
 .map-chat-fab {
