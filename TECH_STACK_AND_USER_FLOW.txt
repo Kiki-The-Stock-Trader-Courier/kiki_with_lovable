@@ -1,0 +1,199 @@
+================================================================================
+  Kiki (캐시워크 주식) — 사용자 이용 흐름 · 프론트엔드 · 백엔드 · AI 기술 정리
+  (저장소 기준 문서, 배포 설정에 따라 세부 URL·환경 변수는 달라질 수 있음)
+
+  ▶ 읽기 쉬운 요약본: USER_FLOW_TECH_EASY.txt
+================================================================================
+
+■ 1. 제품 개요
+--------------------------------------------------------------------------------
+  - 웹/하이브리드 앱: 걸음·캐시, 지도 기반 근처 상장사, 보유/스크랩 종목, 챗봇(키키),
+    지도 연동 주식 퀴즈 등.
+  - 프론트: Vite + React 18 + TypeScript, SPA(Single Page Application).
+  - 백엔드: Vercel Serverless Functions(단일 게이트웨이 api/gw.ts) + 공유 로직 lib-server/.
+  - 데이터/인증: Supabase(Postgres + Auth).
+  - AI: OpenAI Chat Completions API(gpt-4o-mini). 보조로 네이버 뉴스 검색 API,
+    DuckDuckGo(HTML/Instant Answer) 스니펫.
+
+
+■ 2. 사용자 이용 흐름(라우트·기능 중심)
+--------------------------------------------------------------------------------
+
+  [2-1] 첫 방문 / 비로그인
+    - "/" (Index): 지도(Leaflet)에서 현재 위치·반경 내 상장사 핀 표시.
+      → 주변 기업은 Supabase 테이블(nearby_companies 등) + 클라이언트 폴백 로직.
+      → 시세는 /api/quotes(Yahoo KRX 경로) 또는 설정에 따라 프록시.
+    - "/login": Google OAuth(Supabase Auth) 로그인. 미로그인 시 일부 탭 제한 가능.
+
+  [2-2] 로그인 후 메인 내비게이션(BottomNav)
+    - 지도 "/", 걷기 "/walk", 보유 "/holdings", 내 정보 "/profile"
+    - 중앙 FAB: 글로벌 챗(GlobalChatSheet) — 로그인 필수로 열도록 구성됨.
+
+  [2-3] 걷기(Walk)
+    - 오늘 걸음·목표·캐시 적립(로컬 상태 + 로그인 시 user_profiles 동기화).
+    - 채팅 페이지로 이동 링크 등.
+
+  [2-4] 지도(Index) + 종목 시트(StockInfoSheet)
+    - 핀 선택 → 시트에서 시세(/api/quotes)·기업 정보.
+    - "기업 알아보기" StockSheetChat: 종목별 질문 → POST /api/chat
+      (stockAssist로 회사명·티커 전달, 서버에서 네이버 뉴스·DDG 보강 후 OpenAI).
+    - 스크랩 의도는 규칙 기반으로 즉시 처리(챗 LLM 없음).
+
+  [2-5] 글로벌 챗(GlobalChatSheet)
+    - 자연어: askGlobalAssistant → /api/chat (일반 시스템 프롬프트, stockAssist 없음).
+    - 키워드(예: 오늘의 주식 퀴즈): MapQuizContext 스냅샷(반경 1km 내 종목)이 2개 이상일 때
+      POST /api/quiz/hybrid → 문항 3개 수신 → 클라이언트에서 1~4 답·채점·캐시(addQuizCash).
+    - 걸음 목표 변경: 규칙 + 숫자 입력 등(일부는 LLM 없음).
+
+  [2-6] 채팅 전용 화면 /chat
+    - ProtectedRoute. GlobalChat과 유사하게 askGlobalAssistant 사용(별도 UI).
+
+  [2-7] 보유 / 프로필
+    - 보유 종목·스크랩·프로필·캐시 등( Supabase 및 로컬 상태 연동 ).
+
+  [2-8] 운영/데이터 보강(일반 사용자 외)
+    - scripts/run-companies-sync.mjs 등으로 POST /api/companies/sync 호출 가능
+      (OSM Overpass, 네이버 로컬 검색 옵션, Supabase upsert 등 — 서버 환경 변수 필요).
+
+
+■ 3. 프론트엔드 기술 상세
+--------------------------------------------------------------------------------
+
+  [빌드·언어]
+    - Vite 5, TypeScript 5, @vitejs/plugin-react-swc
+    - ESLint, Vitest(단위 테스트)
+
+  [UI 프레임워크]
+    - React 18, react-router-dom v6 (BrowserRouter, Routes)
+    - 스타일: Tailwind CSS 3, tailwindcss-animate, tailwind-merge, class-variance-authority
+    - 컴포넌트: Radix UI 기반(shadcn 패턴), lucide-react 아이콘
+    - 테마: next-themes, sonner 토스트, vaul(시트 등)
+
+  [상태·데이터 패칭]
+    - @tanstack/react-query (QueryClient 전역)
+    - React Context: AuthContext, MapQuizContext 등
+
+  [지도]
+    - leaflet, react-leaflet — 지도 위 상장사 핀
+
+  [폼·검증]
+    - react-hook-form, @hookform/resolvers, zod
+
+  [기타]
+    - react-markdown, recharts, date-fns, embla-carousel-react, input-otp 등 페이지별 사용
+
+  [모바일]
+    - @capacitor/core, android, ios — 웹 빌드 산출물을 네이티브 웹뷰로 감쌈
+    - API 호출 시 getPublicApiOrigin / VITE_CHAT_API_ORIGIN 등으로 프로덕션 origin 지정 가능
+
+  [챗 클라이언트]
+    - src/lib/openaiChat.ts: /api/chat 로 메시지 전송
+    - 글로벌 챗: localStorage(global_chat_sheet_history_v1)에 대화 목록 저장
+    - 종목 챗: 종목 id/ticker 기준 메모리 내 대화(시트 단위)
+
+
+■ 4. 백엔드 기술 상세
+--------------------------------------------------------------------------------
+
+  [호스팅]
+    - Vercel: 정적 프론트(dist) + Serverless Functions
+
+  [API 게이트웨이]
+    - api/gw.ts 단일 함수 — Hobby 플랜 서버리스 개수 제한 대응
+    - vercel.json rewrites 로 공개 경로 유지:
+        /api/chat              → /api/gw?__r=chat
+        /api/quotes            → /api/gw?__r=quotes
+        /api/quiz/hybrid       → /api/gw?__r=quizHybrid
+        /api/companies/nearby  → /api/gw?__r=companiesNearby
+        /api/companies/sync    → /api/gw?__r=companiesSync
+        /api/companies/backfill-tickers → /api/gw?__r=companiesBackfillTickers
+    - 나머지 경로는 SPA로 index.html (단, /api/* 는 위 규칙 우선)
+
+  [공유 서버 로직: lib-server/]
+    - routes/chat.ts        — OpenAI 채팅 프록시 + 종목 시 stockAssist 시 mergeStockAssistWithDdg
+    - routes/quotes.ts      — Yahoo Finance 경유 KRX 시세(parseTickersQuery, getKrxQuotesFromYahoo)
+    - routes/quizHybrid.ts  — 퀴즈 JSON 생성(OpenAI 1회) + 검증
+    - companies/*           — Supabase 주변 기업 조회, sync, 티커 보강, KRX 매칭 등
+    - yahooKrxQuotesCore.ts, supabasePublicEnv.ts, ddgSearchCore.ts, stockChatAssist.ts,
+      naverNewsSearch.ts
+
+  [런타임]
+    - @vercel/node — VercelRequest / VercelResponse 타입
+    - Node fetch 로 OpenAI·외부 HTTP 호출
+
+  [로컬 개발]
+    - vite.config.ts: OPENAI_API_KEY 있을 때 /api/chat 미들웨어로 OpenAI 프록시 가능
+    - VITE_DEV_API_PROXY 로 원격 Vercel /api 전체 프록시 가능
+    - /api/quotes 는 로컬에서 Yahoo 직접 조회 플러그인 가능
+
+
+■ 5. AI 기술 상세
+--------------------------------------------------------------------------------
+
+  [공통]
+    - OpenAI API: https://api.openai.com/v1/chat/completions
+    - 모델명(코드 기준): gpt-4o-mini
+    - API 키: 서버 환경 변수 OPENAI_API_KEY (브라우저에 노출하지 않음)
+
+  [글로벌 챗 / 종목 챗]
+    - 클라이언트가 messages(system+user+assistant 히스토리) 전송
+    - 서버 handleChat: JSON 파싱 후
+        - stockAssist 있으면 mergeStockAssistWithDdg:
+            · 네이버 뉴스 검색 API(NAVER_CLIENT_ID / NAVER_CLIENT_SECRET)
+            · DuckDuckGo 웹 스니펫(Instant Answer + HTML, 실패 시 대체 검색어)
+            · 시스템 메시지 끝에 스니펫 블록 추가
+        - OpenAI에 그대로 전달 후 응답 텍스트 반환
+    - Function calling / Tools / 에이전트 다단계 루프는 사용하지 않음(단일 completion).
+
+  [하이브리드 퀴즈]
+    - lib-server/routes/quizHybrid.ts
+    - 사전: getKrxQuotesFromYahoo 로 시세 문맥 문자열 생성
+    - LLM 1회: response_format json_object, system+user 로 intro + questions[3] 요청
+    - 서버: JSON 파싱, validateQuestions(티커 화이트리스트 등), difficulty 1~10 클램프
+    - 사용자 답 채점은 전부 클라이언트(숫자 1~4 vs correctKey), LLM 미사용
+
+  [보조 검색]
+    - DuckDuckGo: 공식 JSON API + html.duckduckgo.com (POST/GET), 서버 IP에서 실패 가능
+    - 네이버: openapi.naver.com/v1/search/news.json (뉴스, sort=date)
+
+
+■ 6. 데이터베이스 · 인증(Supabase)
+--------------------------------------------------------------------------------
+
+  - @supabase/supabase-js
+  - VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (클라이언트)
+  - 서버(api)에서는 SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY 등(동기화·관리 작업)
+  - Auth: Google OAuth, 세션은 AuthContext에서 구독
+  - user_profiles 등: 캐시 잔고·걸음 목표 등 앱 데이터 저장
+
+
+■ 7. 환경 변수 요약(대표)
+--------------------------------------------------------------------------------
+
+  [클라이언트(VITE_*)]
+    - VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+    - VITE_AUTH_REDIRECT_URL (OAuth 리다이렉트)
+    - VITE_CHAT_API_ORIGIN, VITE_DEV_API_PROXY (API 베이스 URL)
+
+  [서버(Vercel / 로컬 .env)]
+    - OPENAI_API_KEY
+    - NAVER_CLIENT_ID, NAVER_CLIENT_SECRET (종목 챗 뉴스 + companies sync 보강)
+    - SUPABASE_SERVICE_ROLE_KEY, COMPANY_SYNC_TOKEN 등(기업 동기화 API 보호)
+    - OVERPASS_* 등 (선택, 기업 sync)
+
+
+■ 8. 요약 다이어그램(텍스트)
+--------------------------------------------------------------------------------
+
+  [사용자] 
+      → React SPA (Vite)
+      → (인증) Supabase Auth
+      → (데이터) Supabase DB / 로컬 스토리지
+      → (챗·시세·퀴즈·주변기업) HTTPS /api/* 
+      → Vercel api/gw.ts 
+      → lib-server 핸들러 
+      → OpenAI / 네이버 / Yahoo / DuckDuckGo / Supabase
+
+================================================================================
+  문서 끝
+================================================================================
