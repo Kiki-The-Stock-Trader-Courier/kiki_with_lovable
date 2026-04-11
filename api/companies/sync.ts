@@ -35,6 +35,70 @@ const STATIONS = [
 ];
 const YEOUIDO_STATION = STATIONS[1];
 
+/** 공개 Overpass 인스턴스 — 첫 응답 실패 시 다음 URL 시도 (차단·타임아웃 완화) */
+function overpassInterpreterUrls(): string[] {
+  const custom = process.env.OVERPASS_INTERPRETER_URL?.trim();
+  if (custom) return [custom];
+  return [
+    "https://overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://lz4.overpass-api.de/api/interpreter",
+  ];
+}
+
+async function fetchOverpassElements(query: string): Promise<{
+  elements: OverpassElement[];
+  endpointUsed: string | null;
+  attemptLog: string[];
+}> {
+  const attemptLog: string[] = [];
+  const timeoutMs = Math.min(Math.max(Number(process.env.OVERPASS_FETCH_TIMEOUT_MS ?? "42000") || 42000, 5000), 55000);
+
+  for (const endpoint of overpassInterpreterUrls()) {
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=UTF-8",
+          "User-Agent": "kiki-companies-sync/1.0 (+https://github.com/Kiki-The-Stock-Trader-Courier/kiki_with_lovable)",
+        },
+        body: query,
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        attemptLog.push(`${endpoint}: HTTP ${response.status}`);
+        continue;
+      }
+      let json: { elements?: OverpassElement[] };
+      try {
+        json = JSON.parse(text) as { elements?: OverpassElement[] };
+      } catch {
+        attemptLog.push(`${endpoint}: invalid JSON`);
+        continue;
+      }
+      if (!Array.isArray(json.elements)) {
+        attemptLog.push(`${endpoint}: no elements array`);
+        continue;
+      }
+      return { elements: json.elements, endpointUsed: endpoint, attemptLog };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      attemptLog.push(`${endpoint}: ${msg}`);
+    }
+  }
+  return { elements: [], endpointUsed: null, attemptLog };
+}
+
+type OverpassStationDiag = {
+  station: string;
+  rawElements: number;
+  matchedListed: number;
+  endpointUsed: string | null;
+  /** 마지막 5줄까지 — 실패 원인 추적용 */
+  attemptLogTail: string[];
+};
+
 /** 네이버 지역 검색으로 여의도 상장사 후보를 넓게 수집하기 위한 질의 */
 const NAVER_LISTED_QUERIES = [
   "여의도 삼성",
@@ -161,12 +225,18 @@ async function crawlCompaniesAroundStations(): Promise<{
   companies: CrawledCompany[];
   overpassElementsTotal: number;
   matchedListedBeforeDedup: number;
+  overpassStationDiagnostics: OverpassStationDiag[];
 }> {
-  const perStation = await Promise.all(
-    STATIONS.map(async (station) => {
-      try {
-        const query = `
-[out:json][timeout:60];
+  const gapMs = Math.min(Math.max(Number(process.env.OVERPASS_STATION_GAP_MS ?? "500") || 500, 0), 5000);
+  const stationDiagnostics: OverpassStationDiag[] = [];
+  const flat: CrawledCompany[] = [];
+  let overpassElementsTotal = 0;
+  let matchedListedBeforeDedup = 0;
+
+  for (let i = 0; i < STATIONS.length; i++) {
+    const station = STATIONS[i];
+    const query = `
+[out:json][timeout:55];
 (
   node(around:1000,${station.lat},${station.lng})["office"]["name"];
   way(around:1000,${station.lat},${station.lng})["office"]["name"];
@@ -196,34 +266,35 @@ async function crawlCompaniesAroundStations(): Promise<{
 out center;
 `;
 
-        const response = await fetch("https://overpass-api.de/api/interpreter", {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=UTF-8" },
-          body: query,
-        });
-        if (!response.ok) throw new Error(`Overpass request failed (${station.name}): ${response.status}`);
+    try {
+      const { elements, endpointUsed, attemptLog } = await fetchOverpassElements(query);
+      const companies = elements
+        .map((el) => toCompany(station.name, el))
+        .filter((v): v is CrawledCompany => v != null);
+      overpassElementsTotal += elements.length;
+      matchedListedBeforeDedup += companies.length;
+      flat.push(...companies);
+      stationDiagnostics.push({
+        station: station.name,
+        rawElements: elements.length,
+        matchedListed: companies.length,
+        endpointUsed,
+        attemptLogTail: attemptLog.slice(-5),
+      });
+    } catch (e) {
+      console.warn("[sync] station crawl failed:", station.name, e);
+      stationDiagnostics.push({
+        station: station.name,
+        rawElements: 0,
+        matchedListed: 0,
+        endpointUsed: null,
+        attemptLogTail: [e instanceof Error ? e.message : String(e)].slice(-5),
+      });
+    }
 
-        const json = (await response.json()) as { elements?: OverpassElement[] };
-        const elements = Array.isArray(json.elements) ? json.elements : [];
-        const companies = elements
-          .map((el) => toCompany(station.name, el))
-          .filter((v): v is CrawledCompany => v != null);
-        return { elementCount: elements.length, companies };
-      } catch (e) {
-        // 외부 크롤링 API가 일부 역에서 실패해도 전체 동기화는 계속 진행
-        console.warn("[sync] station crawl failed:", station.name, e);
-        return { elementCount: 0, companies: [] as CrawledCompany[] };
-      }
-    }),
-  );
-
-  let overpassElementsTotal = 0;
-  let matchedListedBeforeDedup = 0;
-  const flat: CrawledCompany[] = [];
-  for (const p of perStation) {
-    overpassElementsTotal += p.elementCount;
-    matchedListedBeforeDedup += p.companies.length;
-    flat.push(...p.companies);
+    if (i < STATIONS.length - 1 && gapMs > 0) {
+      await new Promise((r) => setTimeout(r, gapMs));
+    }
   }
 
   const dedup = new Map<string, CrawledCompany>();
@@ -232,6 +303,7 @@ out center;
     companies: Array.from(dedup.values()),
     overpassElementsTotal,
     matchedListedBeforeDedup,
+    overpassStationDiagnostics: stationDiagnostics,
   };
 }
 
@@ -407,11 +479,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.warn("[sync] tickerRepair:", repairErr);
     }
 
+    const naverApiConfigured = Boolean(
+      (process.env.NAVER_CLIENT_ID ?? "").trim() && (process.env.NAVER_CLIENT_SECRET ?? "").trim(),
+    );
+
     const crawlStats = {
       /** Overpass가 돌려준 원시 요소 수(두 역 합) — 0이면 Overpass 실패·차단 가능 */
       overpassElementsTotal: osm.overpassElementsTotal,
       /** KRX 규칙에 걸린 POI 수(중복 제거 전) */
       matchedListedBeforeDedup: osm.matchedListedBeforeDedup,
+      /** 역별 Overpass 성공 여부·엔드포인트·마지막 시도 로그 */
+      overpassStations: osm.overpassStationDiagnostics,
+      /** 네이버 Local API 키가 없으면 naver 쪽은 항상 0건 */
+      naverApiConfigured,
       /** 네이버 API 검색 보강 */
       naverQueries: naver.searchedQueries,
       naverRawItems: naver.rawItems,
@@ -419,6 +499,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       /** upsert 행 수(중복 제거 후, 곧 ticker 있는 행) */
       upsertedAfterDedup: payload.length,
     };
+
+    /** 모든 미러에서 HTTP/파싱 실패(성공한 Overpass 인스턴스 없음) */
+    const overpassAllFailed = osm.overpassStationDiagnostics.every((s) => s.endpointUsed == null);
 
     res.status(200).json({
       ok: true,
@@ -428,13 +511,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       crawlStats,
       tickerRepair,
       hint:
-        osm.overpassElementsTotal === 0
-          ? "Overpass에서 요소가 0입니다. 네트워크·API 제한을 확인하세요."
-          : osm.matchedListedBeforeDedup === 0 && naver.companies.length === 0
-            ? "OSM 이름이 krxListedMatch 규칙과 맞는 POI가 없습니다. RULES 확장 또는 다른 역 반경을 검토하세요."
-            : payload.length === 0
-              ? "매칭은 됐으나 중복 제거 후 0건입니다(비정상)."
-              : undefined,
+        overpassAllFailed
+          ? "Overpass 전 미러에서 데이터를 받지 못했습니다. crawlStats.overpassStations.attemptLogTail·Vercel 로그를 확인하거나 잠시 후 재시도하세요."
+          : osm.overpassElementsTotal === 0
+            ? "Overpass 원시 요소가 0입니다. 차단 완화를 위해 미러 순회·역 간 간격을 적용했습니다. 여전히 0이면 RULES 매칭 전 단계입니다."
+            : osm.matchedListedBeforeDedup === 0 && naver.companies.length === 0
+              ? !naverApiConfigured
+                ? "OSM에서 상장 매칭이 0건이고, 네이버 보강도 비활성(NAVER_CLIENT_ID/SECRET 미설정)입니다."
+                : "OSM 이름이 krxListedMatch 규칙과 맞는 POI가 없습니다. RULES 확장 또는 다른 역 반경을 검토하세요."
+              : payload.length === 0
+                ? "매칭은 됐으나 중복 제거 후 0건입니다(비정상)."
+                : undefined,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
