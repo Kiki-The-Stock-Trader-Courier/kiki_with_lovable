@@ -176,8 +176,12 @@
   color: hsl(225 13% 42%);
 }
 
-/* 중앙 챗봇 FAB만 네이비→보라 그라데이션 + 핑크 글로우 (전역 테마 변수에 의존하지 않음) */
+/* 중앙 챗봇 FAB — 중앙 정렬은 항상 translate + scale을 한 줄에 묶어야 호버/press 시 위치가 밀리지 않음 */
 .map-chat-fab {
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, -50%);
+  touch-action: manipulation;
   background: linear-gradient(155deg, #1a1a40 0%, #6a2c91 100%);
   color: #fff;
   box-shadow:
@@ -194,11 +198,11 @@
   box-shadow:
     0 14px 36px rgba(255, 0, 142, 0.5),
     0 0 0 8px rgba(255, 0, 142, 0.18);
-  transform: scale(1.06);
+  transform: translate(-50%, -50%) scale(1.06);
 }
 
 .map-chat-fab:active {
-  transform: scale(0.96);
+  transform: translate(-50%, -50%) scale(0.96);
 }
 
 .leaflet-control-zoom {
