@@ -14,6 +14,9 @@
     --popover: 0 0% 100%;
     --popover-foreground: 265 26% 28%;
 
+    /* 종목 시트·채팅 패널 — 카드와 동일 톤, Tailwind bg-chat-sheet 와 연결 */
+    --chat-sheet: 0 0% 100%;
+
     /* 탭 활성·링·말풍선 등 — 촌스러운 형광 대신 차분한 오키드 (본문 primary 버튼은 .btn-primary-surface) */
     --primary: 278 36% 46%;
     --primary-foreground: 0 0% 100%;

@@ -52,6 +52,7 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        "chat-sheet": "hsl(var(--chat-sheet))",
         pin: {
           DEFAULT: "hsl(var(--color-pin))",
           active: "hsl(var(--color-pin-active))",
