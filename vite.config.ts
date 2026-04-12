@@ -127,6 +127,8 @@ export default defineConfig(({ mode }) => {
   for (const key of [
     "OPENAI_API_KEY",
     "CHAT_INTENT_ROUTER",
+    "CHAT_INTENT_HYBRID",
+    "CHAT_INTENT_CLASSIFIER_MODEL",
     "CHAT_MODEL_DEEP",
     "LANGSMITH_TRACING",
     "LANGSMITH_API_KEY",

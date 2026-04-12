@@ -2,6 +2,7 @@ import type OpenAI from "openai";
 import { awaitLangSmithPendingTraces, getOpenAIClient } from "../openaiClient.js";
 import { mergeStockAssistWithDdg } from "../stockChatAssist.js";
 import { CHAT_UNSAFE_FIXED_REPLY, getChatPolicy } from "./policy.js";
+import { classifyIntentWithLlm, shouldRefineIntentWithLlm } from "./intentClassifier.js";
 import { inferComplexity, lastUserContent, routeChatIntent } from "./router.js";
 import type { ChatComplexity, ChatIntent } from "./types.js";
 
@@ -12,12 +13,16 @@ export type ChatRequestBody = {
   stockAssist?: { name: string; ticker: string; sector?: string };
 };
 
+/** rule: 규칙만 | llm: general일 때 소형 LLM 보정 성공 | rule_fallback: LLM 실패·무효 시 규칙 유지 */
+export type IntentSource = "rule" | "llm" | "rule_fallback";
+
 export type PipelineMeta = {
   intent: ChatIntent | "legacy";
   complexity: ChatComplexity;
   model: string;
   needsRetrieval: boolean;
   routerEnabled: boolean;
+  intentSource?: IntentSource;
 };
 
 export type PipelineResult =
@@ -85,10 +90,10 @@ export async function runChatPipeline(body: ChatRequestBody): Promise<PipelineRe
   const hasStockAssist = !!(stockAssist?.name && stockAssist?.ticker);
 
   const lastUser = lastUserContent(messages);
-  const intent = routeChatIntent(lastUser, hasStockAssist);
+  const ruleIntent = routeChatIntent(lastUser, hasStockAssist);
   const complexity = inferComplexity(lastUser);
 
-  if (intent === "unsafe") {
+  if (ruleIntent === "unsafe") {
     return {
       kind: "fixed",
       content: CHAT_UNSAFE_FIXED_REPLY,
@@ -98,8 +103,27 @@ export async function runChatPipeline(body: ChatRequestBody): Promise<PipelineRe
         model: "none",
         needsRetrieval: false,
         routerEnabled: true,
+        intentSource: "rule",
       },
     };
+  }
+
+  let intent: ChatIntent = ruleIntent;
+  let intentSource: IntentSource = "rule";
+
+  if (shouldRefineIntentWithLlm(ruleIntent, lastUser)) {
+    try {
+      const refined = await classifyIntentWithLlm(lastUser, hasStockAssist, stockAssist);
+      if (refined) {
+        intent = refined;
+        intentSource = "llm";
+      } else {
+        intentSource = "rule_fallback";
+      }
+    } catch (e) {
+      console.warn("[chat/pipeline] hybrid intent classifier failed:", e);
+      intentSource = "rule_fallback";
+    }
   }
 
   const policy = getChatPolicy(intent, complexity, hasStockAssist);
@@ -130,7 +154,11 @@ export async function runChatPipeline(body: ChatRequestBody): Promise<PipelineRe
           intent,
           complexity,
         },
-        tags: [hasStockAssist ? "stock-sheet-chat" : "global-chat", `intent-${intent}`],
+        tags: [
+          hasStockAssist ? "stock-sheet-chat" : "global-chat",
+          `intent-${intent}`,
+          `intent-src-${intentSource}`,
+        ],
       },
     } as Record<string, unknown>,
   );
@@ -144,6 +172,7 @@ export async function runChatPipeline(body: ChatRequestBody): Promise<PipelineRe
       model: policy.model,
       needsRetrieval: policy.needsRetrieval,
       routerEnabled: true,
+      intentSource,
     },
   };
 }

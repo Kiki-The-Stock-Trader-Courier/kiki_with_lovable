@@ -46,6 +46,9 @@ export async function handleChat(req: VercelRequest, res: VercelResponse) {
     res.setHeader("X-Chat-Intent", result.meta.intent);
     res.setHeader("X-Chat-Model", result.meta.model);
     res.setHeader("X-Chat-Router", result.meta.routerEnabled ? "on" : "off");
+    if (result.meta.intentSource) {
+      res.setHeader("X-Chat-Intent-Source", result.meta.intentSource);
+    }
 
     if (result.kind === "fixed") {
       res.status(200);
