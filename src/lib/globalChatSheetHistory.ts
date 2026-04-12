@@ -138,11 +138,27 @@ function parseConversationList(raw: string | null): StoredGlobalConversation[] |
   }
 }
 
-/** 구버전에서 글로벌 키에 섞였던 종목 시트 대화(id 접두사 `stock-sheet-`) 제거용 */
+/** 종목 시트 첫 인사: `이름(000000)에 대해 물어보세요.` */
+function conversationOpensWithStockSheetWelcome(c: StoredGlobalConversation): boolean {
+  const m = c.messages[0];
+  if (!m || m.role !== "assistant") return false;
+  const t = m.content.trim();
+  return /^.+\(\d{6}\)에 대해 물어보세요\.?$/.test(t);
+}
+
+/**
+ * 플로팅 글로벌 챗 전용 목록 정리.
+ * - id가 `stock-sheet-` 로 시작하는 항목
+ * - 구버전 등으로 id는 일반이지만 첫 메시지가 종목 시트 환영 문구인 항목
+ */
 export function stripStockSheetConversationsFromGlobal(
   list: StoredGlobalConversation[],
 ): StoredGlobalConversation[] {
-  return list.filter((c) => !String(c.id).startsWith("stock-sheet-"));
+  return list.filter((c) => {
+    if (String(c.id).startsWith("stock-sheet-")) return false;
+    if (conversationOpensWithStockSheetWelcome(c)) return false;
+    return true;
+  });
 }
 
 export function readGlobalChatConversationsFromStorage(): StoredGlobalConversation[] | null {
