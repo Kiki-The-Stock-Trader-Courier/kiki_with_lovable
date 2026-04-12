@@ -46,16 +46,29 @@ const WalkPage = () => {
       {/* Header */}
       <div className="tab-hero-panel px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl">
         <h1 className="mb-6 flex items-center gap-2 font-display text-xl font-bold tracking-tight text-foreground">
-          <span
-            className="inline-block h-5 w-5 shrink-0 bg-primary [mask-image:url(/walk-title-shoe.png)] [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
-            style={{
-              WebkitMaskImage: "url(/walk-title-shoe.png)",
-              WebkitMaskSize: "contain",
-              WebkitMaskRepeat: "no-repeat",
-              WebkitMaskPosition: "center",
-            }}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="h-5 w-5 shrink-0 text-primary"
             aria-hidden
-          />
+          >
+            <rect
+              width="24"
+              height="24"
+              fill="currentColor"
+              style={{
+                maskImage: "url(/walk-title-shoe.png)",
+                WebkitMaskImage: "url(/walk-title-shoe.png)",
+                maskSize: "contain",
+                WebkitMaskSize: "contain",
+                maskRepeat: "no-repeat",
+                WebkitMaskRepeat: "no-repeat",
+                maskPosition: "center",
+                WebkitMaskPosition: "center",
+              }}
+            />
+          </svg>
           오늘의 걷기
         </h1>
 
