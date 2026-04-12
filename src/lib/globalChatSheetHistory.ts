@@ -11,8 +11,40 @@ export interface StoredGlobalConversation {
 }
 
 const FILLER_TAIL =
-  /(알려줘|알려주세요|해줘|해주세요|부탁해|부탁드립니다|좀 알려줘|좀|요|물어봐|물어봐요|알려줄래|알려줄래요|해줄래|해줄래요)\s*$/u;
+  /(알려줘|알려주세요|해줘|해주세요|부탁해|부탁드립니다|좀 알려줘|좀|요|물어봐|물어봐요|알려줄래|알려줄래요|해줄래|해줄래요|어때|뭐야|얼마야|인가|예요|이에요)\s*$/u;
 const FILLER_HEAD = /^(그리고|근데|그럼|있잖아|저|나)\s+/u;
+
+/** 제목에서 뺄 일반 단어(토큰 전체 일치) */
+const TITLE_STOP_TOKENS = new Set([
+  "여기",
+  "거기",
+  "그게",
+  "이게",
+  "뭐",
+  "그냥",
+  "혹시",
+  "그리고",
+  "근데",
+  "그럼",
+  "제가",
+  "나는",
+  "너는",
+  "너가",
+  "당신",
+  "좀",
+  "정말",
+  "아주",
+  "매우",
+  "왜",
+  "어떻게",
+  "대해",
+  "관련한",
+  "관련",
+  "있는",
+  "있어",
+  "제발",
+  "너한테",
+]);
 
 function trivialUserReply(text: string): boolean {
   const t = text.replace(/\s+/g, "").trim();
@@ -41,8 +73,26 @@ export function makeTitleFromInput(input: string, maxLen = 34): string {
   return compact.length > maxLen ? `${compact.slice(0, Math.max(1, maxLen - 1))}…` : compact;
 }
 
+/** 공백 기준 토큰만 남겨 짧은 키워드 제목으로 만듭니다(구분은 공백만). */
+function keywordTitleFromCleaned(cleaned: string, maxTokens = 5, maxLen = 26): string {
+  const tokens = cleaned.split(/\s+/).filter(Boolean);
+  const picked: string[] = [];
+  for (const rawTok of tokens) {
+    const t = rawTok.replace(/^[!?.,:]+|[!?.,:]+$/gu, "").trim();
+    if (!t) continue;
+    if (t.length === 1 && !/\d/u.test(t)) continue;
+    if (TITLE_STOP_TOKENS.has(t)) continue;
+    if (picked.includes(t)) continue;
+    picked.push(t);
+    if (picked.length >= maxTokens) break;
+  }
+  const joined = picked.join(" ");
+  if (joined.length > 0) return makeTitleFromInput(joined, maxLen);
+  return makeTitleFromInput(cleaned.replace(/\s+/g, " ").trim(), maxLen);
+}
+
 /**
- * 사용자 발화 흐름(시간순)에서 짧은 답·중복을 걷어내 한 줄짜리 제목으로 합칩니다. 구분은 공백만 씁니다.
+ * 가장 최근 의미 있는 사용자 질문에서 핵심 토큰만 뽑아 짧은 제목으로 씁니다.
  */
 export function summarizeConversationTitle(messages: ChatMessage[]): string {
   const userTexts = messages
@@ -51,23 +101,17 @@ export function summarizeConversationTitle(messages: ChatMessage[]): string {
     .filter(Boolean);
   if (userTexts.length === 0) return "New chat";
 
-  const snippets: string[] = [];
-  for (let i = 0; i < userTexts.length && snippets.length < 5; i++) {
+  for (let i = userTexts.length - 1; i >= 0; i--) {
     const raw = userTexts[i];
     if (trivialUserReply(raw)) continue;
     const c = cleanUserLineForTitle(raw);
     if (!c) continue;
-    if (snippets.includes(c)) continue;
-    snippets.push(c);
+    const title = keywordTitleFromCleaned(c);
+    if (title.length > 0) return title;
   }
 
-  if (snippets.length === 0) {
-    const last = cleanUserLineForTitle(userTexts[userTexts.length - 1] ?? "");
-    return last.length > 0 ? makeTitleFromInput(last) : "New chat";
-  }
-
-  const merged = snippets.join(" ");
-  return makeTitleFromInput(merged, 36);
+  const last = cleanUserLineForTitle(userTexts[userTexts.length - 1] ?? "");
+  return last.length > 0 ? makeTitleFromInput(last, 28) : "New chat";
 }
 
 export function createConversation(): StoredGlobalConversation {
