@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Footprints, Target, Coins, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
 import WalkGoalChatSheet from "@/components/WalkGoalChatSheet";
 import { useUserData } from "@/hooks/useUserData";
 import { useNavigate } from "react-router-dom";
+import { claimablePointsFromSteps } from "@/lib/walkPoints";
 
 /** 걷기 탭 제목 — 보유 종목 `BriefcaseBusiness`와 동일 `h-5 w-5`·primary 색 */
 function WalkTitleSneakerIcon() {
@@ -31,7 +32,17 @@ const WalkPage = () => {
   const [goalChatOpen, setGoalChatOpen] = useState(false);
   /** 주간 걸음 차트 섹션 앵커 */
   const weeklySectionRef = useRef<HTMLDivElement>(null);
-  const { walk, weeklySteps } = useUserData();
+  const { walk, weeklySteps, claimWalkPoints } = useUserData();
+  /** 코인 버튼 탭 시 받을 수 있는 포인트 (100걸음 = 1) */
+  const claimableWalkPoints = useMemo(
+    () => claimablePointsFromSteps(walk.todaySteps, walk.stepsClaimedForCashToday),
+    [walk.todaySteps, walk.stepsClaimedForCashToday],
+  );
+
+  const onCashCoinClick = () => {
+    claimWalkPoints();
+    navigate("/holdings");
+  };
   const progress = Math.min((walk.todaySteps / walk.goalSteps) * 100, 100);
   const appShareUrl = "https://universal-layout-main.vercel.app/";
   const shareText = "캐시워크 주식 앱에서 같이 걸으며 투자해요!";
@@ -107,15 +118,15 @@ const WalkPage = () => {
             {/* 참고 UI: 링 하단 중앙 · 메인/서브 톤 코인 */}
             <button
               type="button"
-              onClick={() => navigate("/holdings")}
+              onClick={onCashCoinClick}
               className="absolute left-[64px] top-[113px] z-10 flex size-9 translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-gradient-to-b from-primary via-[#593d63] to-[#3d2845] text-[15px] font-bold leading-none text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.38),inset_0_-3px_6px_rgba(0,0,0,0.22),0_4px_10px_rgba(105,10,207,0.3)] ring-1 ring-[#593d63]/25 transition-transform active:scale-95"
-              aria-label="보유 종목에서 캐시 확인"
+              aria-label="걷기 포인트 받기 후 보유 종목으로 이동"
             >
               <i
                 className="pointer-events-none absolute -right-0.5 -top-0.5 z-20 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-[#FF3B30] px-0.5 text-[9px] font-bold leading-none text-white not-italic shadow-[0_1px_2px_rgba(0,0,0,0.22)] ring-1 ring-white"
                 aria-hidden
               >
-                72
+                {claimableWalkPoints}
               </i>
               <span className="drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">₩</span>
             </button>

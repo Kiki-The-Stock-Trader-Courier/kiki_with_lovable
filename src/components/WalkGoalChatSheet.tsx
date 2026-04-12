@@ -77,11 +77,11 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
     }
 
     if (trimmed === "100보당 몇 포인트 적립돼?") {
-      const per100 = walk.cashPerStep * 100;
       const botMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `걸음당 ${walk.cashPerStep}포인트이므로, 100보당 **${per100.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}포인트**가 적립돼요.`,
+        content:
+          "**100걸음을 걸을 때마다 1포인트**가 쌓여요. 잔고에는 걷기 화면의 **보라색 코인 버튼**을 눌렀을 때만 반영돼요.",
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMsg]);

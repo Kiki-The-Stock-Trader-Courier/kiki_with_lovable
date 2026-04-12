@@ -31,8 +31,10 @@ export interface UserWalk {
   goalSteps: number;
   /** 현재 캐시 잔고 (원) */
   cashBalance: number;
-  /** 캐시워크 적립 비율: 1보당 원 */
+  /** 표시·네이티브 힌트용: 1보당 이론 포인트 (실제 적립은 수령 버튼으로만) */
   cashPerStep: number;
+  /** 오늘 걸음 중 이미 포인트로 바꾼 데 사용한 걸음 수 (100걸음 단위 적립) */
+  stepsClaimedForCashToday: number;
 }
 
 /** 사용자 보유 주식 */

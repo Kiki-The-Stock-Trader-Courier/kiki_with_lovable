@@ -4,7 +4,7 @@ create table if not exists public.user_profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   nickname text,
   cash_balance numeric not null default 0,
-  cash_per_step numeric not null default 0.5,
+  cash_per_step numeric not null default 0.01,
   goal_steps integer not null default 5000,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -15,6 +15,7 @@ create table if not exists public.user_walk_daily (
   walk_date date not null,
   steps integer not null default 0,
   goal_steps integer not null default 5000,
+  steps_claimed_for_cash integer not null default 0,
   updated_at timestamptz not null default now(),
   primary key (user_id, walk_date)
 );

@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MOCK_USER_WALK } from "@/data/mockStocks";
+import {
+  CASH_PER_STEP_DISPLAY,
+  STEPS_PER_POINT,
+  WON_PER_POINT,
+  claimablePointsFromSteps,
+} from "@/lib/walkPoints";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/contexts/AuthContext";
 import type { HoldingStock, ScrappedStock, UserWalk } from "@/types/stock";
@@ -19,6 +25,8 @@ interface UseUserDataResult {
   setGoalSteps: (goal: number) => void;
   setNickname: (nickname: string) => void;
   addSteps: (steps: number) => void;
+  /** 걷기 포인트 수령: 코인 버튼 — 100걸음 단위로 잔고에 반영 */
+  claimWalkPoints: () => void;
   /** 주식 퀴즈 정답 등 — 난이도별 1~10원 적립 */
   addQuizCash: (won: number) => void;
   buyStock: (order: { ticker: string; name: string; price: number; shares: number }) => Promise<{
@@ -43,6 +51,7 @@ interface DailyRow {
   walk_date: string;
   steps: number | null;
   goal_steps: number | null;
+  steps_claimed_for_cash?: number | null;
 }
 
 interface HoldingRow {
@@ -199,7 +208,7 @@ export function useUserData(): UseUserDataResult {
           user_id: userId,
           nickname: seedNick,
           cash_balance: MOCK_USER_WALK.cashBalance,
-          cash_per_step: MOCK_USER_WALK.cashPerStep,
+          cash_per_step: CASH_PER_STEP_DISPLAY,
           goal_steps: MOCK_USER_WALK.goalSteps,
         })
         .select("user_id,nickname,cash_balance,cash_per_step,goal_steps")
@@ -208,13 +217,13 @@ export function useUserData(): UseUserDataResult {
     }
 
     const goal = Math.max(1000, Math.round(profile?.goal_steps ?? MOCK_USER_WALK.goalSteps));
-    const cashPerStep = profile?.cash_per_step ?? MOCK_USER_WALK.cashPerStep;
+    const cashPerStep = Number(profile?.cash_per_step ?? CASH_PER_STEP_DISPLAY);
     const cashBalance = profile?.cash_balance ?? MOCK_USER_WALK.cashBalance;
     setNicknameState(profile?.nickname?.trim() || "닉네임 미설정");
 
     let { data: todayData } = await supabase
       .from("user_walk_daily")
-      .select("user_id,walk_date,steps,goal_steps")
+      .select("user_id,walk_date,steps,goal_steps,steps_claimed_for_cash")
       .eq("user_id", userId)
       .eq("walk_date", today)
       .maybeSingle<DailyRow>();
@@ -227,18 +236,21 @@ export function useUserData(): UseUserDataResult {
           walk_date: today,
           steps: 0,
           goal_steps: goal,
+          steps_claimed_for_cash: 0,
         })
-        .select("user_id,walk_date,steps,goal_steps")
+        .select("user_id,walk_date,steps,goal_steps,steps_claimed_for_cash")
         .single<DailyRow>();
       todayData = insertedDay ?? null;
     }
 
     const todaySteps = Math.max(0, Math.round(todayData?.steps ?? 0));
+    const stepsClaimed = Math.max(0, Math.round(todayData?.steps_claimed_for_cash ?? 0));
     setWalk({
       todaySteps,
       goalSteps: Math.max(1000, Math.round(todayData?.goal_steps ?? goal)),
-      cashBalance: Math.round(cashBalance * 10) / 10,
+      cashBalance: Math.round(Number(cashBalance) * 10) / 10,
       cashPerStep,
+      stepsClaimedForCashToday: stepsClaimed,
     });
 
     const weekStart = new Date();
@@ -331,9 +343,22 @@ export function useUserData(): UseUserDataResult {
       const today = dateKey();
       enqueue(async () => {
         await supabase.from("user_profiles").update({ goal_steps: nextGoal }).eq("user_id", userId);
-        await supabase
+        const { data: day } = await supabase
           .from("user_walk_daily")
-          .upsert({ user_id: userId, walk_date: today, goal_steps: nextGoal }, { onConflict: "user_id,walk_date" });
+          .select("steps,steps_claimed_for_cash")
+          .eq("user_id", userId)
+          .eq("walk_date", today)
+          .maybeSingle<{ steps: number | null; steps_claimed_for_cash: number | null }>();
+        await supabase.from("user_walk_daily").upsert(
+          {
+            user_id: userId,
+            walk_date: today,
+            steps: day?.steps ?? 0,
+            goal_steps: nextGoal,
+            steps_claimed_for_cash: day?.steps_claimed_for_cash ?? 0,
+          },
+          { onConflict: "user_id,walk_date" },
+        );
       });
     },
     [enqueue, session?.user?.id],
@@ -361,7 +386,6 @@ export function useUserData(): UseUserDataResult {
       setWalk((prev) => ({
         ...prev,
         todaySteps: prev.todaySteps + add,
-        cashBalance: Math.round((prev.cashBalance + add * prev.cashPerStep) * 10) / 10,
       }));
       setWeeklySteps((prev) => {
         const today = dateKey();
@@ -374,35 +398,80 @@ export function useUserData(): UseUserDataResult {
       enqueue(async () => {
         const { data: day } = await supabase
           .from("user_walk_daily")
-          .select("steps,goal_steps")
+          .select("steps,goal_steps,steps_claimed_for_cash")
           .eq("user_id", userId)
           .eq("walk_date", today)
-          .maybeSingle<{ steps: number | null; goal_steps: number | null }>();
+          .maybeSingle<{
+            steps: number | null;
+            goal_steps: number | null;
+            steps_claimed_for_cash: number | null;
+          }>();
         const currentSteps = day?.steps ?? 0;
-        await supabase
-          .from("user_walk_daily")
-          .upsert(
-            {
-              user_id: userId,
-              walk_date: today,
-              steps: currentSteps + add,
-              goal_steps: day?.goal_steps ?? walk.goalSteps,
-            },
-            { onConflict: "user_id,walk_date" },
-          );
-
-        const { data: profile } = await supabase
-          .from("user_profiles")
-          .select("cash_balance,cash_per_step")
-          .eq("user_id", userId)
-          .single<{ cash_balance: number | null; cash_per_step: number | null }>();
-        const currentCash = profile?.cash_balance ?? walk.cashBalance;
-        const cps = profile?.cash_per_step ?? walk.cashPerStep;
-        await supabase.from("user_profiles").update({ cash_balance: currentCash + add * cps }).eq("user_id", userId);
+        await supabase.from("user_walk_daily").upsert(
+          {
+            user_id: userId,
+            walk_date: today,
+            steps: currentSteps + add,
+            goal_steps: day?.goal_steps ?? walk.goalSteps,
+            steps_claimed_for_cash: day?.steps_claimed_for_cash ?? 0,
+          },
+          { onConflict: "user_id,walk_date" },
+        );
       });
     },
-    [enqueue, session?.user?.id, walk.cashBalance, walk.cashPerStep, walk.goalSteps],
+    [enqueue, session?.user?.id, walk.goalSteps],
   );
+
+  const claimWalkPoints = useCallback(() => {
+    let claimedPoints = 0;
+    setWalk((prev) => {
+      claimedPoints = claimablePointsFromSteps(prev.todaySteps, prev.stepsClaimedForCashToday);
+      if (claimedPoints <= 0) return prev;
+      return {
+        ...prev,
+        cashBalance: Math.round((prev.cashBalance + claimedPoints * WON_PER_POINT) * 10) / 10,
+        stepsClaimedForCashToday: prev.stepsClaimedForCashToday + claimedPoints * STEPS_PER_POINT,
+      };
+    });
+    if (claimedPoints <= 0 || !supabase || !session?.user?.id) return;
+    const userId = session.user.id;
+    const today = dateKey();
+    enqueue(async () => {
+      const { data: day } = await supabase
+        .from("user_walk_daily")
+        .select("steps,goal_steps,steps_claimed_for_cash")
+        .eq("user_id", userId)
+        .eq("walk_date", today)
+        .maybeSingle<{
+          steps: number | null;
+          goal_steps: number | null;
+          steps_claimed_for_cash: number | null;
+        }>();
+      const st = Math.max(0, Math.round(day?.steps ?? 0));
+      const sc = Math.max(0, Math.round(day?.steps_claimed_for_cash ?? 0));
+      const pts = claimablePointsFromSteps(st, sc);
+      if (pts <= 0) return;
+      const nextClaimed = sc + pts * STEPS_PER_POINT;
+      const goalStepsRow = Math.max(1000, Math.round(day?.goal_steps ?? 5000));
+      const { data: profile } = await supabase
+        .from("user_profiles")
+        .select("cash_balance")
+        .eq("user_id", userId)
+        .single<{ cash_balance: number | null }>();
+      const bal = Number(profile?.cash_balance ?? 0);
+      await supabase.from("user_walk_daily").upsert(
+        {
+          user_id: userId,
+          walk_date: today,
+          steps: st,
+          goal_steps: goalStepsRow,
+          steps_claimed_for_cash: nextClaimed,
+        },
+        { onConflict: "user_id,walk_date" },
+      );
+      await supabase.from("user_profiles").update({ cash_balance: bal + pts * WON_PER_POINT }).eq("user_id", userId);
+    });
+  }, [enqueue, session?.user?.id]);
 
   const addQuizCash = useCallback(
     (won: number) => {
@@ -545,6 +614,7 @@ export function useUserData(): UseUserDataResult {
       setGoalSteps,
       setNickname,
       addSteps,
+      claimWalkPoints,
       addQuizCash,
       buyStock,
       toggleScrap,
@@ -560,6 +630,7 @@ export function useUserData(): UseUserDataResult {
       setGoalSteps,
       setNickname,
       addSteps,
+      claimWalkPoints,
       addQuizCash,
       buyStock,
       toggleScrap,

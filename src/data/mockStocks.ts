@@ -18,10 +18,13 @@ export const MOCK_STOCKS: StockPin[] = [
 ];
 
 export const MOCK_USER_WALK: UserWalk = {
-  todaySteps: 3247,
-  goalSteps: 5000,
+  /** 데모: 7200보 → 미수령 시 코인 뱃지에 72포인트 */
+  todaySteps: 7200,
+  goalSteps: 10000,
   cashBalance: 12450,
-  cashPerStep: 0.5,
+  /** 100걸음 = 1포인트 → 1보당 0.01 (표시용) */
+  cashPerStep: 0.01,
+  stepsClaimedForCashToday: 0,
 };
 
 export const MOCK_HOLDINGS: HoldingStock[] = [
