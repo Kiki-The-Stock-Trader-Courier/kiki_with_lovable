@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, X } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/types/stock";
 import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
@@ -172,8 +172,16 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
       <header className="shrink-0 border-b border-border/80 bg-background/95 px-4 pb-3 pt-2">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
-              <Bot className="h-5 w-5 text-primary" aria-hidden />
+            <div className="relative size-8 shrink-0 overflow-hidden rounded-full bg-card ring-1 ring-border/60">
+              <img
+                src="/kiki-chat-avatar.png"
+                alt="키키 아바타"
+                width={32}
+                height={32}
+                decoding="async"
+                draggable={false}
+                className="block h-full w-full object-cover object-center"
+              />
             </div>
             <div className="min-w-0">
               <h2 className="font-display text-base font-bold tracking-tight text-foreground">키키</h2>
