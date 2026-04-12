@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
 import type { ChatMessage } from "@/types/stock";
 import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
-import { askGlobalAssistant } from "@/lib/openaiChat";
+import { askGlobalAssistant, askStockAssistant } from "@/lib/openaiChat";
+import { resolveStockPinFromMapMessage } from "@/lib/globalChatStockResolve";
+import { useMapQuizSnapshotOptional } from "@/contexts/MapQuizContext";
 import { fetchQuizContextForSystemPrompt, persistQuizContextExchange } from "@/lib/quizContextMemory";
 import { useAuth } from "@/contexts/AuthContext";
 import { averageLastNDaysStepsRounded, buildAssistantWalkStepsContext } from "@/lib/walkWeeklyStats";
@@ -37,6 +39,7 @@ const ChatPage = () => {
   const ragUserId = session?.user?.id;
   const avg3Recent = useMemo(() => averageLastNDaysStepsRounded(weeklySteps, 3), [weeklySteps]);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const mapQuizOptional = useMapQuizSnapshotOptional();
 
   useEffect(() => {
     const id = window.setTimeout(() => {
@@ -139,6 +142,29 @@ const ChatPage = () => {
     setIsLoading(true);
 
     try {
+      const nearbyPin = resolveStockPinFromMapMessage(
+        userMsg.content,
+        mapQuizOptional?.snapshot?.stocks,
+      );
+      if (nearbyPin) {
+        const { content: reply, intent } = await askStockAssistant(nearbyPin, historyAfterUser);
+        void persistQuizContextExchange({
+          userId: ragUserId,
+          intent,
+          userQuestion: `[${nearbyPin.name}] ${userMsg.content}`,
+          assistantAnswer: reply,
+          stock: { name: nearbyPin.name, ticker: nearbyPin.ticker },
+        });
+        const botMsg: ChatMessage = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: reply,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, botMsg]);
+        return;
+      }
+
       const walkCtx = buildAssistantWalkStepsContext(weeklySteps);
       const ragCtx = await fetchQuizContextForSystemPrompt(ragUserId);
       const { content: reply, intent } = await askGlobalAssistant(historyAfterUser, {

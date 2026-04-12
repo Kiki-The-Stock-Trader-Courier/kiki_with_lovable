@@ -27,6 +27,7 @@ import {
 } from "@/lib/quizContextMemory";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
+import { resolveStockPinFromMapMessage } from "@/lib/globalChatStockResolve";
 
 const QUICK_ACTIONS = [
   "근처 삼성전자 정보 알려줘",
@@ -373,6 +374,33 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
             };
           }),
         );
+      } catch (err) {
+        const detail = err instanceof Error && err.message ? err.message : "";
+        appendAssistantMessage(
+          detail
+            ? `응답에 실패했어요: ${detail}\n배포 환경에 OPENAI_API_KEY 가 있는지 확인해 주세요.`
+            : "일시적으로 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    /** 글로벌 대화창: 지도 반경 종목명·코드가 보이면 종목 시트와 동일하게 검색·시세 보강 API 사용 */
+    const nearbyStockPin = resolveStockPinFromMapMessage(userMsg.content, mapQuizSnapshot?.stocks);
+    if (nearbyStockPin) {
+      setIsLoading(true);
+      try {
+        const { content: reply, intent } = await askStockAssistant(nearbyStockPin, historyAfterUser);
+        void persistQuizContextExchange({
+          userId: ragUserId,
+          intent,
+          userQuestion: `[${nearbyStockPin.name}] ${userMsg.content}`,
+          assistantAnswer: reply,
+          stock: { name: nearbyStockPin.name, ticker: nearbyStockPin.ticker },
+        });
+        appendAssistantMessage(reply);
       } catch (err) {
         const detail = err instanceof Error && err.message ? err.message : "";
         appendAssistantMessage(
