@@ -163,7 +163,7 @@ export default function StockSheetChat({ stock, isScrapped, onToggleScrap }: Sto
         <div>
           <p className="text-sm font-semibold text-foreground">기업 알아보기</p>
           <p className="text-xs text-muted-foreground">
-            이 종목에 대해 질문해 보세요. 답변에 DuckDuckGo 웹 검색 스니펫이 반영될 수 있어요.
+            해당 종목에 대해 질문해 보세요.
           </p>
         </div>
       </div>
