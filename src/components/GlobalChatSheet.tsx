@@ -428,7 +428,13 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
           </div>
           );
         })}
-        {isLoading && <p className="text-xs text-muted-foreground">생각하는 중...</p>}
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-border/50 bg-card px-3 py-2 text-xs text-muted-foreground">
+              생각하는 중...
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="border-t border-border/80 p-3">
