@@ -73,15 +73,15 @@ const WalkPage = () => {
             <button
               type="button"
               onClick={() => navigate("/holdings")}
-              className="absolute left-1/2 top-[115px] z-10 flex size-9 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-gradient-to-b from-primary via-[#593d63] to-[#3d2845] text-[15px] font-bold leading-none text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.38),inset_0_-3px_6px_rgba(0,0,0,0.22),0_4px_10px_rgba(105,10,207,0.3)] ring-1 ring-[#593d63]/25 transition-transform active:scale-95"
+              className="absolute z-10 flex size-9 -translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-gradient-to-b from-primary via-[#593d63] to-[#3d2845] text-[15px] font-bold leading-none text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.38),inset_0_-3px_6px_rgba(0,0,0,0.22),0_4px_10px_rgba(105,10,207,0.3)] ring-1 ring-[#593d63]/25 transition-transform active:scale-95"
               aria-label="보유 종목에서 캐시 확인"
             >
-              <span
-                className="pointer-events-none absolute -right-1 -top-1 z-20 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[#FF3B30] px-1 text-[10px] font-bold leading-none text-white shadow-[0_1px_3px_rgba(0,0,0,0.25)] ring-[1.5px] ring-white"
+              <i
+                className="pointer-events-none absolute -right-0.5 -top-0.5 z-20 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-[#FF3B30] px-0.5 text-[9px] font-bold leading-none text-white not-italic shadow-[0_1px_2px_rgba(0,0,0,0.22)] ring-1 ring-white"
                 aria-hidden
               >
                 72
-              </span>
+              </i>
               <span className="drop-shadow-[0_1px_0_rgba(0,0,0,0.35)]">₩</span>
             </button>
           </div>
