@@ -1,4 +1,4 @@
-import { User, Wallet, Settings, ChevronRight, Shield, Camera } from "lucide-react";
+import { User, Wallet, Settings, ChevronRight, ArrowRight, Shield, Camera } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
@@ -30,19 +30,25 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Summary cards */}
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="tab-stat-tile rounded-xl p-4">
-            <p className="text-xs text-muted-foreground">보유 캐시</p>
+        {/* Summary: 워키 포인트 → 키움 포인트(투자 평가금 가로) */}
+        <div className="mt-6 flex min-w-0 items-stretch justify-between gap-3">
+          <div className="tab-stat-tile min-w-0 flex-1 basis-0 rounded-xl p-4">
+            <p className="text-xs text-muted-foreground">워키 포인트</p>
             <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
               {walk.cashBalance.toLocaleString()}원
             </p>
           </div>
-          <div className="tab-stat-tile rounded-xl p-4">
-            <p className="text-xs text-muted-foreground">투자 평가금</p>
-            <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
-              {totalValue.toLocaleString()}원
-            </p>
+          <div className="flex shrink-0 items-center justify-center self-center px-0.5" aria-hidden>
+            <ArrowRight className="h-5 w-5 text-muted-foreground" strokeWidth={2} />
+          </div>
+          <div className="tab-stat-tile min-w-0 flex-[1.15] basis-0 rounded-xl p-4">
+            <p className="text-xs font-medium text-foreground">키움 포인트</p>
+            <div className="mt-2 flex min-w-0 flex-row items-center justify-between gap-2">
+              <p className="shrink-0 text-xs text-muted-foreground">투자 평가금</p>
+              <p className="min-w-0 truncate text-right font-display text-lg font-bold tabular-nums text-foreground">
+                {totalValue.toLocaleString()}원
+              </p>
+            </div>
           </div>
         </div>
       </div>
