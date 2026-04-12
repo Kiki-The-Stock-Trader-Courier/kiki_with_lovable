@@ -54,7 +54,7 @@ const ProfilePage = () => {
             <div className="tab-stat-tile min-w-0 flex-[1.15] basis-0 rounded-xl p-4">
               <p className="text-xs font-medium text-foreground">키움 포인트</p>
               <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
-                {kiwoomEvalFromWalk.toLocaleString()}원
+                {kiwoomEvalFromWalk.toLocaleString()}
               </p>
             </div>
           </div>
