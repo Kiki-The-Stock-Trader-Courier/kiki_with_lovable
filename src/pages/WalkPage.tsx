@@ -5,6 +5,32 @@ import BottomNav from "@/components/BottomNav";
 import { useUserData } from "@/hooks/useUserData";
 import { useNavigate } from "react-router-dom";
 
+/** 걷기 탭 제목 — 보유 종목 `BriefcaseBusiness`와 동일 stroke/크기/색 */
+function WalkTitleSneakerIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="h-5 w-5 shrink-0 text-primary"
+      aria-hidden
+    >
+      <path d="M3 14h2M2.5 17h2.5" />
+      <path d="M6 12h2" />
+      <path d="M5 17c2.5 1 5.8 1.2 9.5.5l5-1" />
+      <path d="M5 17 4.5 13.5a1.75 1.75 0 0 1 2.1-1.6l6 1.7 3 3.4" />
+      <path d="M8 11.5 9.8 8a2 2 0 0 1 3.4-.4l2.8 2.9" />
+      <path d="M10.5 9h2M12.5 8h2" />
+    </svg>
+  );
+}
+
 const WalkPage = () => {
   const navigate = useNavigate();
   /** 주간 걸음 차트 섹션 앵커 */
@@ -45,7 +71,10 @@ const WalkPage = () => {
     >
       {/* Header */}
       <div className="tab-hero-panel px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl">
-        <h1 className="mb-6 font-display text-xl font-bold tracking-tight text-foreground">오늘의 걷기</h1>
+        <h1 className="mb-6 flex items-center gap-2 font-display text-xl font-bold tracking-tight text-foreground">
+          <WalkTitleSneakerIcon />
+          오늘의 걷기
+        </h1>
 
         {/* Circular progress */}
         <div className="flex flex-col items-center">
