@@ -256,11 +256,11 @@
   color: #690acf;
 }
 
-/* 중앙 챗봇 FAB — 본체 #690ACF 단색, 겉 그라데이션 느낌은 글로우만 */
+/* 중앙 챗봇 FAB — 본체 그라데이션, 겉 빛나는 느낌은 box-shadow 유지 */
 .map-chat-fab {
   transform: translate(-50%, -50%);
   touch-action: manipulation;
-  background-color: #690acf;
+  background-image: linear-gradient(138deg, #9b6df2 0%, #690acf 48%, #593d63 100%);
   color: #fff;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.22),
