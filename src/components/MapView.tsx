@@ -128,7 +128,7 @@ const MapView = ({
         className: "user-location-marker-icon",
         html: `<div class="user-location-marker-pin" role="presentation" aria-hidden="true">
 <svg width="36" height="44" viewBox="0 0 36 44" xmlns="http://www.w3.org/2000/svg">
-  <path d="M18 42s14-14 14-26C32 8 26 2 18 2S4 8 4 16c0 12 14 26 14 26z" fill="#690ACF" stroke="#FFFFFF" stroke-width="2.5"/>
+  <path d="M18 42s14-14 14-26C32 8 26 2 18 2S4 8 4 16c0 12 14 26 14 26z" fill="#DC2626" stroke="#FFFFFF" stroke-width="2.5"/>
   <circle cx="18" cy="16" r="5" fill="#fff"/>
 </svg>
 </div>`,
@@ -200,7 +200,7 @@ const MapView = ({
               radius={8}
               pathOptions={{
                 color: "#ffffff",
-                fillColor: "#690ACF",
+                fillColor: "#DC2626",
                 fillOpacity: 1,
                 weight: 3,
                 interactive: false,
