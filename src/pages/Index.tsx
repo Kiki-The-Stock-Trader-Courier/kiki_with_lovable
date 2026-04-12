@@ -34,6 +34,9 @@ const Index = () => {
   } | null>(null);
   const userRecenterSeqRef = useRef(0);
   const { center, accuracyM, status, refreshLocation } = useUserLocation(DEFAULT_CENTER);
+  /** GPS watch로 갱신되는 최신 중심 — 새로고침 실패 시에도 마지막 좌표로 지도 중앙 맞춤 */
+  const centerRef = useRef(center);
+  centerRef.current = center;
   /** API로 주변 상장사만 채움 — 빈 배열이면 지도에 핀 없음(춘천 목업 좌표가 남지 않도록) */
   const [stocks, setStocks] = useState<StockPin[]>([]);
   const { walk, addSteps, setGoalSteps, holdings, buyStock, isScrapped, toggleScrap } = useUserData();
@@ -332,10 +335,9 @@ const Index = () => {
           onClick={() => {
             void (async () => {
               const pos = await refreshLocation();
-              if (pos) {
-                userRecenterSeqRef.current += 1;
-                setUserRecenterTarget({ ...pos, token: userRecenterSeqRef.current });
-              }
+              const latlng = pos ?? centerRef.current;
+              userRecenterSeqRef.current += 1;
+              setUserRecenterTarget({ lat: latlng.lat, lng: latlng.lng, token: userRecenterSeqRef.current });
             })();
           }}
           className="map-icon-btn flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"

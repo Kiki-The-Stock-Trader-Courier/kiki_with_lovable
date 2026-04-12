@@ -1,6 +1,6 @@
 import { MapContainer, TileLayer, Circle, CircleMarker, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import StockPinMarker from "./StockPin";
 import type { StockPin } from "@/types/stock";
 import { normalizeKrxTickerKey } from "@/lib/quoteApi";
@@ -55,27 +55,41 @@ function InitialUserFit({
 }
 
 /**
- * 버튼으로 전달된 좌표로 지도 **뷰포트 중심**을 이동 (마커가 화면 가운데 오도록).
- * `lastTokenRef` 스킵 제거 — Strict Mode에서 rAF 취소로 이동이 누락되던 문제 방지.
- * `setView`가 `flyTo`보다 중심 맞춤이 확실함.
+ * 「내 위치」 버튼: 전달 좌표를 **지도 뷰 정중앙**에 오도록 `flyTo` (마커·정확도 원과 동일 lat/lng).
+ * `refreshLocation`이 null이어도 부모가 마지막 center를 넘기므로 항상 한 번은 이동합니다.
  */
 function FlyToExplicitTarget({ target }: { target: { lat: number; lng: number; token: number } | null }) {
   const map = useMap();
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!target) return;
 
-    const latlng: L.LatLngExpression = [target.lat, target.lng];
+    const latlng = L.latLng(target.lat, target.lng);
     const zoom = USER_RECENTER_ZOOM;
+    let cancelled = false;
 
     const apply = () => {
-      map.invalidateSize({ animate: false });
-      map.setView(latlng, zoom, { animate: true });
+      if (cancelled) return;
+      map.invalidateSize(false);
+      map.flyTo(latlng, zoom, { duration: 0.4, easeLinearity: 0.25 });
     };
 
-    apply();
-    const t = window.setTimeout(apply, 50);
-    return () => window.clearTimeout(t);
+    const schedule = () => {
+      if (cancelled) return;
+      apply();
+      window.requestAnimationFrame(() => {
+        if (!cancelled) apply();
+      });
+      window.setTimeout(() => {
+        if (!cancelled) apply();
+      }, 120);
+    };
+
+    map.whenReady(schedule);
+
+    return () => {
+      cancelled = true;
+    };
   }, [target?.token, target?.lat, target?.lng, map]);
 
   return null;
