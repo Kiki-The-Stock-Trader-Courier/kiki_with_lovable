@@ -347,7 +347,7 @@ const Index = () => {
 
       {/* Trending section */}
       {showTrending && (
-        <div className="animate-slide-up absolute bottom-[88px] left-[max(1rem,env(safe-area-inset-left))] right-[calc(4.5rem+max(0px,env(safe-area-inset-right)))] z-[1200] max-w-[min(100%,20rem)] sm:max-w-none">
+        <div className="animate-slide-up absolute bottom-[88px] left-[max(1rem,env(safe-area-inset-left))] right-[calc(4.5rem+max(0px,env(safe-area-inset-right)))] z-[1200] max-w-[min(100%,20rem)]">
           <TrendingSection stocks={MOCK_TRENDING} />
         </div>
       )}

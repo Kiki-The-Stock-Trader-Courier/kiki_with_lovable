@@ -162,11 +162,19 @@
 @layer base {
   /* Leaflet: 부모 높이가 0이 되지 않도록 전체 뷰포트 높이 전달 */
   html,
-  body,
-  #root {
+  body {
     height: 100%;
     width: 100%;
     margin: 0;
+  }
+
+  /* 데스크톱에서도 본문 max-w-lg와 동일한 “폰 너비” 열 (양옆은 body 배경) */
+  #root {
+    height: 100%;
+    width: 100%;
+    max-width: 32rem;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   * {
