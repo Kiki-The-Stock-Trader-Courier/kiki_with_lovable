@@ -2,6 +2,9 @@ import type { ChatMessage, StockPin } from "@/types/stock";
 
 export const GLOBAL_CHAT_STORAGE_KEY = "global_chat_sheet_history_v1";
 
+/** 지도 종목 시트 전용 — 플로팅 글로벌 챗(`GLOBAL_CHAT_STORAGE_KEY`)과 분리 */
+export const STOCK_SHEET_CHAT_STORAGE_KEY = "kiki_stock_sheet_chat_v1";
+
 /** localStorage에 저장되는 대화 (timestamp는 직렬화 시 문자열일 수 있음) */
 export interface StoredGlobalConversation {
   id: string;
@@ -124,17 +127,32 @@ export function createConversation(): StoredGlobalConversation {
   };
 }
 
-export function readGlobalChatConversationsFromStorage(): StoredGlobalConversation[] | null {
-  if (typeof window === "undefined") return null;
+function parseConversationList(raw: string | null): StoredGlobalConversation[] | null {
+  if (!raw) return null;
   try {
-    const raw = window.localStorage.getItem(GLOBAL_CHAT_STORAGE_KEY);
-    if (!raw) return null;
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed) || parsed.length === 0) return null;
     return parsed as StoredGlobalConversation[];
   } catch {
     return null;
   }
+}
+
+/** 구버전에서 글로벌 키에 섞였던 종목 시트 대화(id 접두사 `stock-sheet-`) 제거용 */
+export function stripStockSheetConversationsFromGlobal(
+  list: StoredGlobalConversation[],
+): StoredGlobalConversation[] {
+  return list.filter((c) => !String(c.id).startsWith("stock-sheet-"));
+}
+
+export function readGlobalChatConversationsFromStorage(): StoredGlobalConversation[] | null {
+  if (typeof window === "undefined") return null;
+  return parseConversationList(window.localStorage.getItem(GLOBAL_CHAT_STORAGE_KEY));
+}
+
+function readStockSheetConversationsFromStorage(): StoredGlobalConversation[] {
+  if (typeof window === "undefined") return [];
+  return parseConversationList(window.localStorage.getItem(STOCK_SHEET_CHAT_STORAGE_KEY)) ?? [];
 }
 
 const STORAGE_SYNC_EVENT = "kiki-global-chat-storage";
@@ -145,7 +163,8 @@ export function notifyGlobalChatStorageChanged(): void {
 }
 
 /**
- * 지도 종목 시트 채팅 내용을 글로벌 챗 히스토리(localStorage)에 반영합니다.
+ * 지도 종목 시트 채팅만 별도 localStorage에 기록합니다.
+ * 플로팅 글로벌 챗(`GLOBAL_CHAT_STORAGE_KEY`)과 섞이지 않습니다.
  * 사용자 메시지가 있을 때만 기록합니다.
  */
 export function upsertStockSheetConversation(
@@ -162,7 +181,7 @@ export function upsertStockSheetConversation(
   const combined = `${prefix} ${summaryPart}`;
   const title = makeTitleFromInput(combined, 40);
 
-  const list = readGlobalChatConversationsFromStorage() ?? [];
+  const list = readStockSheetConversationsFromStorage();
 
   const serialized = JSON.parse(JSON.stringify(messages)) as ChatMessage[];
 
@@ -176,8 +195,7 @@ export function upsertStockSheetConversation(
   const without = list.filter((c) => c.id !== convId);
   const nextList = [nextConv, ...without];
 
-  window.localStorage.setItem(GLOBAL_CHAT_STORAGE_KEY, JSON.stringify(nextList));
-  notifyGlobalChatStorageChanged();
+  window.localStorage.setItem(STOCK_SHEET_CHAT_STORAGE_KEY, JSON.stringify(nextList));
 }
 
 export function subscribeGlobalChatStorageSync(handler: () => void): () => void {

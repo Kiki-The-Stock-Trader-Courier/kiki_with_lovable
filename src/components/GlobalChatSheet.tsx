@@ -7,6 +7,7 @@ import {
   GLOBAL_CHAT_STORAGE_KEY,
   createConversation,
   readGlobalChatConversationsFromStorage,
+  stripStockSheetConversationsFromGlobal,
   subscribeGlobalChatStorageSync,
   summarizeConversationTitle,
   type StoredGlobalConversation,
@@ -53,6 +54,20 @@ function formatQuizBlock(intro: string | null, q: HybridQuizQuestion, idx: numbe
   return `${head}【문제 ${idx + 1}/${total}】\n${q.prompt}\n\n${lines.join("\n")}\n\n답은 1~4 숫자로 보내 주세요.`;
 }
 
+/** 글로벌 챗 전용 목록 — 종목 시트가 예전에 global 키에 넣었던 항목 제거·정리 */
+function loadSanitizedGlobalConversations(): StoredGlobalConversation[] {
+  const loaded = readGlobalChatConversationsFromStorage();
+  if (!loaded || loaded.length === 0) {
+    return [createConversation()];
+  }
+  const cleaned = stripStockSheetConversationsFromGlobal(loaded);
+  const next = cleaned.length > 0 ? cleaned : [createConversation()];
+  if (next.length !== loaded.length || cleaned.length === 0) {
+    window.localStorage.setItem(GLOBAL_CHAT_STORAGE_KEY, JSON.stringify(next));
+  }
+  return next;
+}
+
 export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   const [conversations, setConversations] = useState<StoredGlobalConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string>("");
@@ -96,21 +111,20 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   const syncConversationsFromStorage = useCallback(() => {
     const list = readGlobalChatConversationsFromStorage();
     if (!list || list.length === 0) return;
-    setConversations(list);
-    setActiveConversationId((id) => (list.some((c) => c.id === id) ? id : list[0].id));
+    const cleaned = stripStockSheetConversationsFromGlobal(list);
+    const next = cleaned.length > 0 ? cleaned : [createConversation()];
+    if (next.length !== list.length || cleaned.length === 0) {
+      window.localStorage.setItem(GLOBAL_CHAT_STORAGE_KEY, JSON.stringify(next));
+    }
+    setConversations(next);
+    setActiveConversationId((id) => (next.some((c) => c.id === id) ? id : next[0].id));
   }, []);
 
   useEffect(() => {
     try {
-      const loaded = readGlobalChatConversationsFromStorage();
-      if (!loaded) {
-        const initial = createConversation();
-        setConversations([initial]);
-        setActiveConversationId(initial.id);
-        return;
-      }
-      setConversations(loaded);
-      setActiveConversationId(loaded[0].id);
+      const next = loadSanitizedGlobalConversations();
+      setConversations(next);
+      setActiveConversationId(next[0].id);
     } catch {
       const initial = createConversation();
       setConversations([initial]);
