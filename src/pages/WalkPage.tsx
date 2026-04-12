@@ -126,7 +126,7 @@ const WalkPage = () => {
                   <div className="text-[10px] font-medium text-muted-foreground">{item.steps.toLocaleString()}</div>
                   <div className="flex h-28 w-full items-end rounded-md bg-muted/40 px-1">
                     <div
-                      className="w-full rounded-sm bg-primary/85 transition-all"
+                      className="w-full rounded-sm bg-[#690ACF] transition-all"
                       style={{ height: `${heightPercent}%` }}
                       aria-label={`${item.day} ${item.steps.toLocaleString()}보`}
                     />

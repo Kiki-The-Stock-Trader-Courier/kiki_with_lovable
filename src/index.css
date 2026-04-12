@@ -89,60 +89,55 @@
   }
 
   .tab-hero-panel {
-    background: linear-gradient(
-      185deg,
-      hsl(0 0% 100%) 0%,
-      hsl(288 38% 97%) 48%,
-      hsl(288 33% 94%) 100%
-    );
+    background: #fff;
     border-bottom: 1px solid hsl(278 18% 78% / 0.55);
     box-shadow: 0 18px 44px hsl(267 45% 28% / 0.08);
   }
 
   .tab-stat-tile {
-    background: linear-gradient(145deg, hsl(288 40% 98.5%) 0%, hsl(288 28% 95%) 100%);
+    background: #fff;
     border: 1px solid hsl(278 16% 80% / 0.85);
     box-shadow: 0 4px 16px hsl(267 40% 30% / 0.06);
   }
 
   .tab-card-surface {
-    background: linear-gradient(180deg, hsl(0 0% 100% / 0.98) 0%, hsl(288 30% 97% / 0.99) 100%);
+    background: #fff;
     border: 1px solid hsl(278 14% 82% / 0.9);
     box-shadow: 0 4px 16px hsl(267 35% 28% / 0.07);
   }
 
   .tab-settings-row {
-    background: linear-gradient(180deg, hsl(0 0% 100% / 0.96) 0%, hsl(288 28% 96% / 0.98) 100%);
+    background: #fff;
     border: 1px solid hsl(278 14% 82% / 0.85);
     box-shadow: 0 2px 12px hsl(267 30% 30% / 0.05);
   }
 
   .tab-settings-row:hover {
-    background: linear-gradient(180deg, hsl(288 42% 97.5%) 0%, hsl(288 30% 94.5%) 100%);
+    background: hsl(0 0% 98%);
   }
 
   .tab-settings-row:active {
-    background: linear-gradient(180deg, hsl(288 22% 94%) 0%, hsl(278 18% 92%) 100%);
+    background: hsl(0 0% 96%);
   }
 
   .tab-subtle-row {
-    background: hsl(288 26% 94% / 0.95);
+    background: #fff;
     border: 1px solid hsl(278 12% 84% / 0.8);
   }
 
   .tab-icon-tile {
-    background: linear-gradient(145deg, hsl(267 55% 96%) 0%, hsl(288 35% 95%) 100%);
+    background: #fff;
     box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.7);
     border: 1px solid hsl(267 40% 82% / 0.55);
   }
 
-  /* 본문 primary 버튼 — 메인 #690ACF 중심 그라데이션 */
+  /* 본문 primary 버튼 — #690ACF 단색 */
   .btn-primary-surface {
     @apply text-white;
-    background-image: linear-gradient(124deg, #8f52e8 0%, #690acf 42%, #593d63 100%);
-    border: 1px solid rgb(255 255 255 / 0.28);
+    background-color: #690acf;
+    border: 1px solid rgb(255 255 255 / 0.22);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.32),
+      inset 0 1px 0 rgb(255 255 255 / 0.22),
       0 6px 20px hsl(267 91% 28% / 0.28);
     transition:
       filter 0.2s ease,
@@ -150,16 +145,16 @@
   }
 
   .btn-primary-surface:hover {
-    filter: brightness(1.06) saturate(1.02);
+    filter: brightness(1.05);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      inset 0 1px 0 rgb(255 255 255 / 0.3),
       0 9px 26px hsl(267 91% 24% / 0.32);
   }
 
   .btn-primary-surface:active {
     filter: brightness(0.96);
     box-shadow:
-      inset 0 2px 4px rgb(0 0 0 / 0.15),
+      inset 0 2px 4px rgb(0 0 0 / 0.12),
       0 4px 14px hsl(267 70% 22% / 0.22);
   }
 }
@@ -261,15 +256,17 @@
   color: #690acf;
 }
 
-/* 중앙 챗봇 FAB — 중앙 정렬은 항상 translate + scale을 한 줄에 묶어야 호버/press 시 위치가 밀리지 않음 */
+/* 중앙 챗봇 FAB — 본체 #690ACF 단색, 겉 그라데이션 느낌은 글로우만 */
 .map-chat-fab {
   transform: translate(-50%, -50%);
   touch-action: manipulation;
-  background: linear-gradient(132deg, #b894ff 0%, #690acf 48%, #593d63 100%);
+  background-color: #690acf;
   color: #fff;
   box-shadow:
-    0 12px 32px hsl(267 91% 34% / 0.42),
-    0 0 0 5px hsl(267 70% 72% / 0.35);
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 12px 32px hsl(267 91% 38% / 0.42),
+    0 0 0 5px hsl(267 75% 72% / 0.38),
+    0 0 28px hsl(288 70% 68% / 0.35);
   transition:
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.2s ease,
@@ -277,10 +274,12 @@
 }
 
 .map-chat-fab:hover {
-  filter: brightness(1.06) saturate(1.04);
+  filter: brightness(1.05);
   box-shadow:
-    0 16px 40px hsl(267 91% 30% / 0.48),
-    0 0 0 7px hsl(288 55% 78% / 0.32);
+    inset 0 1px 0 rgb(255 255 255 / 0.28),
+    0 16px 40px hsl(267 91% 34% / 0.48),
+    0 0 0 7px hsl(288 62% 76% / 0.36),
+    0 0 36px hsl(275 75% 62% / 0.4);
   transform: translate(-50%, -50%) scale(1.06);
 }
 
