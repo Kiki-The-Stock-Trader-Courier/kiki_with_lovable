@@ -1,12 +1,13 @@
-import { User, Wallet, Settings, ChevronRight, ArrowRight, Shield, Camera } from "lucide-react";
+import { User, Wallet, Settings, ChevronRight, ChevronsRight, Shield, Camera } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
 
 const ProfilePage = () => {
   const { signOut } = useAuth();
-  const { walk, nickname, holdings } = useUserData();
-  const totalValue = holdings.reduce((sum, h) => sum + h.currentPrice * h.shares, 0);
+  const { walk, nickname } = useUserData();
+  /** 키움 포인트 투자 평가금 표시: 워키 포인트(보유 캐시)의 70% */
+  const kiwoomEvalFromWalk = Math.round(walk.cashBalance * 0.7);
 
   return (
     <div className="app-page-shell mx-auto min-h-[100dvh] w-full max-w-lg pb-24" data-testid="profile-screen">
@@ -30,24 +31,32 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Summary: 워키 포인트 → 키움 포인트(투자 평가금 가로) */}
-        <div className="mt-6 flex min-w-0 items-stretch justify-between gap-3">
-          <div className="tab-stat-tile min-w-0 flex-1 basis-0 rounded-xl p-4">
-            <p className="text-xs text-muted-foreground">워키 포인트</p>
-            <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
-              {walk.cashBalance.toLocaleString()}원
-            </p>
+        {/* Summary: 상단 키움(투자 평가금 = 워키 70%) · 하단 워키 ⟫ 키움 카드 */}
+        <div className="mt-6 flex min-w-0 flex-col gap-3">
+          <div className="tab-stat-tile w-full min-w-0 rounded-xl p-4">
+            <div className="flex min-w-0 flex-row items-center justify-between gap-3">
+              <p className="shrink-0 text-xs font-medium text-foreground">키움 포인트</p>
+              <div className="flex min-w-0 flex-1 flex-row items-center justify-end gap-2 sm:gap-3">
+                <p className="shrink-0 text-xs text-muted-foreground">투자 평가금</p>
+                <p className="min-w-0 truncate text-right font-display text-lg font-bold tabular-nums text-foreground">
+                  {kiwoomEvalFromWalk.toLocaleString()}원
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex shrink-0 items-center justify-center self-center px-0.5" aria-hidden>
-            <ArrowRight className="h-5 w-5 text-muted-foreground" strokeWidth={2} />
-          </div>
-          <div className="tab-stat-tile min-w-0 flex-[1.15] basis-0 rounded-xl p-4">
-            <p className="text-xs font-medium text-foreground">키움 포인트</p>
-            <div className="mt-2 flex min-w-0 flex-row items-center justify-between gap-2">
-              <p className="shrink-0 text-xs text-muted-foreground">투자 평가금</p>
-              <p className="min-w-0 truncate text-right font-display text-lg font-bold tabular-nums text-foreground">
-                {totalValue.toLocaleString()}원
+          <div className="flex min-w-0 items-stretch justify-between gap-3">
+            <div className="tab-stat-tile min-w-0 flex-1 basis-0 rounded-xl p-4">
+              <p className="text-xs text-muted-foreground">워키 포인트</p>
+              <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
+                {walk.cashBalance.toLocaleString()}원
               </p>
+            </div>
+            <div className="flex shrink-0 items-center justify-center self-center px-0.5" aria-hidden>
+              <ChevronsRight className="h-5 w-5 text-muted-foreground" strokeWidth={2} />
+            </div>
+            <div className="tab-stat-tile min-w-0 flex-[1.15] basis-0 rounded-xl p-4">
+              <p className="text-xs font-medium text-foreground">키움 포인트</p>
+              <div className="mt-1 h-7 min-h-[1.75rem]" aria-hidden />
             </div>
           </div>
         </div>
