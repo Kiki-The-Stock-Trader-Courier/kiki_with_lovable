@@ -358,6 +358,14 @@ const Index = () => {
         onClose={() => setSelectedStock(null)}
         cashBalance={walk.cashBalance}
         mapRadiusPurchaseAllowed={mapRadiusPurchaseAllowed}
+        isOwned={
+          selectedStock
+            ? (() => {
+                const t = normalizeKrxTickerKey(selectedStock.ticker);
+                return t != null && ownedTickerSet.has(t);
+              })()
+            : false
+        }
         isScrapped={selectedStock ? isScrapped(selectedStock.ticker) : false}
         onToggleScrap={() => {
           if (!selectedStock) return;

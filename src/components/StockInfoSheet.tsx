@@ -20,6 +20,8 @@ interface StockInfoSheetProps {
    * false면 회색(원 밖) 핀과 동일하게 매수 버튼 비활성.
    */
   mapRadiusPurchaseAllowed?: boolean;
+  /** 보유 종목인 경우 티커 아래에 안내 표시 */
+  isOwned?: boolean;
 }
 
 /** 매수 입력란 기본값: 1주 미만이면 전액(소수 주), 이상이면 1주 */
@@ -42,6 +44,7 @@ const StockInfoSheet = ({
   onToggleScrap,
   onBuyStock,
   mapRadiusPurchaseAllowed = true,
+  isOwned = false,
 }: StockInfoSheetProps) => {
   const [sheetQuote, setSheetQuote] = useState<{ price: number; changePercent: number } | null>(null);
   const [quoteError, setQuoteError] = useState(false);
@@ -147,6 +150,7 @@ const StockInfoSheet = ({
             <div className="min-w-0">
               <h2 className="truncate text-lg font-bold text-foreground">{stock.name}</h2>
               <p className="text-sm text-muted-foreground">{stock.ticker}</p>
+              {isOwned ? <p className="mt-0.5 text-xs text-muted-foreground">보유중</p> : null}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">

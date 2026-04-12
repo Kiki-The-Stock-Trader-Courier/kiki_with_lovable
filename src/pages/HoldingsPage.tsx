@@ -63,15 +63,12 @@ const HoldingsPage = () => {
               {scraps.map((s) => (
                 <div
                   key={s.ticker}
-                  className="tab-subtle-row flex items-center justify-between rounded-lg px-3 py-2"
+                  className="tab-subtle-row flex items-center rounded-lg px-3 py-2"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">{s.name}</p>
                     <p className="text-xs text-muted-foreground">{s.ticker} · {s.sector}</p>
                   </div>
-                  <p className="shrink-0 text-[10px] text-muted-foreground">
-                    {new Date(s.savedAt).toLocaleDateString("ko-KR")}
-                  </p>
                 </div>
               ))}
             </div>
