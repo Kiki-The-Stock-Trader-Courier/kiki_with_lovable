@@ -84,8 +84,8 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
   return sectorIconInner(stock.sector, color);
 }
 
-/** 지도 핀 본체·포인터 — 통일 #690ACF */
-const PIN_COLOR = "#690ACF";
+/** 지도 핀 본체·포인터 — 통일 #CCB9E0 */
+const PIN_COLOR = "#CCB9E0";
 
 const createPinIcon = (stock: StockPinType, _isOwned: boolean, _isOutOfRadius: boolean) => {
   const color = PIN_COLOR;
