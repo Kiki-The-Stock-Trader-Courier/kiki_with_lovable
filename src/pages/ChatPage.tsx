@@ -166,7 +166,7 @@ const ChatPage = () => {
 
   return (
     <div className="app-page-shell mx-auto flex h-[100dvh] max-w-lg flex-col" data-testid="chat-screen">
-      <header className="sticky top-0 z-10 border-b border-border/80 bg-card/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] backdrop-blur-md supports-[backdrop-filter]:bg-card/75">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] backdrop-blur-md supports-[backdrop-filter]:bg-background/75">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
             <Bot className="h-5 w-5 text-primary" aria-hidden />
@@ -210,7 +210,7 @@ const ChatPage = () => {
         </div>
       </div>
 
-      <div className="border-t border-border/80 bg-card/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-card/85">
+      <div className="border-t border-border/80 bg-background/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
         <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-0.5 pl-0.5">
           {QUICK_ACTIONS.map((action) => (
             <button

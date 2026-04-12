@@ -77,7 +77,7 @@ const BottomNav = () => {
         <>
           <button
             type="button"
-            className="animate-fade-in fixed inset-0 z-[1450] bg-violet-950/25"
+            className="animate-fade-in fixed inset-0 z-[1450] bg-[#593d63]/22"
             onClick={() => setShowChatSheet(false)}
             aria-label="챗봇 닫기 배경"
           />

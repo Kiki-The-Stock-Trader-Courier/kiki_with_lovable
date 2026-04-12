@@ -365,7 +365,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   };
 
   return (
-    <div className="animate-slide-up relative flex h-full flex-col rounded-t-3xl bg-card shadow-2xl">
+    <div className="animate-slide-up relative flex h-full flex-col rounded-t-3xl bg-background shadow-2xl">
       <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted-foreground/30" />
       <header className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
         <div className="flex items-center gap-2">
@@ -414,7 +414,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
               className={`max-w-[85%] rounded-2xl px-3 py-2 text-xs ${
                 msg.role === "user"
                   ? "whitespace-pre-wrap rounded-br-md bg-primary text-primary-foreground"
-                  : `rounded-bl-md border border-border/50 bg-background text-foreground ${
+                  : `rounded-bl-md border border-border/50 bg-card text-card-foreground ${
                       shouldAnimateWelcome ? "animate-fade-in" : ""
                     }`
               }`}
@@ -470,7 +470,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
         <>
           <button
             type="button"
-            className="absolute inset-0 z-30 bg-black/15"
+            className="absolute inset-0 z-30 bg-[#593d63]/12"
             onClick={() => setShowHistory(false)}
             aria-label="대화 기록 닫기"
           />

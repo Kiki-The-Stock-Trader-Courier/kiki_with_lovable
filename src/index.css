@@ -4,50 +4,49 @@
 
 @layer base {
   :root {
-    /* 라벤더·마젠타·코랄 메시 그라데이션 톤 (밝은 베이스, Moonie 류의 암톤 지양) */
-    --background: 275 48% 98%;
-    --foreground: 265 30% 22%;
+    /* 메인 #690ACF · 서브 #593D63 · 배경 #EEE2F2 */
+    --background: 288 33% 92%;
+    --foreground: 278 24% 31%;
 
     --card: 0 0% 100%;
-    --card-foreground: 265 26% 28%;
+    --card-foreground: 278 24% 31%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 265 26% 28%;
+    --popover-foreground: 278 24% 31%;
 
-    /* 종목 시트·채팅 패널 — 카드와 동일 톤, Tailwind bg-chat-sheet 와 연결 */
-    --chat-sheet: 0 0% 100%;
+    /* 챗봇 시트·탭 배경과 동일 계열 */
+    --chat-sheet: 288 33% 92%;
 
-    /* 탭 활성·링·말풍선 등 — 촌스러운 형광 대신 차분한 오키드 (본문 primary 버튼은 .btn-primary-surface) */
-    --primary: 278 36% 46%;
+    --primary: 267 91% 43%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 265 35% 95%;
-    --secondary-foreground: 265 28% 32%;
+    --secondary: 288 28% 89%;
+    --secondary-foreground: 278 22% 34%;
 
-    --muted: 265 24% 94%;
-    --muted-foreground: 265 12% 40%;
+    --muted: 288 22% 88%;
+    --muted-foreground: 278 16% 42%;
 
-    --accent: 12 90% 96%;
-    --accent-foreground: 330 48% 36%;
+    --accent: 288 32% 90%;
+    --accent-foreground: 278 24% 31%;
 
     --destructive: 350 72% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 265 22% 88%;
-    --input: 265 22% 88%;
-    --ring: 285 42% 50%;
+    --border: 288 18% 82%;
+    --input: 288 18% 84%;
+    --ring: 267 75% 48%;
 
     --radius: 16px;
 
-    /* 지도·핀 등 */
-    --color-pin: 241 49% 68%;
-    --color-pin-active: 318 52% 48%;
-    --color-map-bg: 270 32% 96%;
+    /* 지도·핀 — 메인/서브 톤 */
+    --color-pin: 267 55% 72%;
+    --color-pin-active: 267 91% 38%;
+    --color-map-bg: 288 28% 90%;
     --color-map-road: 0 0% 100%;
-    --color-map-water: 255 38% 94%;
+    --color-map-water: 288 26% 93%;
     --color-success: 152 38% 40%;
     --color-warning: 28 92% 54%;
-    --color-cash: 265 18% 42%;
+    --color-cash: 278 20% 36%;
 
     /* Spacing (4pt grid) */
     --space-1: 4px;
@@ -67,110 +66,101 @@
     --font-mono: 'JetBrains Mono', monospace;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px hsl(270 40% 40% / 0.07);
-    --shadow-md: 0 4px 14px hsl(300 35% 45% / 0.1);
-    --shadow-lg: 0 10px 28px hsl(310 40% 45% / 0.12);
-    --shadow-sheet: 0 -6px 28px hsl(300 32% 48% / 0.14);
+    --shadow-sm: 0 1px 2px hsl(267 45% 30% / 0.08);
+    --shadow-md: 0 4px 14px hsl(267 50% 35% / 0.1);
+    --shadow-lg: 0 10px 28px hsl(278 35% 28% / 0.12);
+    --shadow-sheet: 0 -6px 28px hsl(267 55% 22% / 0.14);
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 265 26% 28%;
-    --sidebar-primary: 278 36% 46%;
+    --sidebar-background: 288 33% 92%;
+    --sidebar-foreground: 278 24% 31%;
+    --sidebar-primary: 267 91% 43%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 265 32% 95%;
-    --sidebar-accent-foreground: 265 26% 32%;
-    --sidebar-border: 265 22% 88%;
-    --sidebar-ring: 285 42% 50%;
+    --sidebar-accent: 288 25% 89%;
+    --sidebar-accent-foreground: 278 22% 34%;
+    --sidebar-border: 288 18% 82%;
+    --sidebar-ring: 267 75% 48%;
   }
 }
 
 @layer components {
-  /**
-   * 탭 페이지 배경 — 컬러차트(라벤더 #a371bf · 마젠타 #db4c94 · 코랄 #f2866c) 느낌의 밝은 메시
-   */
+  /* 탭·챗 배경 베이스 #EEE2F2 */
   .app-page-shell {
-    background:
-      radial-gradient(120% 85% at 100% 0%, hsl(320 52% 95.5% / 0.42) 0%, transparent 52%),
-      radial-gradient(95% 75% at 0% 100%, hsl(16 90% 94% / 0.38) 0%, transparent 48%),
-      linear-gradient(168deg, hsl(265 50% 98.6%) 0%, hsl(308 38% 98.2%) 48%, hsl(22 82% 98.5%) 100%);
+    background: #eee2f2;
   }
 
-  /* 상단 히어로(걷기·프로필·보유) — 카드형 그라데이션 + 소프트 섀도 */
   .tab-hero-panel {
     background: linear-gradient(
       185deg,
       hsl(0 0% 100%) 0%,
-      hsl(295 45% 99.1%) 42%,
-      hsl(28 72% 98.6%) 100%
+      hsl(288 38% 97%) 48%,
+      hsl(288 33% 94%) 100%
     );
-    border-bottom: 1px solid hsl(285 24% 89% / 0.85);
-    box-shadow: 0 20px 50px hsl(300 26% 52% / 0.09);
+    border-bottom: 1px solid hsl(278 18% 78% / 0.55);
+    box-shadow: 0 18px 44px hsl(267 45% 28% / 0.08);
   }
 
   .tab-stat-tile {
-    background: linear-gradient(145deg, hsl(275 48% 99.2%) 0%, hsl(328 38% 98.4%) 100%);
-    border: 1px solid hsl(285 28% 88% / 0.95);
-    box-shadow: 0 4px 18px hsl(300 24% 50% / 0.07);
+    background: linear-gradient(145deg, hsl(288 40% 98.5%) 0%, hsl(288 28% 95%) 100%);
+    border: 1px solid hsl(278 16% 80% / 0.85);
+    box-shadow: 0 4px 16px hsl(267 40% 30% / 0.06);
   }
 
   .tab-card-surface {
-    background: linear-gradient(180deg, hsl(0 0% 100% / 0.97) 0%, hsl(288 32% 99% / 0.99) 100%);
-    border: 1px solid hsl(285 24% 88% / 0.92);
-    box-shadow: 0 4px 18px hsl(300 22% 48% / 0.08);
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.98) 0%, hsl(288 30% 97% / 0.99) 100%);
+    border: 1px solid hsl(278 14% 82% / 0.9);
+    box-shadow: 0 4px 16px hsl(267 35% 28% / 0.07);
   }
 
   .tab-settings-row {
-    background: linear-gradient(180deg, hsl(0 0% 100% / 0.94) 0%, hsl(282 36% 99% / 0.97) 100%);
-    border: 1px solid hsl(285 22% 88% / 0.88);
-    box-shadow: 0 2px 14px hsl(300 20% 50% / 0.06);
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.96) 0%, hsl(288 28% 96% / 0.98) 100%);
+    border: 1px solid hsl(278 14% 82% / 0.85);
+    box-shadow: 0 2px 12px hsl(267 30% 30% / 0.05);
   }
 
   .tab-settings-row:hover {
-    background: linear-gradient(180deg, hsl(312 42% 98.6%) 0%, hsl(22 78% 98.4%) 100%);
+    background: linear-gradient(180deg, hsl(288 42% 97.5%) 0%, hsl(288 30% 94.5%) 100%);
   }
 
   .tab-settings-row:active {
-    background: linear-gradient(180deg, hsl(275 30% 97%) 0%, hsl(305 32% 97.5%) 100%);
+    background: linear-gradient(180deg, hsl(288 22% 94%) 0%, hsl(278 18% 92%) 100%);
   }
 
   .tab-subtle-row {
-    background: hsl(275 32% 97% / 0.92);
-    border: 1px solid hsl(285 20% 90% / 0.75);
+    background: hsl(288 26% 94% / 0.95);
+    border: 1px solid hsl(278 12% 84% / 0.8);
   }
 
   .tab-icon-tile {
-    background: linear-gradient(145deg, hsl(310 45% 96.5%) 0%, hsl(265 40% 97.5%) 55%, hsl(20 85% 97%) 100%);
-    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.65);
-    border: 1px solid hsl(285 26% 88% / 0.7);
+    background: linear-gradient(145deg, hsl(267 55% 96%) 0%, hsl(288 35% 95%) 100%);
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.7);
+    border: 1px solid hsl(267 40% 82% / 0.55);
   }
 
-  /**
-   * 본문용 primary 버튼 — FAB(#8e8cd8→#d65db1→#ff8c7a)과 같은 계열, 살짝 다듬은 그라데이션·인셋 하이라이트
-   * 원형 챗 FAB(.map-chat-fab)는 별도 유지
-   */
+  /* 본문 primary 버튼 — 메인 #690ACF 중심 그라데이션 */
   .btn-primary-surface {
     @apply text-white;
-    background-image: linear-gradient(124deg, #9492df 0%, #c56fae 42%, #f59e88 100%);
-    border: 1px solid rgb(255 255 255 / 0.32);
+    background-image: linear-gradient(124deg, #8f52e8 0%, #690acf 42%, #593d63 100%);
+    border: 1px solid rgb(255 255 255 / 0.28);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.35),
-      0 6px 18px hsl(300 42% 45% / 0.22);
+      inset 0 1px 0 rgb(255 255 255 / 0.32),
+      0 6px 20px hsl(267 91% 28% / 0.28);
     transition:
       filter 0.2s ease,
       box-shadow 0.2s ease;
   }
 
   .btn-primary-surface:hover {
-    filter: brightness(1.05) saturate(1.04);
+    filter: brightness(1.06) saturate(1.02);
     box-shadow:
-      inset 0 1px 0 rgb(255 255 255 / 0.42),
-      0 9px 24px hsl(312 45% 42% / 0.28);
+      inset 0 1px 0 rgb(255 255 255 / 0.4),
+      0 9px 26px hsl(267 91% 24% / 0.32);
   }
 
   .btn-primary-surface:active {
-    filter: brightness(0.97);
+    filter: brightness(0.96);
     box-shadow:
-      inset 0 2px 4px rgb(0 0 0 / 0.12),
-      0 4px 14px hsl(300 40% 45% / 0.18);
+      inset 0 2px 4px rgb(0 0 0 / 0.15),
+      0 4px 14px hsl(267 70% 22% / 0.22);
   }
 }
 
@@ -213,10 +203,7 @@
 }
 
 .map-screen-shell {
-  background:
-    radial-gradient(120% 85% at 100% 0%, hsl(320 52% 95.5% / 0.38) 0%, transparent 52%),
-    radial-gradient(95% 75% at 0% 100%, hsl(16 90% 94% / 0.34) 0%, transparent 48%),
-    linear-gradient(168deg, hsl(265 50% 98.4%) 0%, hsl(308 38% 97.8%) 48%, hsl(22 82% 98.2%) 100%);
+  background: #eee2f2;
 }
 
 .map-canvas {
@@ -265,13 +252,13 @@
 
 .map-icon-btn {
   background: hsl(0 0% 100%);
-  color: hsl(265 26% 32%);
-  box-shadow: 0 2px 10px hsl(300 35% 50% / 0.14);
+  color: #593d63;
+  box-shadow: 0 2px 10px hsl(267 50% 30% / 0.12);
 }
 
 .map-icon-btn:hover {
-  background: hsl(265 40% 97%);
-  color: hsl(318 45% 42%);
+  background: hsl(288 35% 97%);
+  color: #690acf;
 }
 
 /* 중앙 챗봇 FAB — 중앙 정렬은 항상 translate + scale을 한 줄에 묶어야 호버/press 시 위치가 밀리지 않음 */
@@ -280,11 +267,11 @@
   top: 0;
   transform: translate(-50%, -50%);
   touch-action: manipulation;
-  background: linear-gradient(128deg, #8e8cd8 0%, #d65db1 48%, #ff8c7a 100%);
+  background: linear-gradient(132deg, #b894ff 0%, #690acf 48%, #593d63 100%);
   color: #fff;
   box-shadow:
-    0 12px 32px hsl(318 65% 52% / 0.38),
-    0 0 0 5px hsl(250 55% 72% / 0.28);
+    0 12px 32px hsl(267 91% 34% / 0.42),
+    0 0 0 5px hsl(267 70% 72% / 0.35);
   transition:
     transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.2s ease,
@@ -292,10 +279,10 @@
 }
 
 .map-chat-fab:hover {
-  filter: brightness(1.06) saturate(1.05);
+  filter: brightness(1.06) saturate(1.04);
   box-shadow:
-    0 16px 40px hsl(330 70% 52% / 0.42),
-    0 0 0 7px hsl(12 95% 72% / 0.22);
+    0 16px 40px hsl(267 91% 30% / 0.48),
+    0 0 0 7px hsl(288 55% 78% / 0.32);
   transform: translate(-50%, -50%) scale(1.06);
 }
 
