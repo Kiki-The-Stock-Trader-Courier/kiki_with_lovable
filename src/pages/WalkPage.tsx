@@ -48,9 +48,11 @@ const WalkPage = () => {
         <h1 className="mb-6 flex items-center gap-2 font-display text-xl font-bold tracking-tight text-foreground">
           <svg
             xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
             viewBox="0 0 24 24"
             fill="none"
-            className="h-5 w-5 shrink-0 text-primary"
+            className="lucide h-5 w-5 shrink-0 text-primary"
             aria-hidden
           >
             <rect
