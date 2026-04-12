@@ -221,7 +221,7 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
             </div>
             <div className="min-w-0">
               <h2 className="font-display text-base font-bold tracking-tight text-foreground">키키</h2>
-              <p className="text-xs text-muted-foreground">목표 걸음 설정</p>
+              <p className="text-xs text-muted-foreground">목표 걸음 수 설정</p>
             </div>
           </div>
           <Button
