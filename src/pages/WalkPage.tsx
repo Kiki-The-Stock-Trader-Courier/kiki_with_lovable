@@ -171,7 +171,7 @@ const WalkPage = () => {
         <Button
           className="mt-6 w-full h-12 rounded-xl font-bold"
           aria-label="걸음 수 목표 변경"
-          onClick={() => navigate("/chat")}
+          onClick={() => navigate("/chat?from=walk-goal")}
         >
           <Target className="mr-2 h-5 w-5" />
           걸음 목표 변경하기

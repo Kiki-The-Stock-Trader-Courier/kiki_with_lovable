@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot } from "lucide-react";
+import { Send, Bot, X } from "lucide-react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
 import type { ChatMessage } from "@/types/stock";
@@ -22,12 +23,25 @@ const INITIAL_MESSAGE: ChatMessage = {
   timestamp: new Date(),
 };
 
+/** 걷기 탭 「걸음 목표 변경하기」 전용 인사 (그 외 채팅은 INITIAL_MESSAGE 유지) */
+const INITIAL_MESSAGE_WALK_GOAL: ChatMessage = {
+  id: "welcome-walk-goal",
+  role: "assistant",
+  content:
+    "안녕하세요! 워키 포인트의 페이스 메이커, 키키입니다! 내 페이스에 맞게 목표 걸음 수를 변경해 보세요. 제가 도와드릴게요!",
+  timestamp: new Date(),
+};
+
 const RECENT_3DAY_STEPS = [4880, 5720, 3247];
 
 /** 채팅 진입 시 최초 인사는 1초 후 표시 (즉시 노출 방지) */
 const GREETING_DELAY_MS = 1000;
 
 const ChatPage = () => {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const isWalkGoalSheet = searchParams.get("from") === "walk-goal";
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -35,12 +49,17 @@ const ChatPage = () => {
   const { walk, setGoalSteps } = useUserData();
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const closeWalkGoalSheet = () => {
+    navigate("/walk", { replace: true });
+  };
+
   useEffect(() => {
+    const welcome = isWalkGoalSheet ? INITIAL_MESSAGE_WALK_GOAL : INITIAL_MESSAGE;
     const id = window.setTimeout(() => {
-      setMessages((prev) => (prev.length === 0 ? [INITIAL_MESSAGE] : prev));
+      setMessages((prev) => (prev.length === 0 ? [welcome] : prev));
     }, GREETING_DELAY_MS);
     return () => window.clearTimeout(id);
-  }, []);
+  }, [isWalkGoalSheet]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -164,17 +183,39 @@ const ChatPage = () => {
     void sendMessage(input);
   };
 
-  return (
-    <div className="app-page-shell mx-auto flex h-[100dvh] max-w-lg flex-col" data-testid="chat-screen">
-      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] backdrop-blur-md supports-[backdrop-filter]:bg-background/75">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
-            <Bot className="h-5 w-5 text-primary" aria-hidden />
+  const headerClass = isWalkGoalSheet
+    ? "shrink-0 border-b border-border/80 bg-background/95 px-4 pb-3 pt-2"
+    : "sticky top-0 z-10 border-b border-border/80 bg-background/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] backdrop-blur-md supports-[backdrop-filter]:bg-background/75";
+
+  const formBottomPad = isWalkGoalSheet
+    ? "pb-[calc(env(safe-area-inset-bottom,0px)+12px)]"
+    : "pb-[calc(env(safe-area-inset-bottom,0px)+72px)]";
+
+  const chatBody = (
+    <>
+      <header className={headerClass}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
+              <Bot className="h-5 w-5 text-primary" aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <h1 className="font-display text-base font-bold tracking-tight text-foreground">키키</h1>
+              <p className="text-xs text-muted-foreground">종목 정보 · 퀴즈 · 걸음 설정</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h1 className="font-display text-base font-bold tracking-tight text-foreground">키키</h1>
-            <p className="text-xs text-muted-foreground">종목 정보 · 퀴즈 · 걸음 설정</p>
-          </div>
+          {isWalkGoalSheet && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:bg-muted/60"
+              onClick={closeWalkGoalSheet}
+              aria-label="닫기"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          )}
         </div>
       </header>
 
@@ -210,7 +251,7 @@ const ChatPage = () => {
         </div>
       </div>
 
-      <div className="border-t border-border/80 bg-background/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
+      <div className="shrink-0 border-t border-border/80 bg-background/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
         <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-0.5 pl-0.5">
           {QUICK_ACTIONS.map((action) => (
             <button
@@ -224,10 +265,7 @@ const ChatPage = () => {
           ))}
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="flex items-center gap-2 pb-[calc(env(safe-area-inset-bottom,0px)+72px)]"
-        >
+        <form onSubmit={handleSubmit} className={`flex items-center gap-2 ${formBottomPad}`}>
           <input
             id="chat-page-message"
             name="chatMessage"
@@ -248,7 +286,31 @@ const ChatPage = () => {
           </Button>
         </form>
       </div>
+    </>
+  );
 
+  if (isWalkGoalSheet) {
+    return (
+      <div className="fixed inset-0 z-[1980]" data-testid="chat-screen">
+        <button
+          type="button"
+          className="animate-fade-in absolute inset-0 z-0 bg-[#593d63]/22"
+          onClick={closeWalkGoalSheet}
+          aria-label="닫기"
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 left-1/2 z-[10] h-[50dvh] w-full max-w-lg -translate-x-1/2">
+          <div className="pointer-events-auto flex h-full min-h-0 animate-slide-up flex-col rounded-t-3xl bg-background shadow-2xl">
+            <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" aria-hidden />
+            {chatBody}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app-page-shell mx-auto flex h-[100dvh] max-w-lg flex-col" data-testid="chat-screen">
+      {chatBody}
       <BottomNav />
     </div>
   );
