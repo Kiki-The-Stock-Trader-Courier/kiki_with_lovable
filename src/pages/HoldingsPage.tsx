@@ -1,9 +1,76 @@
+import { useEffect, useMemo, useState } from "react";
 import { BriefcaseBusiness, Bookmark } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useUserData } from "@/hooks/useUserData";
+import { MOCK_STOCKS } from "@/data/mockStocks";
+import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
+import type { ScrappedStock } from "@/types/stock";
 
 const HoldingsPage = () => {
   const { holdings, scraps } = useUserData();
+  const [scrapQuotes, setScrapQuotes] = useState<Record<string, number>>({});
+
+  const mockPriceByTicker = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const pin of MOCK_STOCKS) {
+      const k = normalizeKrxTickerKey(pin.ticker);
+      if (k) m.set(k, pin.price);
+    }
+    return m;
+  }, []);
+
+  const scrapTickerKey = useMemo(
+    () =>
+      scraps
+        .map((s) => normalizeKrxTickerKey(s.ticker))
+        .filter((t): t is string => t != null)
+        .sort()
+        .join(","),
+    [scraps],
+  );
+
+  useEffect(() => {
+    const keys = scrapTickerKey.split(",").filter(Boolean);
+    if (keys.length === 0) {
+      setScrapQuotes({});
+      return;
+    }
+
+    let canceled = false;
+    const load = async () => {
+      try {
+        const qs = await fetchYahooQuotes(keys);
+        if (canceled) return;
+        const next: Record<string, number> = {};
+        for (const q of qs) {
+          const k = normalizeKrxTickerKey(q.ticker);
+          if (k) next[k] = Math.round(q.price);
+        }
+        setScrapQuotes(next);
+      } catch {
+        if (!canceled) setScrapQuotes({});
+      }
+    };
+
+    void load();
+    const timer = setInterval(load, 12_000);
+    return () => {
+      canceled = true;
+      clearInterval(timer);
+    };
+  }, [scrapTickerKey]);
+
+  const resolveScrapPrice = (s: ScrappedStock): number | null => {
+    const k = normalizeKrxTickerKey(s.ticker);
+    if (!k) return null;
+    const live = scrapQuotes[k];
+    if (live != null && live > 0) return live;
+    if (typeof s.price === "number" && s.price > 0) return s.price;
+    const h = holdings.find((x) => normalizeKrxTickerKey(x.ticker) === k);
+    if (h && h.currentPrice > 0) return h.currentPrice;
+    const mock = mockPriceByTicker.get(k);
+    return mock != null && mock > 0 ? mock : null;
+  };
   return (
     <div className="app-page-shell mx-auto min-h-[100dvh] w-full max-w-lg pb-24" data-testid="holdings-screen">
       <div className="tab-hero-panel px-5 pb-5 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl">
@@ -60,20 +127,23 @@ const HoldingsPage = () => {
             </p>
           ) : (
             <div className="space-y-2">
-              {scraps.map((s) => (
-                <div
-                  key={s.ticker}
-                  className="tab-subtle-row flex items-center justify-between gap-3 rounded-lg px-3 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">{s.name}</p>
-                    <p className="text-xs text-muted-foreground">{s.ticker} · {s.sector}</p>
+              {scraps.map((s) => {
+                const displayPrice = resolveScrapPrice(s);
+                return (
+                  <div
+                    key={s.ticker}
+                    className="tab-subtle-row flex items-center justify-between gap-3 rounded-lg px-3 py-2"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-foreground">{s.name}</p>
+                      <p className="text-xs text-muted-foreground">{s.ticker} · {s.sector}</p>
+                    </div>
+                    <p className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                      {displayPrice != null ? `${displayPrice.toLocaleString("ko-KR")}원` : "—"}
+                    </p>
                   </div>
-                  <p className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
-                    {typeof s.price === "number" ? `${s.price.toLocaleString("ko-KR")}원` : "—"}
-                  </p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
