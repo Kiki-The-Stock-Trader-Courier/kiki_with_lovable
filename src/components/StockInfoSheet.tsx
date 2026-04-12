@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import StockSheetChat from "@/components/StockSheetChat";
 import type { StockPin } from "@/types/stock";
 import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
+import { SECTOR_QUEST_REWARD_WON, SECTOR_QUEST_TARGET } from "@/lib/sectorQuest";
 
 interface StockInfoSheetProps {
   stock: StockPin | null;
@@ -22,6 +23,8 @@ interface StockInfoSheetProps {
   mapRadiusPurchaseAllowed?: boolean;
   /** 보유 종목인 경우 티커 아래에 안내 표시 */
   isOwned?: boolean;
+  /** 지도 원 안 업종 수집 퀘스트 진행도 */
+  sectorQuest?: { count: number; target: number; rewardClaimed: boolean } | null;
 }
 
 /** 매수 입력란 기본값: 1주 미만이면 전액(소수 주), 이상이면 1주 */
@@ -45,6 +48,7 @@ const StockInfoSheet = ({
   onBuyStock,
   mapRadiusPurchaseAllowed = true,
   isOwned = false,
+  sectorQuest = null,
 }: StockInfoSheetProps) => {
   const [sheetQuote, setSheetQuote] = useState<{ price: number; changePercent: number } | null>(null);
   const [quoteError, setQuoteError] = useState(false);
@@ -310,6 +314,21 @@ const StockInfoSheet = ({
               </span>
             )}
           </div>
+          {sectorQuest ? (
+            <div className="rounded-xl border border-primary/25 bg-primary/5 px-3 py-2.5 text-xs leading-relaxed text-foreground">
+              <p className="font-semibold text-primary">업종 수집 퀘스트</p>
+              <p className="mt-1 text-muted-foreground">
+                지도 강조 원 안에서 이 업종의 서로 다른 종목{" "}
+                <strong className="text-foreground">
+                  {sectorQuest.count}/{sectorQuest.target}
+                </strong>
+                개를 발견했어요.
+                {sectorQuest.rewardClaimed
+                  ? ` · 달성 보상(${SECTOR_QUEST_REWARD_WON.toLocaleString("ko-KR")}원) 수령 완료`
+                  : ` · ${SECTOR_QUEST_TARGET}개 모으면 캐시 ${SECTOR_QUEST_REWARD_WON.toLocaleString("ko-KR")}원`}
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <StockSheetChat

@@ -40,7 +40,17 @@ const Index = () => {
   centerRef.current = center;
   /** API로 주변 상장사만 채움 — 빈 배열이면 지도에 핀 없음(춘천 목업 좌표가 남지 않도록) */
   const [stocks, setStocks] = useState<StockPin[]>([]);
-  const { walk, addSteps, setGoalSteps, holdings, buyStock, isScrapped, toggleScrap } = useUserData();
+  const {
+    walk,
+    addSteps,
+    setGoalSteps,
+    holdings,
+    buyStock,
+    isScrapped,
+    toggleScrap,
+    registerDiscoveredPinsInCircle,
+    getSectorQuest,
+  } = useUserData();
   const { setSnapshot: setMapQuizSnapshot } = useMapQuizSnapshot();
   const stocksRef = useRef<StockPin[]>([]);
   const prevCenterRef = useRef<{ lat: number; lng: number } | null>(null);
@@ -86,6 +96,14 @@ const Index = () => {
   useEffect(() => {
     setMapQuizSnapshot(buildMapQuizSnapshot(center.lat, center.lng, DEFAULT_RADIUS_M, stocks));
   }, [center.lat, center.lng, stocks, setMapQuizSnapshot]);
+
+  /** 원 안에 들어온 종목을 업종별로 수집(티커 중복 없음) — 업종당 5종목 시 캐시 보상 */
+  useEffect(() => {
+    const inside = stocks.filter(
+      (s) => distanceMeters(center.lat, center.lng, s.lat, s.lng) <= DEFAULT_RADIUS_M,
+    );
+    registerDiscoveredPinsInCircle(inside);
+  }, [center.lat, center.lng, stocks, registerDiscoveredPinsInCircle]);
 
   /** 종목 목록이 바뀔 때만 재조회 (시세 갱신으로 stocks가 바뀌어 무한 루프 나지 않음) */
   /** 지도 강조 원( DEFAULT_RADIUS_M ) 안에서만 캐시 매수 — MapView 회색 핀과 동일 기준 */
@@ -384,6 +402,7 @@ const Index = () => {
           });
         }}
         onBuyStock={buyStock}
+        sectorQuest={selectedStock ? getSectorQuest(selectedStock.sector) : null}
       />
 
       {/* Bottom nav */}

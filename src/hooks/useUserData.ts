@@ -16,9 +16,18 @@ import {
   WON_PER_POINT,
   claimablePointsFromSteps,
 } from "@/lib/walkPoints";
+import {
+  applySectorDiscovery,
+  emptySectorQuestState,
+  getSectorQuestProgress,
+  loadSectorQuestFromStorage,
+  saveSectorQuestToStorage,
+  type SectorQuestState,
+} from "@/lib/sectorQuest";
 import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/contexts/AuthContext";
-import type { HoldingStock, ScrappedStock, UserWalk } from "@/types/stock";
+import type { HoldingStock, ScrappedStock, UserWalk, StockPin } from "@/types/stock";
+import { toast } from "sonner";
 
 interface WeeklyStepPoint {
   day: string;
@@ -45,6 +54,9 @@ interface UseUserDataResult {
   }>;
   toggleScrap: (stock: { ticker: string; name: string; sector?: string | null; price?: number }) => void;
   isScrapped: (ticker: string) => boolean;
+  /** 지도 원 안에 있는 핀 목록(중복 티커 가능) — 업종별 수집 퀘스트 반영 */
+  registerDiscoveredPinsInCircle: (pins: StockPin[]) => void;
+  getSectorQuest: (sector: string | null | undefined) => ReturnType<typeof getSectorQuestProgress>;
   isReady: boolean;
 }
 
@@ -185,6 +197,12 @@ function useUserDataState(): UseUserDataResult {
   const [weeklySteps, setWeeklySteps] = useState<WeeklyStepPoint[]>(defaultWeekly);
   const [holdings, setHoldings] = useState<HoldingStock[]>([]);
   const [scraps, setScraps] = useState<ScrappedStock[]>([]);
+  const [sectorQuestState, setSectorQuestState] = useState<SectorQuestState>(() =>
+    typeof window !== "undefined" ? loadSectorQuestFromStorage(undefined) : emptySectorQuestState(),
+  );
+  const sectorQuestRef = useRef<SectorQuestState>(
+    typeof window !== "undefined" ? loadSectorQuestFromStorage(undefined) : emptySectorQuestState(),
+  );
   const [isReady, setIsReady] = useState(false);
   const queueRef = useRef(Promise.resolve());
   const lastDateRef = useRef(dateKey());
@@ -330,6 +348,18 @@ function useUserDataState(): UseUserDataResult {
       // 저장 실패 시 UX는 유지 (권한/용량 이슈)
     }
   }, [scraps, session?.user?.id]);
+
+  /** 업종 수집 퀘스트: 사용자 전환 시 로드 */
+  useEffect(() => {
+    const s = loadSectorQuestFromStorage(session?.user?.id);
+    sectorQuestRef.current = s;
+    setSectorQuestState(s);
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    sectorQuestRef.current = sectorQuestState;
+    saveSectorQuestToStorage(session?.user?.id, sectorQuestState);
+  }, [sectorQuestState, session?.user?.id]);
 
   useEffect(() => {
     if (!isAuthenticated || !supabase || !session?.user?.id) return;
@@ -508,6 +538,61 @@ function useUserDataState(): UseUserDataResult {
     [enqueue, session?.user?.id],
   );
 
+  /** 업종 퀘스트 등 — 퀴즈와 달리 금액 상한 없음 */
+  const addQuestRewardCash = useCallback(
+    (won: number) => {
+      const add = Math.max(0, Math.round(Number(won) || 0));
+      if (add <= 0) return;
+
+      setWalk((prev) => ({
+        ...prev,
+        cashBalance: Math.round((prev.cashBalance + add) * 10) / 10,
+      }));
+
+      if (!supabase || !session?.user?.id) return;
+      const userId = session.user.id;
+      enqueue(async () => {
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("cash_balance")
+          .eq("user_id", userId)
+          .single<{ cash_balance: number | null }>();
+        const currentCash = Number(profile?.cash_balance ?? 0);
+        await supabase.from("user_profiles").update({ cash_balance: currentCash + add }).eq("user_id", userId);
+      });
+    },
+    [enqueue, session?.user?.id],
+  );
+
+  const registerDiscoveredPinsInCircle = useCallback(
+    (pins: StockPin[]) => {
+      if (!pins.length) return;
+      const prev = sectorQuestRef.current;
+      let next = prev;
+      let totalReward = 0;
+      for (const s of pins) {
+        const r = applySectorDiscovery(next, s.ticker, s.sector);
+        next = r.next;
+        totalReward += r.rewardWon;
+      }
+      if (next === prev && totalReward === 0) return;
+      sectorQuestRef.current = next;
+      setSectorQuestState(next);
+      if (totalReward > 0) {
+        addQuestRewardCash(totalReward);
+        toast.success("업종 수집 퀘스트 달성!", {
+          description: `${totalReward.toLocaleString("ko-KR")}원이 캐시로 지급되었어요.`,
+        });
+      }
+    },
+    [addQuestRewardCash],
+  );
+
+  const getSectorQuest = useCallback(
+    (sector: string | null | undefined) => getSectorQuestProgress(sectorQuestState, sector),
+    [sectorQuestState],
+  );
+
   const buyStock = useCallback(
     async (order: { ticker: string; name: string; price: number; shares: number }) => {
       const ticker = normalizeTicker(order.ticker);
@@ -629,6 +714,8 @@ function useUserDataState(): UseUserDataResult {
       buyStock,
       toggleScrap,
       isScrapped,
+      registerDiscoveredPinsInCircle,
+      getSectorQuest,
       isReady,
     }),
     [
@@ -645,6 +732,8 @@ function useUserDataState(): UseUserDataResult {
       buyStock,
       toggleScrap,
       isScrapped,
+      registerDiscoveredPinsInCircle,
+      getSectorQuest,
       isReady,
     ],
   );
