@@ -60,6 +60,21 @@ const HoldingsPage = () => {
     };
   }, [scrapTickerKey]);
 
+  /** 전 종목 합산: 카드별 원금(평균×수량)·평가손익·평가액(원금+평가손익) */
+  const portfolioSummary = useMemo(() => {
+    let totalPrincipal = 0;
+    let totalPnl = 0;
+    for (const h of holdings) {
+      totalPrincipal += h.avgPrice * h.shares;
+      totalPnl += (h.currentPrice - h.avgPrice) * h.shares;
+    }
+    return {
+      totalPrincipal,
+      totalPnl,
+      totalMarket: totalPrincipal + totalPnl,
+    };
+  }, [holdings]);
+
   const resolveScrapPrice = (s: ScrappedStock): number | null => {
     const k = normalizeKrxTickerKey(s.ticker);
     if (!k) return null;
@@ -88,6 +103,28 @@ const HoldingsPage = () => {
           </div>
         ) : (
           <div className="space-y-3">
+            <div className="w-full rounded-xl border border-border/80 bg-muted/50 p-4 shadow-sm dark:bg-muted/35">
+              <p className="text-center font-display text-lg font-bold tabular-nums text-foreground">
+                {portfolioSummary.totalMarket.toLocaleString("ko-KR")}원
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border/50 pt-3">
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground">원금</p>
+                  <p className="mt-0.5 truncate text-sm font-semibold tabular-nums text-foreground">
+                    {portfolioSummary.totalPrincipal.toLocaleString("ko-KR")}원
+                  </p>
+                </div>
+                <div className="min-w-0 text-right">
+                  <p className="text-xs text-muted-foreground">평가손익</p>
+                  <p
+                    className={`mt-0.5 truncate text-sm font-semibold tabular-nums ${portfolioSummary.totalPnl >= 0 ? "text-destructive" : "text-accent"}`}
+                  >
+                    {portfolioSummary.totalPnl >= 0 ? "+" : ""}
+                    {portfolioSummary.totalPnl.toLocaleString("ko-KR")}원
+                  </p>
+                </div>
+              </div>
+            </div>
             {holdings.map((h) => {
               const pnl = (h.currentPrice - h.avgPrice) * h.shares;
               const pnlPercent = ((h.currentPrice - h.avgPrice) / h.avgPrice) * 100;
