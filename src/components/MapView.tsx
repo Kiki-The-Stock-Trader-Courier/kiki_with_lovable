@@ -1,6 +1,6 @@
 import { MapContainer, TileLayer, Circle, CircleMarker, Marker, useMap } from "react-leaflet";
 import L from "leaflet";
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import StockPinMarker from "./StockPin";
 import type { StockPin } from "@/types/stock";
 import { normalizeKrxTickerKey } from "@/lib/quoteApi";
@@ -55,13 +55,14 @@ function InitialUserFit({
 }
 
 /**
- * 「내 위치」 버튼: 전달 좌표를 **지도 뷰 정중앙**에 오도록 `flyTo` (마커·정확도 원과 동일 lat/lng).
- * `refreshLocation`이 null이어도 부모가 마지막 center를 넘기므로 항상 한 번은 이동합니다.
+ * 「내 위치」 버튼: 패닝 후에도 반드시 해당 좌표가 화면 중앙에 오도록 뷰를 옮깁니다.
+ * - 진행 중 pan/fly 애니메이션을 `stop()`으로 끊은 뒤 `setView` (flyTo는 동일 목적지로 스킵되는 경우가 있음).
+ * - 타일/레이아웃 직후 한 프레임·짧은 지연으로 한 번 더 적용.
  */
 function FlyToExplicitTarget({ target }: { target: { lat: number; lng: number; token: number } | null }) {
   const map = useMap();
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (!target) return;
 
     const latlng = L.latLng(target.lat, target.lng);
@@ -70,27 +71,34 @@ function FlyToExplicitTarget({ target }: { target: { lat: number; lng: number; t
 
     const apply = () => {
       if (cancelled) return;
+      try {
+        map.stop();
+      } catch {
+        /* Leaflet 내부 상태에 따라 stop 실패 무시 */
+      }
       map.invalidateSize(false);
-      map.flyTo(latlng, zoom, { duration: 0.4, easeLinearity: 0.25 });
+      map.setView(latlng, zoom, { animate: true });
     };
 
-    const schedule = () => {
-      if (cancelled) return;
-      apply();
-      window.requestAnimationFrame(() => {
-        if (!cancelled) apply();
-      });
-      window.setTimeout(() => {
-        if (!cancelled) apply();
-      }, 120);
-    };
-
-    map.whenReady(schedule);
+    apply();
+    const raf = requestAnimationFrame(() => {
+      if (!cancelled) apply();
+    });
+    const t1 = window.setTimeout(() => {
+      if (!cancelled) apply();
+    }, 80);
+    const t2 = window.setTimeout(() => {
+      if (!cancelled) apply();
+    }, 350);
 
     return () => {
       cancelled = true;
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
     };
-  }, [target?.token, target?.lat, target?.lng, map]);
+    // token이 바뀔 때마다 객체 참조가 바뀌므로 클릭마다 실행됨
+  }, [target, map]);
 
   return null;
 }

@@ -32,8 +32,9 @@ const Index = () => {
     lng: number;
     token: number;
   } | null>(null);
-  const userRecenterSeqRef = useRef(0);
   const { center, accuracyM, status, refreshLocation } = useUserLocation(DEFAULT_CENTER);
+  /** 내 위치 버튼마다 증가 — effect 의존성으로 재중심 보장(동일 ms 중복 방지) */
+  const recenterTokenSeqRef = useRef(0);
   /** GPS watch로 갱신되는 최신 중심 — 새로고침 실패 시에도 마지막 좌표로 지도 중앙 맞춤 */
   const centerRef = useRef(center);
   centerRef.current = center;
@@ -336,8 +337,12 @@ const Index = () => {
             void (async () => {
               const pos = await refreshLocation();
               const latlng = pos ?? centerRef.current;
-              userRecenterSeqRef.current += 1;
-              setUserRecenterTarget({ lat: latlng.lat, lng: latlng.lng, token: userRecenterSeqRef.current });
+              recenterTokenSeqRef.current += 1;
+              setUserRecenterTarget({
+                lat: latlng.lat,
+                lng: latlng.lng,
+                token: recenterTokenSeqRef.current,
+              });
             })();
           }}
           className="map-icon-btn flex h-12 w-12 items-center justify-center rounded-full transition-transform active:scale-95"
