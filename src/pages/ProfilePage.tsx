@@ -34,21 +34,18 @@ const ProfilePage = () => {
         {/* Summary: 상단 키움(투자 평가금 = 워키 70%) · 하단 워키 ⟫ 키움 카드 */}
         <div className="mt-6 flex min-w-0 flex-col gap-3">
           <div className="tab-stat-tile w-full min-w-0 rounded-xl p-4">
-            <div className="flex min-w-0 flex-row items-center justify-between gap-3">
-              <p className="shrink-0 text-xs font-medium text-foreground">키움 포인트</p>
-              <div className="flex min-w-0 flex-1 flex-row items-center justify-end gap-2 sm:gap-3">
-                <p className="shrink-0 text-xs text-muted-foreground">투자 평가금</p>
-                <p className="min-w-0 truncate text-right font-display text-lg font-bold tabular-nums text-foreground">
-                  {kiwoomEvalFromWalk.toLocaleString()}원
-                </p>
-              </div>
+            <div className="flex min-w-0 flex-row flex-wrap items-center justify-start gap-2 sm:gap-3">
+              <p className="shrink-0 text-xs text-muted-foreground">투자 평가금</p>
+              <p className="min-w-0 font-display text-lg font-bold tabular-nums text-foreground">
+                {kiwoomEvalFromWalk.toLocaleString()}원
+              </p>
             </div>
           </div>
           <div className="flex min-w-0 items-stretch justify-between gap-3">
             <div className="tab-stat-tile min-w-0 flex-1 basis-0 rounded-xl p-4">
               <p className="text-xs text-muted-foreground">워키 포인트</p>
               <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
-                {walk.cashBalance.toLocaleString()}원
+                {walk.cashBalance.toLocaleString()}
               </p>
             </div>
             <div className="flex shrink-0 items-center justify-center self-center px-0.5" aria-hidden>
@@ -56,7 +53,9 @@ const ProfilePage = () => {
             </div>
             <div className="tab-stat-tile min-w-0 flex-[1.15] basis-0 rounded-xl p-4">
               <p className="text-xs font-medium text-foreground">키움 포인트</p>
-              <div className="mt-1 h-7 min-h-[1.75rem]" aria-hidden />
+              <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
+                {kiwoomEvalFromWalk.toLocaleString()}원
+              </p>
             </div>
           </div>
         </div>
