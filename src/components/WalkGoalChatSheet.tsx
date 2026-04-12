@@ -1,9 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/types/stock";
 import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
 import { askGlobalAssistant } from "@/lib/openaiChat";
+import {
+  averageLastNDaysStepsRounded,
+  buildAssistantWalkStepsContext,
+  formatLastNDaysWalkLines,
+} from "@/lib/walkWeeklyStats";
 import { useUserData } from "@/hooks/useUserData";
 
 const QUICK_ACTIONS = [
@@ -20,8 +25,6 @@ const INITIAL_MESSAGE_WALK_GOAL: ChatMessage = {
   timestamp: new Date(),
 };
 
-const RECENT_3DAY_STEPS = [4880, 5720, 3247];
-
 const GREETING_DELAY_MS = 1000;
 
 interface WalkGoalChatSheetProps {
@@ -33,7 +36,9 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
-  const { walk, setGoalSteps } = useUserData();
+  const { walk, setGoalSteps, weeklySteps } = useUserData();
+  /** 걷기 화면 주간 그래프와 동일 데이터 — 최근 3일 평균 */
+  const avg3Recent = useMemo(() => averageLastNDaysStepsRounded(weeklySteps, 3), [weeklySteps]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -62,8 +67,6 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
     setInput("");
 
     const trimmed = text.trim();
-    const avg3 =
-      Math.round(RECENT_3DAY_STEPS.reduce((sum, v) => sum + v, 0) / RECENT_3DAY_STEPS.length / 10) * 10;
 
     if (trimmed === "현재 목표 걸음 수는?") {
       const botMsg: ChatMessage = {
@@ -89,11 +92,11 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
     }
 
     if (trimmed === "최근 3일치 걸음 수 평균 내줘.") {
-      const list = RECENT_3DAY_STEPS.map((s) => `${s.toLocaleString("ko-KR")}보`).join(", ");
+      const lines = formatLastNDaysWalkLines(weeklySteps, 3);
       const botMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `최근 3일 걸음은 ${list}이에요.\n\n평균은 **${avg3.toLocaleString("ko-KR")}보**예요.`,
+        content: `최근 3일 걸음은 아래와 같아요.\n\n${lines}\n\n평균은 **${avg3Recent.toLocaleString("ko-KR")}보**예요.`,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMsg]);
@@ -109,9 +112,9 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
       let goalReply: string;
 
       if (lower === "1" || /평균|최근 3일|자동/.test(lower)) {
-        setGoalSteps(avg3);
+        setGoalSteps(avg3Recent);
         setAwaitingGoalChoice(false);
-        goalReply = `최근 3일 걸음 평균(${avg3.toLocaleString()}보)으로 목표를 변경했어요.\n\n현재 목표: ${avg3.toLocaleString()}보`;
+        goalReply = `최근 3일 걸음 평균(${avg3Recent.toLocaleString()}보)으로 목표를 변경했어요.\n\n현재 목표: ${avg3Recent.toLocaleString()}보`;
       } else if (lower === "2") {
         goalReply = "좋아요. 원하는 목표 걸음 수를 숫자로 입력해 주세요.\n예: 7000";
       } else if (Number.isFinite(requested) && requested >= 1000 && requested <= 50000) {
@@ -124,7 +127,7 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
           "입력을 이해하지 못했어요.",
           "",
           "다시 선택해 주세요:",
-          `1) 평균으로 변경 (${avg3.toLocaleString()}보)`,
+          `1) 평균으로 변경 (${avg3Recent.toLocaleString()}보)`,
           `2) 직접 입력 (예: 7000보)`,
         ].join("\n");
       }
@@ -143,9 +146,9 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
     if (asksGoal) {
       let goalReply: string;
       if (/평균|최근 3일|자동/.test(lower)) {
-        setGoalSteps(avg3);
+        setGoalSteps(avg3Recent);
         setAwaitingGoalChoice(false);
-        goalReply = `최근 3일 걸음 평균(${avg3.toLocaleString()}보)으로 목표를 변경했어요.\n\n현재 목표: ${avg3.toLocaleString()}보`;
+        goalReply = `최근 3일 걸음 평균(${avg3Recent.toLocaleString()}보)으로 목표를 변경했어요.\n\n현재 목표: ${avg3Recent.toLocaleString()}보`;
       } else if (Number.isFinite(requested) && requested >= 1000 && requested <= 50000) {
         const nextGoal = Math.round(requested);
         setGoalSteps(nextGoal);
@@ -155,7 +158,7 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
         setAwaitingGoalChoice(true);
         goalReply = [
           `현재 목표: ${walk.goalSteps.toLocaleString()}보`,
-          `최근 3일 평균: ${avg3.toLocaleString()}보`,
+          `최근 3일 평균: ${avg3Recent.toLocaleString()}보`,
           "",
           "원하는 방식으로 답장해 주세요:",
           `1) "평균으로 바꿔줘" (최근 3일 평균 적용)`,
@@ -176,7 +179,9 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
     setIsLoading(true);
 
     try {
-      const reply = await askGlobalAssistant(historyAfterUser);
+      const reply = await askGlobalAssistant(historyAfterUser, {
+        extraSystemContext: buildAssistantWalkStepsContext(weeklySteps),
+      });
       const botMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: "assistant",

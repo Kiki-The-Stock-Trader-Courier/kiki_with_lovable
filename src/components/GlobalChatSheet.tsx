@@ -16,6 +16,7 @@ import {
   summarizeStockSheetConversationTitle,
   type StoredGlobalConversation,
 } from "@/lib/globalChatSheetHistory";
+import { averageLastNDaysStepsRounded, buildAssistantWalkStepsContext } from "@/lib/walkWeeklyStats";
 import { useUserData } from "@/hooks/useUserData";
 import { useMapQuizSnapshot } from "@/contexts/MapQuizContext";
 import { requestHybridQuiz, type HybridQuizQuestion } from "@/lib/quizHybridApi";
@@ -29,8 +30,6 @@ const QUICK_ACTIONS = [
 
 const WELCOME_TEXT =
   "안녕하세요! 워키 포인트의 든든한 정보통, 키키입니다! 제가 주가 예측부터 기업 정보까지 싹~ 다 알려드릴 테니까, 여러분은 즐겁게 걷기만 하세요! 참, 주식 퀴즈도 준비되어 있는데... 혹시 요즘 뉴스 안 보고 오신 건 아니겠죠?";
-
-const RECENT_3DAY_STEPS = [4880, 5720, 3247];
 
 interface GlobalChatSheetProps {
   onClose: () => void;
@@ -65,7 +64,8 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
   const [animatedWelcomeId, setAnimatedWelcomeId] = useState<string | null>(null);
-  const { walk, setGoalSteps, addQuizCash } = useUserData();
+  const { walk, setGoalSteps, addQuizCash, weeklySteps } = useUserData();
+  const avg3Recent = useMemo(() => averageLastNDaysStepsRounded(weeklySteps, 3), [weeklySteps]);
   const { snapshot: mapQuizSnapshot } = useMapQuizSnapshot();
   const [quizSession, setQuizSession] = useState<{ intro: string; questions: HybridQuizQuestion[] } | null>(
     null,
@@ -208,8 +208,6 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     );
     setInput("");
 
-    const avg3 =
-      Math.round(RECENT_3DAY_STEPS.reduce((sum, v) => sum + v, 0) / RECENT_3DAY_STEPS.length / 10) * 10;
     const normalized = text.replace(/,/g, "").trim();
     const lower = normalized.toLowerCase();
     const numberMatch = normalized.match(/(\d{3,6})/);
@@ -218,9 +216,9 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     if (awaitingGoalChoice) {
       let goalReply: string;
       if (lower === "1" || /평균|최근 3일|자동/.test(lower)) {
-        setGoalSteps(avg3);
+        setGoalSteps(avg3Recent);
         setAwaitingGoalChoice(false);
-        goalReply = `최근 3일 걸음 평균(${avg3.toLocaleString()}보)으로 목표를 변경했어요.\n현재 목표: ${avg3.toLocaleString()}보`;
+        goalReply = `최근 3일 걸음 평균(${avg3Recent.toLocaleString()}보)으로 목표를 변경했어요.\n현재 목표: ${avg3Recent.toLocaleString()}보`;
       } else if (lower === "2") {
         goalReply = "좋아요. 원하는 목표 걸음 수를 숫자로 입력해 주세요.\n예: 7000";
       } else if (Number.isFinite(requested) && requested >= 1000 && requested <= 50000) {
@@ -229,7 +227,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
         setAwaitingGoalChoice(false);
         goalReply = `요청하신 대로 걸음 목표를 ${nextGoal.toLocaleString()}보로 변경했어요.`;
       } else {
-        goalReply = `입력을 이해하지 못했어요.\n\n다시 선택해 주세요:\n1) 평균으로 변경 (${avg3.toLocaleString()}보)\n2) 직접 입력 (예: 7000보)`;
+        goalReply = `입력을 이해하지 못했어요.\n\n다시 선택해 주세요:\n1) 평균으로 변경 (${avg3Recent.toLocaleString()}보)\n2) 직접 입력 (예: 7000보)`;
       }
       appendAssistantMessage(goalReply);
       return;
@@ -315,9 +313,9 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     if (asksGoal) {
       let goalReply: string;
       if (/평균|최근 3일|자동/.test(lower)) {
-        setGoalSteps(avg3);
+        setGoalSteps(avg3Recent);
         setAwaitingGoalChoice(false);
-        goalReply = `최근 3일 걸음 평균(${avg3.toLocaleString()}보)으로 목표를 변경했어요.\n현재 목표: ${avg3.toLocaleString()}보`;
+        goalReply = `최근 3일 걸음 평균(${avg3Recent.toLocaleString()}보)으로 목표를 변경했어요.\n현재 목표: ${avg3Recent.toLocaleString()}보`;
       } else if (Number.isFinite(requested) && requested >= 1000 && requested <= 50000) {
         const nextGoal = Math.round(requested);
         setGoalSteps(nextGoal);
@@ -325,7 +323,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
         goalReply = `요청하신 대로 걸음 목표를 ${nextGoal.toLocaleString()}보로 변경했어요.`;
       } else {
         setAwaitingGoalChoice(true);
-        goalReply = `현재 목표: ${walk.goalSteps.toLocaleString()}보\n최근 3일 평균: ${avg3.toLocaleString()}보\n\n원하는 방식으로 답장해 주세요:\n1) 평균으로 바꿔줘\n2) 7000보로 변경`;
+        goalReply = `현재 목표: ${walk.goalSteps.toLocaleString()}보\n최근 3일 평균: ${avg3Recent.toLocaleString()}보\n\n원하는 방식으로 답장해 주세요:\n1) 평균으로 바꿔줘\n2) 7000보로 변경`;
       }
       appendAssistantMessage(goalReply);
       return;
@@ -371,7 +369,9 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
 
     setIsLoading(true);
     try {
-      const reply = await askGlobalAssistant(historyAfterUser);
+      const reply = await askGlobalAssistant(historyAfterUser, {
+        extraSystemContext: buildAssistantWalkStepsContext(weeklySteps),
+      });
       appendAssistantMessage(reply);
     } catch (err) {
       const detail = err instanceof Error && err.message ? err.message : "";

@@ -78,14 +78,23 @@ export async function askStockAssistant(stock: StockPin, history: ChatMessage[])
   });
 }
 
-export async function askGlobalAssistant(history: ChatMessage[]): Promise<string> {
+export async function askGlobalAssistant(
+  history: ChatMessage[],
+  options?: { extraSystemContext?: string },
+): Promise<string> {
+  const parts = [
+    "당신은 '워키포인트' 앱의 도우미입니다.",
+    "걸음·캐시·근처 상장사·지도 핀 등을 친절히 설명합니다.",
+    "투자 권유는 하지 말고 정보 제공 중심으로 답하세요.",
+    "걸음 수·평균을 설명할 때는 사용자 메시지와 아래 [컨텍스트]에 주어진 숫자만 사용하고, 가상의 예시 계산을 만들지 마세요.",
+  ];
+  if (options?.extraSystemContext?.trim()) {
+    parts.push("", "[컨텍스트]", options.extraSystemContext.trim());
+  }
+
   const system: OpenAIChatMessage = {
     role: "system",
-    content: [
-      "당신은 '워키포인트' 앱의 도우미입니다.",
-      "걸음·캐시·근처 상장사·지도 핀 등을 친절히 설명합니다.",
-      "투자 권유는 하지 말고 정보 제공 중심으로 답하세요.",
-    ].join("\n"),
+    content: parts.join("\n"),
   };
 
   return postChatCompletion([
