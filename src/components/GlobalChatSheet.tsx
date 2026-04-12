@@ -2,14 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PanelLeft, Plus, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/types/stock";
-import { askGlobalAssistant } from "@/lib/openaiChat";
+import { askGlobalAssistant, askStockAssistant } from "@/lib/openaiChat";
 import {
   GLOBAL_CHAT_STORAGE_KEY,
+  STOCK_SHEET_CHAT_STORAGE_KEY,
   createConversation,
-  readGlobalChatConversationsFromStorage,
-  stripStockSheetConversationsFromGlobal,
+  loadMergedFabConversations,
+  parseStockWelcomeFromMessages,
+  readStockSheetConversationsFromStorage,
+  stockSheetConversationToStockPin,
   subscribeGlobalChatStorageSync,
   summarizeConversationTitle,
+  summarizeStockSheetConversationTitle,
   type StoredGlobalConversation,
 } from "@/lib/globalChatSheetHistory";
 import { useUserData } from "@/hooks/useUserData";
@@ -54,20 +58,6 @@ function formatQuizBlock(intro: string | null, q: HybridQuizQuestion, idx: numbe
   return `${head}【문제 ${idx + 1}/${total}】\n${q.prompt}\n\n${lines.join("\n")}\n\n답은 1~4 숫자로 보내 주세요.`;
 }
 
-/** 글로벌 챗 전용 목록 — 종목 시트가 예전에 global 키에 넣었던 항목 제거·정리 */
-function loadSanitizedGlobalConversations(): StoredGlobalConversation[] {
-  const loaded = readGlobalChatConversationsFromStorage();
-  if (!loaded || loaded.length === 0) {
-    return [createConversation()];
-  }
-  const cleaned = stripStockSheetConversationsFromGlobal(loaded);
-  const next = cleaned.length > 0 ? cleaned : [createConversation()];
-  if (next.length !== loaded.length || cleaned.length === 0) {
-    window.localStorage.setItem(GLOBAL_CHAT_STORAGE_KEY, JSON.stringify(next));
-  }
-  return next;
-}
-
 export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   const [conversations, setConversations] = useState<StoredGlobalConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string>("");
@@ -109,22 +99,22 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   };
 
   const syncConversationsFromStorage = useCallback(() => {
-    const list = readGlobalChatConversationsFromStorage();
-    if (!list || list.length === 0) return;
-    const cleaned = stripStockSheetConversationsFromGlobal(list);
-    const next = cleaned.length > 0 ? cleaned : [createConversation()];
-    if (next.length !== list.length || cleaned.length === 0) {
-      window.localStorage.setItem(GLOBAL_CHAT_STORAGE_KEY, JSON.stringify(next));
+    try {
+      const next = loadMergedFabConversations();
+      setConversations(next);
+      setActiveConversationId((id) => (next.some((c) => c.id === id) ? id : next[0].id));
+    } catch {
+      const initial = createConversation();
+      setConversations([initial]);
+      setActiveConversationId(initial.id);
     }
-    setConversations(next);
-    setActiveConversationId((id) => (next.some((c) => c.id === id) ? id : next[0].id));
   }, []);
 
   useEffect(() => {
     try {
-      const next = loadSanitizedGlobalConversations();
+      const next = loadMergedFabConversations();
       setConversations(next);
-      setActiveConversationId(next[0].id);
+      setActiveConversationId(next[0]?.id ?? "");
     } catch {
       const initial = createConversation();
       setConversations([initial]);
@@ -140,7 +130,15 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
 
   useEffect(() => {
     if (conversations.length === 0) return;
-    window.localStorage.setItem(GLOBAL_CHAT_STORAGE_KEY, JSON.stringify(conversations));
+    const globalOnly = conversations.filter((c) => !String(c.id).startsWith("stock-sheet-"));
+    if (globalOnly.length > 0) {
+      window.localStorage.setItem(GLOBAL_CHAT_STORAGE_KEY, JSON.stringify(globalOnly));
+    }
+    const fromState = conversations.filter((c) => String(c.id).startsWith("stock-sheet-"));
+    const map = new Map(readStockSheetConversationsFromStorage().map((c) => [c.id, c]));
+    for (const c of fromState) map.set(c.id, c);
+    const stockValues = Array.from(map.values()).sort((a, b) => b.updatedAt - a.updatedAt);
+    window.localStorage.setItem(STOCK_SHEET_CHAT_STORAGE_KEY, JSON.stringify(stockValues));
   }, [conversations]);
 
   useEffect(() => {
@@ -197,16 +195,17 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
 
     const historyAfterUser = [...activeMessages, userMsg];
     setConversations((prev) =>
-      prev.map((c) =>
-        c.id === activeConversationId
-          ? {
-              ...c,
-              messages: [...c.messages, userMsg],
-              title: summarizeConversationTitle([...c.messages, userMsg]),
-              updatedAt: Date.now(),
-            }
-          : c,
-      ),
+      prev.map((c) => {
+        if (c.id !== activeConversationId) return c;
+        const nextMsgs = [...c.messages, userMsg];
+        const meta = parseStockWelcomeFromMessages(c.messages);
+        const isStockSheet = String(c.id).startsWith("stock-sheet-");
+        const title =
+          isStockSheet && meta
+            ? summarizeStockSheetConversationTitle(meta.name, nextMsgs)
+            : summarizeConversationTitle(nextMsgs);
+        return { ...c, messages: nextMsgs, title, updatedAt: Date.now() };
+      }),
     );
     setInput("");
 
@@ -330,6 +329,44 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
         goalReply = `현재 목표: ${walk.goalSteps.toLocaleString()}보\n최근 3일 평균: ${avg3.toLocaleString()}보\n\n원하는 방식으로 답장해 주세요:\n1) 평균으로 바꿔줘\n2) 7000보로 변경`;
       }
       appendAssistantMessage(goalReply);
+      return;
+    }
+
+    const stockPin =
+      activeConversationId.startsWith("stock-sheet-") && activeConversation
+        ? stockSheetConversationToStockPin(activeConversation)
+        : null;
+    if (stockPin) {
+      setIsLoading(true);
+      try {
+        const reply = await askStockAssistant(stockPin, historyAfterUser);
+        const replyId = (Date.now() + 1).toString();
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id !== activeConversationId) return c;
+            const newMsgs = [
+              ...c.messages,
+              { id: replyId, role: "assistant" as const, content: reply, timestamp: new Date() },
+            ];
+            const meta = parseStockWelcomeFromMessages(c.messages);
+            return {
+              ...c,
+              messages: newMsgs,
+              title: meta ? summarizeStockSheetConversationTitle(meta.name, newMsgs) : c.title,
+              updatedAt: Date.now(),
+            };
+          }),
+        );
+      } catch (err) {
+        const detail = err instanceof Error && err.message ? err.message : "";
+        appendAssistantMessage(
+          detail
+            ? `응답에 실패했어요: ${detail}\n배포 환경에 OPENAI_API_KEY 가 있는지 확인해 주세요.`
+            : "일시적으로 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.",
+        );
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 

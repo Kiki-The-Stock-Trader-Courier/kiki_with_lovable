@@ -97,6 +97,23 @@ function keywordTitleFromCleaned(cleaned: string, maxTokens = 5, maxLen = 26): s
 /**
  * 가장 최근 의미 있는 사용자 질문에서 핵심 토큰만 뽑아 짧은 제목으로 씁니다.
  */
+/** 종목 시트 히스토리 리스트용: `카카오: 첫 질문 요약` (첫 의미 있는 사용자 문장 기반, 키워드 나열 지양) */
+export function summarizeStockSheetConversationTitle(stockName: string, messages: ChatMessage[]): string {
+  const userTexts = messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content.trim())
+    .filter(Boolean);
+  for (const raw of userTexts) {
+    if (trivialUserReply(raw)) continue;
+    let c = cleanUserLineForTitle(raw);
+    if (!c) continue;
+    c = c.replace(/[.·…]+/g, " ").replace(/\s+/g, " ").trim();
+    const phrase = makeTitleFromInput(c, 24);
+    if (phrase) return makeTitleFromInput(`${stockName}: ${phrase}`, 44);
+  }
+  return makeTitleFromInput(`${stockName}: 대화`, 44);
+}
+
 export function summarizeConversationTitle(messages: ChatMessage[]): string {
   const userTexts = messages
     .filter((m) => m.role === "user")
@@ -166,9 +183,61 @@ export function readGlobalChatConversationsFromStorage(): StoredGlobalConversati
   return parseConversationList(window.localStorage.getItem(GLOBAL_CHAT_STORAGE_KEY));
 }
 
-function readStockSheetConversationsFromStorage(): StoredGlobalConversation[] {
+export function readStockSheetConversationsFromStorage(): StoredGlobalConversation[] {
   if (typeof window === "undefined") return [];
   return parseConversationList(window.localStorage.getItem(STOCK_SHEET_CHAT_STORAGE_KEY)) ?? [];
+}
+
+/** 종목 시트 첫 환영 메시지에서 이름·티커 추출 */
+export function parseStockWelcomeFromMessages(messages: ChatMessage[]): { name: string; ticker: string } | null {
+  const m = messages[0];
+  if (!m || m.role !== "assistant") return null;
+  const t = m.content.trim();
+  const re = /^(.+?)\((\d{6})\)에 대해 물어보세요\.?$/;
+  const match = t.match(re);
+  if (!match) return null;
+  return { name: match[1].trim(), ticker: match[2] };
+}
+
+export function stockSheetConversationToStockPin(c: StoredGlobalConversation): StockPin | null {
+  const meta = parseStockWelcomeFromMessages(c.messages);
+  if (!meta) return null;
+  return {
+    id: `sheet-${meta.ticker}`,
+    ticker: meta.ticker,
+    name: meta.name,
+    lat: 0,
+    lng: 0,
+    price: 0,
+    changePercent: 0,
+    sector: "기타",
+    description: `${meta.name}에 대한 지도 종목 시트 대화입니다.`,
+    isSponsored: false,
+  };
+}
+
+/** 플로팅 챗 FAB: 글로벌 대화 + 종목 시트 대화를 한 목록으로 (시간순) */
+export function loadMergedFabConversations(): StoredGlobalConversation[] {
+  const loadedGlobal = readGlobalChatConversationsFromStorage();
+  let globalList: StoredGlobalConversation[];
+  if (!loadedGlobal || loadedGlobal.length === 0) {
+    globalList = [createConversation()];
+  } else {
+    const cleaned = stripStockSheetConversationsFromGlobal(loadedGlobal);
+    globalList = cleaned.length > 0 ? cleaned : [createConversation()];
+    if (globalList.length !== loadedGlobal.length) {
+      window.localStorage.setItem(GLOBAL_CHAT_STORAGE_KEY, JSON.stringify(globalList));
+    }
+  }
+  const stocks = readStockSheetConversationsFromStorage().map((c) => {
+    const meta = parseStockWelcomeFromMessages(c.messages);
+    if (!meta) return c;
+    return {
+      ...c,
+      title: summarizeStockSheetConversationTitle(meta.name, c.messages),
+    };
+  });
+  return [...globalList, ...stocks].sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
 const STORAGE_SYNC_EVENT = "kiki-global-chat-storage";
@@ -191,11 +260,7 @@ export function upsertStockSheetConversation(
   if (!messages.some((m) => m.role === "user")) return;
 
   const convId = `stock-sheet-${String(stock.ticker).trim()}`;
-  const titleBase = summarizeConversationTitle(messages);
-  const summaryPart = titleBase && titleBase !== "New chat" ? titleBase : "대화";
-  const prefix = `${stock.name}:`;
-  const combined = `${prefix} ${summaryPart}`;
-  const title = makeTitleFromInput(combined, 40);
+  const title = summarizeStockSheetConversationTitle(stock.name, messages);
 
   const list = readStockSheetConversationsFromStorage();
 
@@ -212,6 +277,7 @@ export function upsertStockSheetConversation(
   const nextList = [nextConv, ...without];
 
   window.localStorage.setItem(STOCK_SHEET_CHAT_STORAGE_KEY, JSON.stringify(nextList));
+  notifyGlobalChatStorageChanged();
 }
 
 export function subscribeGlobalChatStorageSync(handler: () => void): () => void {
