@@ -42,7 +42,7 @@ export function makeTitleFromInput(input: string, maxLen = 34): string {
 }
 
 /**
- * 최근 사용자 발화부터 최대 3개까지 핵심만 이어 붙여 제목으로 씁니다 (최신이 앞).
+ * 사용자 발화 흐름(시간순)에서 짧은 답·중복을 걷어내 한 줄짜리 제목으로 합칩니다. 구분은 공백만 씁니다.
  */
 export function summarizeConversationTitle(messages: ChatMessage[]): string {
   const userTexts = messages
@@ -51,22 +51,23 @@ export function summarizeConversationTitle(messages: ChatMessage[]): string {
     .filter(Boolean);
   if (userTexts.length === 0) return "New chat";
 
-  const parts: string[] = [];
-  for (let i = userTexts.length - 1; i >= 0 && parts.length < 3; i--) {
+  const snippets: string[] = [];
+  for (let i = 0; i < userTexts.length && snippets.length < 5; i++) {
     const raw = userTexts[i];
     if (trivialUserReply(raw)) continue;
     const c = cleanUserLineForTitle(raw);
     if (!c) continue;
-    if (parts.includes(c)) continue;
-    parts.push(c);
+    if (snippets.includes(c)) continue;
+    snippets.push(c);
   }
 
-  if (parts.length === 0) {
+  if (snippets.length === 0) {
     const last = cleanUserLineForTitle(userTexts[userTexts.length - 1] ?? "");
     return last.length > 0 ? makeTitleFromInput(last) : "New chat";
   }
 
-  return makeTitleFromInput(parts.join(" · "), 36);
+  const merged = snippets.join(" ");
+  return makeTitleFromInput(merged, 36);
 }
 
 export function createConversation(): StoredGlobalConversation {
