@@ -92,22 +92,45 @@ const HoldingsPage = () => {
               const pnl = (h.currentPrice - h.avgPrice) * h.shares;
               const pnlPercent = ((h.currentPrice - h.avgPrice) / h.avgPrice) * 100;
               const isUp = pnl >= 0;
+              const principal = h.avgPrice * h.shares;
+              const marketValue = principal + pnl;
               return (
-                <div
-                  key={h.ticker}
-                  className="tab-card-surface flex items-center justify-between rounded-xl p-4"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{h.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {h.shares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주 · 평균 {h.avgPrice.toLocaleString()}원
+                <div key={h.ticker} className="space-y-2">
+                  <div className="rounded-xl border border-border/70 bg-muted/45 p-4 shadow-sm dark:bg-muted/30">
+                    <p className="text-center font-display text-lg font-bold tabular-nums text-foreground">
+                      {marketValue.toLocaleString("ko-KR")}원
                     </p>
+                    <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border/50 pt-3">
+                      <div className="min-w-0">
+                        <p className="text-xs text-muted-foreground">원금</p>
+                        <p className="mt-0.5 truncate text-sm font-semibold tabular-nums text-foreground">
+                          {principal.toLocaleString("ko-KR")}원
+                        </p>
+                      </div>
+                      <div className="min-w-0 text-right">
+                        <p className="text-xs text-muted-foreground">총 수익</p>
+                        <p
+                          className={`mt-0.5 truncate text-sm font-semibold tabular-nums ${isUp ? "text-destructive" : "text-accent"}`}
+                        >
+                          {isUp ? "+" : ""}
+                          {pnl.toLocaleString("ko-KR")}원
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-foreground">{(h.currentPrice * h.shares).toLocaleString()}원</p>
-                    <p className={`text-xs font-medium ${isUp ? "text-destructive" : "text-accent"}`}>
-                      {isUp ? "+" : ""}{pnl.toLocaleString()}원 ({isUp ? "+" : ""}{pnlPercent.toFixed(1)}%)
-                    </p>
+                  <div className="tab-card-surface flex items-center justify-between rounded-xl p-4">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{h.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {h.shares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주 · 평균 {h.avgPrice.toLocaleString()}원
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-foreground">{(h.currentPrice * h.shares).toLocaleString()}원</p>
+                      <p className={`text-xs font-medium ${isUp ? "text-destructive" : "text-accent"}`}>
+                        {isUp ? "+" : ""}{pnl.toLocaleString()}원 ({isUp ? "+" : ""}{pnlPercent.toFixed(1)}%)
+                      </p>
+                    </div>
                   </div>
                 </div>
               );
