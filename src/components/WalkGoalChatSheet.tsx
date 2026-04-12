@@ -7,10 +7,9 @@ import { askGlobalAssistant } from "@/lib/openaiChat";
 import { useUserData } from "@/hooks/useUserData";
 
 const QUICK_ACTIONS = [
-  "500보로 살 수 있는 주식은?",
-  "근처 삼성전자 정보 알려줘",
-  "오늘의 주식 퀴즈!",
-  "걸음 목표 업데이트해줘",
+  "현재 목표 걸음 수는?",
+  "100보당 몇 포인트 적립돼?",
+  "최근 3일치 걸음 수 평균 내줘.",
 ];
 
 const INITIAL_MESSAGE_WALK_GOAL: ChatMessage = {
@@ -62,8 +61,45 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
 
+    const trimmed = text.trim();
     const avg3 =
       Math.round(RECENT_3DAY_STEPS.reduce((sum, v) => sum + v, 0) / RECENT_3DAY_STEPS.length / 10) * 10;
+
+    if (trimmed === "현재 목표 걸음 수는?") {
+      const botMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `지금 설정된 목표는 **${walk.goalSteps.toLocaleString("ko-KR")}보**예요.`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMsg]);
+      return;
+    }
+
+    if (trimmed === "100보당 몇 포인트 적립돼?") {
+      const per100 = walk.cashPerStep * 100;
+      const botMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `걸음당 ${walk.cashPerStep}포인트이므로, 100보당 **${per100.toLocaleString("ko-KR", { maximumFractionDigits: 2 })}포인트**가 적립돼요.`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMsg]);
+      return;
+    }
+
+    if (trimmed === "최근 3일치 걸음 수 평균 내줘.") {
+      const list = RECENT_3DAY_STEPS.map((s) => `${s.toLocaleString("ko-KR")}보`).join(", ");
+      const botMsg: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `최근 3일 걸음은 ${list}이에요.\n\n평균은 **${avg3.toLocaleString("ko-KR")}보**예요.`,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, botMsg]);
+      return;
+    }
+
     const normalized = text.replace(/,/g, "").trim();
     const lower = normalized.toLowerCase();
     const numberMatch = normalized.match(/(\d{3,6})/);
@@ -185,7 +221,7 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
             </div>
             <div className="min-w-0">
               <h2 className="font-display text-base font-bold tracking-tight text-foreground">키키</h2>
-              <p className="text-xs text-muted-foreground">종목 정보 · 퀴즈 · 걸음 설정</p>
+              <p className="text-xs text-muted-foreground">목표 걸음 설정</p>
             </div>
           </div>
           <Button
@@ -237,17 +273,19 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
       </div>
 
       <div className="shrink-0 border-t border-border/80 bg-background/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
-        <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-0.5 pl-0.5">
-          {QUICK_ACTIONS.map((action) => (
-            <button
-              key={action}
-              type="button"
-              onClick={() => void sendMessage(action)}
-              className="min-h-[36px] shrink-0 rounded-full border border-border/70 bg-muted/40 px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/80 active:scale-[0.98]"
-            >
-              {action}
-            </button>
-          ))}
+        <div className="mb-3 w-full overflow-x-auto overflow-y-hidden pb-0.5 pl-0.5 [touch-action:pan-x]">
+          <div className="inline-flex min-w-max items-center gap-2 pr-1">
+            {QUICK_ACTIONS.map((action) => (
+              <button
+                key={action}
+                type="button"
+                onClick={() => void sendMessage(action)}
+                className="min-h-[36px] shrink-0 rounded-full border border-border/70 bg-muted/40 px-3.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/80 active:scale-[0.98]"
+              >
+                {action}
+              </button>
+            ))}
+          </div>
         </div>
 
         <form
@@ -259,7 +297,7 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
             name="walkGoalChatMessage"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="궁금한 종목이나 걸음 설정을 물어보세요"
+            placeholder="목표 설정 관련해 궁금한 점을 물어보세요."
             className="min-h-[48px] flex-1 rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="메시지 입력"
           />
