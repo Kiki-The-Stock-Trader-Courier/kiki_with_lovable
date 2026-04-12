@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot } from "lucide-react";
+import { Send, Bot, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import BottomNav from "@/components/BottomNav";
 import type { ChatMessage } from "@/types/stock";
 import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
 import { askGlobalAssistant } from "@/lib/openaiChat";
@@ -14,20 +13,23 @@ const QUICK_ACTIONS = [
   "걸음 목표 업데이트해줘",
 ];
 
-const INITIAL_MESSAGE: ChatMessage = {
-  id: "welcome",
+const INITIAL_MESSAGE_WALK_GOAL: ChatMessage = {
+  id: "welcome-walk-goal",
   role: "assistant",
   content:
-    "안녕하세요! 워키 포인트의 든든한 정보통, 키키입니다! 제가 주가 예측부터 기업 정보까지 싹~ 다 알려드릴 테니까, 여러분은 즐겁게 걷기만 하세요! 참, 주식 퀴즈도 준비되어 있는데... 혹시 요즘 뉴스 안 보고 오신 건 아니겠죠?",
+    "안녕하세요! 워키 포인트의 페이스 메이커, 키키입니다! 내 페이스에 맞게 목표 걸음 수를 변경해 보세요. 제가 도와드릴게요!",
   timestamp: new Date(),
 };
 
 const RECENT_3DAY_STEPS = [4880, 5720, 3247];
 
-/** 채팅 진입 시 최초 인사는 1초 후 표시 (즉시 노출 방지) */
 const GREETING_DELAY_MS = 1000;
 
-const ChatPage = () => {
+interface WalkGoalChatSheetProps {
+  onClose: () => void;
+}
+
+export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -37,7 +39,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     const id = window.setTimeout(() => {
-      setMessages((prev) => (prev.length === 0 ? [INITIAL_MESSAGE] : prev));
+      setMessages((prev) => (prev.length === 0 ? [INITIAL_MESSAGE_WALK_GOAL] : prev));
     }, GREETING_DELAY_MS);
     return () => window.clearTimeout(id);
   }, []);
@@ -165,20 +167,36 @@ const ChatPage = () => {
   };
 
   return (
-    <div className="app-page-shell mx-auto flex h-[100dvh] max-w-lg flex-col" data-testid="chat-screen">
-      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/90 px-4 pb-3 pt-[calc(env(safe-area-inset-top,0px)+12px)] backdrop-blur-md supports-[backdrop-filter]:bg-background/75">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
-            <Bot className="h-5 w-5 text-primary" aria-hidden />
+    <div className="flex h-full min-h-0 flex-col rounded-t-3xl bg-background shadow-2xl">
+      <div className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-muted-foreground/30" aria-hidden />
+      <header className="shrink-0 border-b border-border/80 bg-background/95 px-4 pb-3 pt-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10">
+              <Bot className="h-5 w-5 text-primary" aria-hidden />
+            </div>
+            <div className="min-w-0">
+              <h2 className="font-display text-base font-bold tracking-tight text-foreground">키키</h2>
+              <p className="text-xs text-muted-foreground">종목 정보 · 퀴즈 · 걸음 설정</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h1 className="font-display text-base font-bold tracking-tight text-foreground">키키</h1>
-            <p className="text-xs text-muted-foreground">종목 정보 · 퀴즈 · 걸음 설정</p>
-          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:bg-muted/60"
+            onClick={onClose}
+            aria-label="닫기"
+          >
+            <X className="h-5 w-5" />
+          </Button>
         </div>
       </header>
 
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto p-4 pb-4 no-scrollbar">
+      <div
+        ref={scrollRef}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-4 pb-4 [overflow-anchor:none]"
+      >
         <div className="mx-auto max-w-lg space-y-4">
           {messages.map((msg) => (
             <div
@@ -210,7 +228,7 @@ const ChatPage = () => {
         </div>
       </div>
 
-      <div className="border-t border-border/80 bg-background/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
+      <div className="shrink-0 border-t border-border/80 bg-background/95 px-4 pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
         <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-0.5 pl-0.5">
           {QUICK_ACTIONS.map((action) => (
             <button
@@ -229,8 +247,8 @@ const ChatPage = () => {
           className="flex items-center gap-2 pb-[calc(env(safe-area-inset-bottom,0px)+72px)]"
         >
           <input
-            id="chat-page-message"
-            name="chatMessage"
+            id="walk-goal-chat-message"
+            name="walkGoalChatMessage"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="궁금한 종목이나 걸음 설정을 물어보세요"
@@ -248,11 +266,9 @@ const ChatPage = () => {
           </Button>
         </form>
       </div>
-
-      <BottomNav />
     </div>
   );
-};
+}
 
 function getMockResponse(input: string): string {
   const lower = input.toLowerCase();
@@ -270,5 +286,3 @@ function getMockResponse(input: string): string {
   }
   return "좋은 질문이에요! 🙌\n\n현재 반경 500m 내에 12개 종목이 있어요. 지도로 돌아가서 핀을 눌러보시면 기업 정보를 확인할 수 있어요.\n\n다른 궁금한 점이 있으시면 말씀해주세요!";
 }
-
-export default ChatPage;

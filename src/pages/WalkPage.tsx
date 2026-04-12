@@ -1,7 +1,8 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Footprints, Target, Coins, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import BottomNav from "@/components/BottomNav";
+import WalkGoalChatSheet from "@/components/WalkGoalChatSheet";
 import { useUserData } from "@/hooks/useUserData";
 import { useNavigate } from "react-router-dom";
 
@@ -27,6 +28,7 @@ function WalkTitleSneakerIcon() {
 
 const WalkPage = () => {
   const navigate = useNavigate();
+  const [goalChatOpen, setGoalChatOpen] = useState(false);
   /** 주간 걸음 차트 섹션 앵커 */
   const weeklySectionRef = useRef<HTMLDivElement>(null);
   const { walk, weeklySteps } = useUserData();
@@ -58,11 +60,21 @@ const WalkPage = () => {
     }
   };
 
+  const walkScrollClass = goalChatOpen
+    ? "min-h-0 flex-1 overflow-y-auto overscroll-y-contain [overflow-anchor:none]"
+    : "";
+
   return (
     <div
-      className="app-page-shell mx-auto min-h-[100dvh] w-full max-w-lg pb-24"
+      className={
+        goalChatOpen
+          ? "app-page-shell mx-auto flex h-[100dvh] w-full max-w-lg flex-col overflow-hidden"
+          : "app-page-shell mx-auto min-h-[100dvh] w-full max-w-lg pb-24"
+      }
       data-testid="walk-screen"
     >
+      <div className={goalChatOpen ? "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden" : ""}>
+        <div className={walkScrollClass}>
       {/* Header */}
       <div className="tab-hero-panel px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl">
         <h1 className="mb-6 flex items-center gap-2 font-display text-xl font-bold tracking-tight text-foreground">
@@ -171,11 +183,19 @@ const WalkPage = () => {
         <Button
           className="mt-6 w-full h-12 rounded-xl font-bold"
           aria-label="걸음 수 목표 변경"
-          onClick={() => navigate("/chat?from=walk-goal")}
+          onClick={() => setGoalChatOpen(true)}
         >
           <Target className="mr-2 h-5 w-5" />
           걸음 목표 변경하기
         </Button>
+      </div>
+        </div>
+
+        {goalChatOpen && (
+          <div className="animate-slide-up flex h-[50dvh] min-h-0 w-full shrink-0 flex-col border-t border-border/60 bg-background">
+            <WalkGoalChatSheet onClose={() => setGoalChatOpen(false)} />
+          </div>
+        )}
       </div>
 
       <BottomNav />
