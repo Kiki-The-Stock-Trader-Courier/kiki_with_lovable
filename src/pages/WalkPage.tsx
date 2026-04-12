@@ -5,29 +5,23 @@ import BottomNav from "@/components/BottomNav";
 import { useUserData } from "@/hooks/useUserData";
 import { useNavigate } from "react-router-dom";
 
-/** 걷기 탭 제목 — 보유 종목 `BriefcaseBusiness`와 동일 stroke/크기/색 */
+/** 걷기 탭 제목 — 보유 종목 `BriefcaseBusiness`와 동일 `h-5 w-5`·primary 색 */
 function WalkTitleSneakerIcon() {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-5 w-5 shrink-0 text-primary"
+    <span
       aria-hidden
-    >
-      <path d="M3 14h2M2.5 17h2.5" />
-      <path d="M6 12h2" />
-      <path d="M5 17c2.5 1 5.8 1.2 9.5.5l5-1" />
-      <path d="M5 17 4.5 13.5a1.75 1.75 0 0 1 2.1-1.6l6 1.7 3 3.4" />
-      <path d="M8 11.5 9.8 8a2 2 0 0 1 3.4-.4l2.8 2.9" />
-      <path d="M10.5 9h2M12.5 8h2" />
-    </svg>
+      className="inline-block h-5 w-5 shrink-0 bg-primary"
+      style={{
+        WebkitMaskImage: "url(/walk-header-shoe.png)",
+        maskImage: "url(/walk-header-shoe.png)",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+      }}
+    />
   );
 }
 
