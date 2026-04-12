@@ -36,7 +36,16 @@ export function routeChatIntent(lastUserText: string, hasStockAssist: boolean): 
   }
 
   if (hasStockAssist) {
-    if (/시세|주가|현재가|호가|등락|전일|퍼센트|%|몇\s*원|원\s*이야|얼마|장중/.test(n)) {
+    /** 시세 키워드만 있는 질문 vs '주가 의미·리스크·투자 유의' 등 분석형 질문 구분 */
+    const priceCue = /시세|주가|현재가|호가|등락|전일|퍼센트|%|몇\s*원|원\s*이야|얼마|장중/.test(n);
+    const investmentCautionOrAnalysisCue =
+      /투자할\s*때|매수\s*전|주의할|조심할|유의사항|투자\s*시\s*주의|살\s*까|팔\s*까/.test(n) ||
+      (/(리스크|위험|주의|조심|전망|분석|변동성|의미|하락|급등|급락|과열|매력|추천)/.test(n) &&
+        /주가|시세|현재가|등락|호가/.test(n));
+    if (investmentCautionOrAnalysisCue) {
+      return "deep_analysis";
+    }
+    if (priceCue) {
       return "price_fact";
     }
     if (/뉴스|이슈|공시|최근\s*소식|화제|기사/.test(n)) {

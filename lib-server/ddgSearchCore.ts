@@ -163,9 +163,15 @@ export type StockAssistPayload = {
 export function buildStockDdgQuery(stock: StockAssistPayload, lastUserMessage: string): string {
   const user = lastUserMessage.replace(/\s+/g, " ").trim().slice(0, 200);
   const wantsNews = /뉴스|news|최신|오늘|최근|헤드라인|속보|기사/i.test(user);
+  /** 투자 유의·리스크 질문은 스니펫에 실릴 키워드를 보강 */
+  const wantsRiskContext =
+    /투자할\s*때|매수\s*전|주의|조심|유의|리스크|위험|전망|분석|변동성|하락|급등/i.test(user);
   const base = `${stock.name} ${stock.ticker} 주식`;
   if (wantsNews) {
     return `${base} ${user || "최신 뉴스"}`.trim();
+  }
+  if (wantsRiskContext && user.length > 0) {
+    return `${base} ${user} 최근 이슈 실적 리스크`.trim();
   }
   if (user.length > 0) {
     return `${base} ${user}`.trim();

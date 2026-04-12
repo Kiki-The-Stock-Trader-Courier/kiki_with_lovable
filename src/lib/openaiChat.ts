@@ -57,6 +57,7 @@ export async function askStockAssistant(stock: StockPin, history: ChatMessage[])
       `앱에 표시된 한줄 설명: ${stock.description}`,
       `현재가 ${stock.price.toLocaleString()}원, 전일 대비 ${stock.changePercent}%.`,
       "투자 권유·매수 권유는 하지 말고, 정보·설명 위주로 간결하게 답하세요. 법적·세무 조언은 하지 마세요.",
+      "질문이 이 종목 투자 시 주의점·리스크·매수 전 점검·전망·의미 분석이면, 반드시 아래에 붙은 [외부 검색·뉴스 스니펫]과 위 종목·업종·등락 정보를 근거로 먼저 답하세요. 누구에게나 동일한 일반 투자 체크리스트만 길게 나열하지 마세요. 스니펫이 부족하면 그 한계를 밝히고 공시·거래소·DART 등 직접 확인을 짧게 권하세요.",
     ].join("\n"),
   };
 

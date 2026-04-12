@@ -2,8 +2,16 @@ import { describe, expect, it } from "vitest";
 import { inferComplexity, routeChatIntent } from "./router";
 
 describe("routeChatIntent", () => {
-  it("종목 시트에서 시세 질문 → price_fact", () => {
-    expect(routeChatIntent("지금 주가는 어떤 의미야?", true)).toBe("price_fact");
+  it("종목 시트에서 주가+의미(해석) 질문 → deep_analysis", () => {
+    expect(routeChatIntent("지금 주가는 어떤 의미야?", true)).toBe("deep_analysis");
+  });
+
+  it("종목 시트에서 단순 시세 질문 → price_fact", () => {
+    expect(routeChatIntent("지금 주가 얼마야?", true)).toBe("price_fact");
+  });
+
+  it("투자 유의 질문(퀵프롬프트) → deep_analysis", () => {
+    expect(routeChatIntent("투자할 때 주의할 점은?", true)).toBe("deep_analysis");
   });
 
   it("종목 시트에서 뉴스 → news_issue", () => {
