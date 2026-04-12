@@ -40,5 +40,5 @@ export const MOCK_TRENDING: TrendingStock[] = [
 
 /** 앱 초기 지도 중심 (GPS 전) — 서울 지하철 5·9호선 여의도역 (sync STATIONS와 동일) */
 export const DEFAULT_CENTER = { lat: 37.521758, lng: 126.924139 };
-/** 주변 POI 조회·지도 원 반경 — sync 크롤 반경(1km)과 맞춤 */
-export const DEFAULT_RADIUS_M = 1000;
+/** 지도 보라색 강조 원·캐시 매수 허용 반경(미터). 주변 POI 조회는 Index에서 이 값의 3배로 넓게 가져옴 */
+export const DEFAULT_RADIUS_M = 300;

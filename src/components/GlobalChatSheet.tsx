@@ -288,7 +288,7 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     if (wantsQuiz) {
       if (!mapQuizSnapshot || mapQuizSnapshot.stocks.length < 2) {
         appendAssistantMessage(
-          "지도 원(반경 1km) 안에 상장 종목이 2곳 이상일 때 퀴즈를 만들 수 있어요.\n지도 탭에서 핀이 보이도록 잠시 기다렸다가 다시 눌러 주세요.",
+          "지도 원(반경 300m) 안에 상장 종목이 2곳 이상일 때 퀴즈를 만들 수 있어요.\n지도 탭에서 핀이 보이도록 잠시 기다렸다가 다시 눌러 주세요.",
         );
         return;
       }

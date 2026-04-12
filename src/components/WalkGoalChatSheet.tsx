@@ -319,7 +319,7 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
 function getMockResponse(input: string): string {
   const lower = input.toLowerCase();
   if (lower.includes("500보") || lower.includes("걸음")) {
-    return "500보 = 약 250원이에요! 💰\n\n현재 반경 500m 내에서 250원 이하로 매수 가능한 종목은 없지만, 1,000보를 더 걸으면 삼성전자 1주(72,400원)에 한 발짝 더 가까워져요.\n\n목표를 5,000보로 올려볼까요?";
+    return "500보 = 약 250원이에요! 💰\n\n현재 반경 300m 내에서 250원 이하로 매수 가능한 종목은 없지만, 1,000보를 더 걸으면 삼성전자 1주(72,400원)에 한 발짝 더 가까워져요.\n\n목표를 5,000보로 올려볼까요?";
   }
   if (lower.includes("삼성")) {
     return "📊 삼성전자 (005930)\n\n• 현재가: 72,400원 (+1.2%)\n• 업종: 반도체\n• 시가총액: 431조원\n\n글로벌 메모리 반도체 1위, 스마트폰·디스플레이 사업도 영위하고 있어요. 최근 AI 반도체 수주 기대감으로 상승세입니다.";
@@ -330,5 +330,5 @@ function getMockResponse(input: string): string {
   if (lower.includes("업데이트") || lower.includes("목표")) {
     return "현재 목표: 5,000보\n오늘 걸음: 3,247보 (65% 달성)\n\n목표를 변경하시겠어요?\n• 3,000보 → 일일 약 1,500원\n• 5,000보 → 일일 약 2,500원\n• 10,000보 → 일일 약 5,000원\n\n원하는 걸음 수를 알려주세요!";
   }
-  return "좋은 질문이에요! 🙌\n\n현재 반경 500m 내에 12개 종목이 있어요. 지도로 돌아가서 핀을 눌러보시면 기업 정보를 확인할 수 있어요.\n\n다른 궁금한 점이 있으시면 말씀해주세요!";
+  return "좋은 질문이에요! 🙌\n\n현재 반경 300m 내에 12개 종목이 있어요. 지도로 돌아가서 핀을 눌러보시면 기업 정보를 확인할 수 있어요.\n\n다른 궁금한 점이 있으시면 말씀해주세요!";
 }

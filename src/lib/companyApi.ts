@@ -1,4 +1,5 @@
 import type { StockPin } from "@/types/stock";
+import { DEFAULT_RADIUS_M } from "@/data/mockStocks";
 import { fetchNearbyCompaniesFromSupabase } from "@/lib/nearbyCompanies";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
 import { Capacitor } from "@capacitor/core";
@@ -31,7 +32,8 @@ function nearbyUrls(query: string): string[] {
  */
 export async function fetchNearbyCompanies(
   center: { lat: number; lng: number },
-  radius = 1000,
+  /** 미지정 시: 강조 원( DEFAULT_RADIUS_M )의 3배 — Index와 동일 */
+  radius = DEFAULT_RADIUS_M * 3,
 ): Promise<StockPin[]> {
   const params = new URLSearchParams({
     lat: String(center.lat),

@@ -1,9 +1,10 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import type { StockPin } from "@/types/stock";
+import { DEFAULT_RADIUS_M } from "@/data/mockStocks";
 import { distanceMeters } from "@/lib/geoDistance";
 
 /** 지도 강조 원과 동일 — 퀴즈 근거 반경 */
-export const MAP_QUIZ_RADIUS_M = 1000;
+export const MAP_QUIZ_RADIUS_M = DEFAULT_RADIUS_M;
 
 export type MapQuizStockSnapshot = Pick<
   StockPin,
