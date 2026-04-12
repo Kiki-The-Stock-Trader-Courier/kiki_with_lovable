@@ -84,12 +84,11 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
   return sectorIconInner(stock.sector, color);
 }
 
-/** 지도 핀 — 보유 / 미보유 (미보유는 요청 색상 #690ACF 고정) */
-const PIN_COLOR_OWNED = "#593D63";
-const PIN_COLOR_NON_OWNED = "#690ACF";
+/** 지도 핀 본체·포인터 — 통일 #690ACF */
+const PIN_COLOR = "#690ACF";
 
-const createPinIcon = (stock: StockPinType, isOwned: boolean, _isOutOfRadius: boolean) => {
-  const color = isOwned === true ? PIN_COLOR_OWNED : PIN_COLOR_NON_OWNED;
+const createPinIcon = (stock: StockPinType, _isOwned: boolean, _isOutOfRadius: boolean) => {
+  const color = PIN_COLOR;
   const inner = logoOrSectorInner(stock, color);
 
   return L.divIcon({
@@ -111,9 +110,9 @@ const createPinIcon = (stock: StockPinType, isOwned: boolean, _isOutOfRadius: bo
 const StockPinMarker = ({ stock, isOwned = false, isOutOfRadius = false, onSelect }: StockPinProps) => {
   return (
     <Marker
-      key={`${stock.id}-${isOwned === true ? "owned" : "other"}`}
+      key={stock.id}
       position={[stock.lat, stock.lng]}
-      icon={createPinIcon(stock, isOwned === true, isOutOfRadius)}
+      icon={createPinIcon(stock, isOwned, isOutOfRadius)}
       eventHandlers={{
         click: () => onSelect(stock),
       }}
