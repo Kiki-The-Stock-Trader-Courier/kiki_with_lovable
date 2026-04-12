@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import type { ChatMessage, StockPin } from "@/types/stock";
 import { askStockAssistant } from "@/lib/openaiChat";
 import { getStockSheetChatReply } from "@/lib/stockSheetChatMock";
+import { upsertStockSheetConversation } from "@/lib/globalChatSheetHistory";
 import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
 
 const QUICK_PROMPTS = [
@@ -62,6 +63,11 @@ export default function StockSheetChat({ stock, isScrapped, onToggleScrap }: Sto
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!messages.some((m) => m.role === "user")) return;
+    upsertStockSheetConversation(stock, messages);
+  }, [messages, stock.id, stock.ticker, stock.name]);
 
   const send = async (text: string) => {
     const trimmed = text.trim();

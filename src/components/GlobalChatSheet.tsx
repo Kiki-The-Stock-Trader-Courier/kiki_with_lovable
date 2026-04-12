@@ -1,8 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PanelLeft, Plus, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/types/stock";
 import { askGlobalAssistant } from "@/lib/openaiChat";
+import {
+  GLOBAL_CHAT_STORAGE_KEY,
+  createConversation,
+  readGlobalChatConversationsFromStorage,
+  subscribeGlobalChatStorageSync,
+  summarizeConversationTitle,
+  type StoredGlobalConversation,
+} from "@/lib/globalChatSheetHistory";
 import { useUserData } from "@/hooks/useUserData";
 import { useMapQuizSnapshot } from "@/contexts/MapQuizContext";
 import { requestHybridQuiz, type HybridQuizQuestion } from "@/lib/quizHybridApi";
@@ -15,16 +23,8 @@ const QUICK_ACTIONS = [
   "걸음 목표 업데이트해줘",
 ];
 
-const STORAGE_KEY = "global_chat_sheet_history_v1";
 const WELCOME_TEXT =
   "안녕하세요! 워키 포인트의 든든한 정보통, 키키입니다! 제가 주가 예측부터 기업 정보까지 싹~ 다 알려드릴 테니까, 여러분은 즐겁게 걷기만 하세요! 참, 주식 퀴즈도 준비되어 있는데... 혹시 요즘 뉴스 안 보고 오신 건 아니겠죠?";
-
-interface Conversation {
-  id: string;
-  title: string;
-  messages: ChatMessage[];
-  updatedAt: number;
-}
 
 const RECENT_3DAY_STEPS = [4880, 5720, 3247];
 
@@ -41,41 +41,6 @@ function buildInitialMessage(): ChatMessage {
   };
 }
 
-function createConversation(): Conversation {
-  const id = `c-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-  return {
-    id,
-    title: "New chat",
-    messages: [],
-    updatedAt: Date.now(),
-  };
-}
-
-function makeTitleFromInput(input: string): string {
-  const compact = input.replace(/\s+/g, " ").trim();
-  return compact.length > 22 ? `${compact.slice(0, 22)}…` : compact;
-}
-
-function summarizeConversationTitle(messages: ChatMessage[]): string {
-  const userMessages = messages.filter((m) => m.role === "user").map((m) => m.content.trim()).filter(Boolean);
-  if (userMessages.length === 0) return "New chat";
-
-  // 가장 최근 사용자 질문을 자연스러운 제목으로 정리
-  const latest = userMessages[userMessages.length - 1]
-    .replace(/\s+/g, " ")
-    .replace(/[^\p{L}\p{N}\s?!.,]/gu, "")
-    .trim();
-
-  const softened = latest.replace(
-    /(알려줘|알려주세요|해줘|해주세요|부탁해|부탁드립니다|좀 알려줘|좀|요)\s*$/u,
-    "",
-  );
-
-  const normalized = softened.length > 0 ? softened : latest;
-  if (normalized.length > 0) return makeTitleFromInput(normalized);
-  return "New chat";
-}
-
 function sortQuizChoices(q: HybridQuizQuestion["choices"]) {
   return [...q].sort((a, b) => a.key.localeCompare(b.key));
 }
@@ -89,7 +54,7 @@ function formatQuizBlock(intro: string | null, q: HybridQuizQuestion, idx: numbe
 }
 
 export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversations, setConversations] = useState<StoredGlobalConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string>("");
   const [showHistory, setShowHistory] = useState(false);
   const [input, setInput] = useState("");
@@ -128,24 +93,24 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     );
   };
 
+  const syncConversationsFromStorage = useCallback(() => {
+    const list = readGlobalChatConversationsFromStorage();
+    if (!list || list.length === 0) return;
+    setConversations(list);
+    setActiveConversationId((id) => (list.some((c) => c.id === id) ? id : list[0].id));
+  }, []);
+
   useEffect(() => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) {
+      const loaded = readGlobalChatConversationsFromStorage();
+      if (!loaded) {
         const initial = createConversation();
         setConversations([initial]);
         setActiveConversationId(initial.id);
         return;
       }
-      const parsed = JSON.parse(raw) as Conversation[];
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-        const initial = createConversation();
-        setConversations([initial]);
-        setActiveConversationId(initial.id);
-        return;
-      }
-      setConversations(parsed);
-      setActiveConversationId(parsed[0].id);
+      setConversations(loaded);
+      setActiveConversationId(loaded[0].id);
     } catch {
       const initial = createConversation();
       setConversations([initial]);
@@ -154,8 +119,14 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   }, []);
 
   useEffect(() => {
+    return subscribeGlobalChatStorageSync(() => {
+      syncConversationsFromStorage();
+    });
+  }, [syncConversationsFromStorage]);
+
+  useEffect(() => {
     if (conversations.length === 0) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(conversations));
+    window.localStorage.setItem(GLOBAL_CHAT_STORAGE_KEY, JSON.stringify(conversations));
   }, [conversations]);
 
   useEffect(() => {
@@ -371,7 +342,10 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowHistory(true)}
+            onClick={() => {
+              syncConversationsFromStorage();
+              setShowHistory(true);
+            }}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/60"
             aria-label="대화 기록 열기"
           >
