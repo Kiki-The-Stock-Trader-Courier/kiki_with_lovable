@@ -263,8 +263,6 @@
 
 /* 중앙 챗봇 FAB — 중앙 정렬은 항상 translate + scale을 한 줄에 묶어야 호버/press 시 위치가 밀리지 않음 */
 .map-chat-fab {
-  left: 50%;
-  top: 0;
   transform: translate(-50%, -50%);
   touch-action: manipulation;
   background: linear-gradient(132deg, #b894ff 0%, #690acf 48%, #593d63 100%);

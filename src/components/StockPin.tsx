@@ -84,11 +84,12 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
   return sectorIconInner(stock.sector, color);
 }
 
-/** 지도 핀 본체·포인터 — 통일 #CCB9E0 */
-const PIN_COLOR = "#CCB9E0";
+/** 보유 #690ACF, 미보유 #CCB9E0 */
+const PIN_COLOR_OWNED = "#690ACF";
+const PIN_COLOR_NON_OWNED = "#CCB9E0";
 
-const createPinIcon = (stock: StockPinType, _isOwned: boolean, _isOutOfRadius: boolean) => {
-  const color = PIN_COLOR;
+const createPinIcon = (stock: StockPinType, isOwned: boolean, _isOutOfRadius: boolean) => {
+  const color = isOwned === true ? PIN_COLOR_OWNED : PIN_COLOR_NON_OWNED;
   const inner = logoOrSectorInner(stock, color);
 
   return L.divIcon({

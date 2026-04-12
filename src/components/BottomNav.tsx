@@ -45,7 +45,7 @@ const BottomNav = () => {
             }
             setShowChatSheet(true);
           }}
-          className="map-chat-fab pointer-events-auto absolute z-[1400] flex h-14 w-14 items-center justify-center rounded-full"
+          className="map-chat-fab pointer-events-auto absolute left-1/2 top-0 z-[1400] flex h-14 w-14 items-center justify-center rounded-full"
           aria-label="챗봇 열기"
         >
           <MessageCircle className="h-6 w-6 text-white" aria-hidden />
