@@ -55,7 +55,7 @@ function buildClassifierPrompt(
     "- price_fact: 현재가·시세·등락·원 단위 등 숫자 시세",
     "- news_issue: 뉴스·공시·이슈·최근 기사",
     "- company_profile: 회사 소개·무슨 일·업종·사업·한줄 요약",
-    "- deep_analysis: 투자 판단·리스크·전망·매수/매도 고민·밸류·경쟁(분석 성격)",
+    "- deep_analysis: 투자 판단·리스크·전망·매수/매도 고민·밸류·경쟁, 거래량·주간 거래·재무제표·실적·PER 등 수치·분석 성격",
     "- how_to_use_app: 앱 사용법·워키포인트·걸음·지도·탭",
     "- smalltalk: 인사·감사만 짧게",
     "- general: 위에 명확히 안 맞을 때",

@@ -166,9 +166,17 @@ export function buildStockDdgQuery(stock: StockAssistPayload, lastUserMessage: s
   /** 투자 유의·리스크 질문은 스니펫에 실릴 키워드를 보강 */
   const wantsRiskContext =
     /투자할\s*때|매수\s*전|주의|조심|유의|리스크|위험|전망|분석|변동성|하락|급등/i.test(user);
+  /** 거래량·재무·실적 — KRX·공시·DART 쪽 키워드 보강 */
+  const wantsMarketDataContext =
+    /거래량|거래대금|회전율|재무|재무제표|실적|분기|연간|PER|PBR|EPS|BPS|영업이익|순이익|부채|ROE|배당|주간|일주일|1주일|7일/i.test(
+      user,
+    );
   const base = `${stock.name} ${stock.ticker} 주식`;
   if (wantsNews) {
     return `${base} ${user || "최신 뉴스"}`.trim();
+  }
+  if (wantsMarketDataContext && user.length > 0) {
+    return `${base} ${user} KRX 거래량 재무제표 DART 공시`.trim();
   }
   if (wantsRiskContext && user.length > 0) {
     return `${base} ${user} 최근 이슈 실적 리스크`.trim();
@@ -234,6 +242,11 @@ export async function duckDuckGoWebContext(
     if (ticker6 && /^\d{6}$/.test(ticker6)) {
       alts.push(`${ticker6} KRX stock news`);
       alts.push(`${ticker6} KR stock 뉴스`);
+      if (/거래량|재무|실적|PER|주간|일주일|1주일|7일|분기|연간/i.test(primary)) {
+        alts.push(`${ticker6} 거래량 KRX`);
+        alts.push(`${ticker6} DART 재무제표`);
+        alts.push(`${ticker6} 네이버 금융`);
+      }
     }
     if (/[가-힣]/.test(primary)) {
       const stripped = primary.replace(/\s*주식\s*/g, " ").trim();

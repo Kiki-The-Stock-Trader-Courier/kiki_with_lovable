@@ -36,6 +36,15 @@ export function routeChatIntent(lastUserText: string, hasStockAssist: boolean): 
   }
 
   if (hasStockAssist) {
+    /** 거래량·재무·실적 등 — 웹 검색·심층 근거가 필요한 분석형( deep_analysis + RAG ) */
+    const fundamentalsOrLiquidityCue =
+      /거래량|거래대금|회전율|유동성|체결|대금|1주일|일주일|주간|7일|최근\s*7|최근\s*일주|일별\s*거래|재무|재무제표|재무상태|실적|분기|연간|영업이익|순이익|당기순이익|부채|총자산|자본|ROE|ROA|PER|PBR|EPS|BPS|배당|시가총액|EBITDA|현금흐름|부채비율|유보율|재무\s*공시|실적\s*공시/.test(
+        n,
+      );
+    if (fundamentalsOrLiquidityCue) {
+      return "deep_analysis";
+    }
+
     /** 시세 키워드만 있는 질문 vs '주가 의미·리스크·투자 유의' 등 분석형 질문 구분 */
     const priceCue = /시세|주가|현재가|호가|등락|전일|퍼센트|%|몇\s*원|원\s*이야|얼마|장중/.test(n);
     const investmentCautionOrAnalysisCue =

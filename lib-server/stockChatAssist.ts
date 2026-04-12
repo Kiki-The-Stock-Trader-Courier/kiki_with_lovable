@@ -24,6 +24,14 @@ function wantsStockSpecificInvestmentGuidance(lastUser: string): boolean {
   return caution || meaningVsPrice;
 }
 
+/** 거래량·재무·실적 — 스니펫 수치 인용 + 거절형 답변 지양 */
+function wantsMarketDataGuidance(lastUser: string): boolean {
+  const t = lastUser.replace(/\s+/g, " ").trim();
+  return /거래량|거래대금|회전율|재무|재무제표|재무상태|실적|분기|연간|PER|PBR|EPS|영업이익|순이익|부채|ROE|배당|주간|일주일|1주일|7일|재무\s*공시|실적\s*공시/.test(
+    t,
+  );
+}
+
 /**
  * 종목 챗: 네이버 뉴스 API(우선) + DuckDuckGo 스니펫을 시스템 프롬프트에 합칩니다.
  */
@@ -63,6 +71,14 @@ export async function mergeStockAssistWithDdg(
       ].join("\n")
     : "";
 
+  const marketDataExtra = wantsMarketDataGuidance(lastUser)
+    ? [
+        "",
+        "[이번 질문 전용 지침 — 거래량·재무·실적]",
+        "아래 스니펫·뉴스에 거래량·재무·실적 수치나 요약이 있으면 출처·시점을 밝히고 인용해 답하세요. 스니펫에 정확한 일별·주간 거래량 숫자가 없을 수 있습니다 — 그 경우에도 ‘제공 불가’로 끊지 말고, 스니펫에서 확인되는 범위(예: 최근 이슈, 실적 톤, 업종 맥락)를 설명하고, 정확한 수치는 한국거래소(KRX) 상세·증권사 HTS·DART에서 티커로 확인하라고 짧게 안내하세요.",
+      ].join("\n")
+    : "";
+
   let block: string;
   if (sections.length > 0) {
     block = [
@@ -70,14 +86,17 @@ export async function mergeStockAssistWithDdg(
       "---",
       "[외부 검색·뉴스 스니펫 — 아래 내용을 우선 근거로 답하세요. 네이버 뉴스가 있으면 최근 이슈를 요약·인용하고, 없으면 DuckDuckGo만 사용. 스니펫에 없는 사실은 추측하지 말고 ‘확인 필요’로 안내.]",
       cautionExtra,
+      marketDataExtra,
       sections.join("\n\n---\n\n"),
     ].join("\n");
   } else {
     block = [
       "\n---\n[외부 뉴스/검색: NAVER_CLIENT_ID·NAVER_CLIENT_SECRET이 없거나 검색 결과가 비었고, DuckDuckGo도 실패했습니다.",
-      wantsStockSpecificInvestmentGuidance(lastUser)
-        ? "이 질문은 종목별 투자 유의사항이므로, 일반론 나열 대신 ‘검색 결과 없음’을 밝히고 앱 시세·업종·한줄 설명만 근거로 말할 수 있는 범위에서만 답하고, 나머지는 DART·공시·거래소 확인을 권하세요."
-        : "앱에 표시된 시세·설명 위주로 답하고, 공시·뉴스 원문은 DART·거래소·언론 사이트 직접 확인을 권장한다고 짧게 안내하세요.",
+      wantsMarketDataGuidance(lastUser)
+        ? "거래량·재무 질문입니다. 검색이 비었어도 ‘답변 불가’ 한 문장으로 끝내지 말고, 앱에 있는 시세·등락·업종·한줄 설명으로 말할 수 있는 맥락은 주고, 정확한 수치는 KRX·DART·증권사에서 확인하라고 안내하세요."
+        : wantsStockSpecificInvestmentGuidance(lastUser)
+          ? "이 질문은 종목별 투자 유의사항이므로, 일반론 나열 대신 ‘검색 결과 없음’을 밝히고 앱 시세·업종·한줄 설명만 근거로 말할 수 있는 범위에서만 답하고, 나머지는 DART·공시·거래소 확인을 권하세요."
+          : "앱에 표시된 시세·설명 위주로 답하고, 공시·뉴스 원문은 DART·거래소·언론 사이트 직접 확인을 권장한다고 짧게 안내하세요.",
       "]",
     ].join(" ");
   }

@@ -14,6 +14,14 @@ describe("routeChatIntent", () => {
     expect(routeChatIntent("투자할 때 주의할 점은?", true)).toBe("deep_analysis");
   });
 
+  it("종목 시트에서 주간 거래량 질문 → deep_analysis", () => {
+    expect(routeChatIntent("최근 1주일간 거래량 알려줘", true)).toBe("deep_analysis");
+  });
+
+  it("종목 시트에서 재무 질문 → deep_analysis", () => {
+    expect(routeChatIntent("이 회사 재무상태 어때?", true)).toBe("deep_analysis");
+  });
+
   it("종목 시트에서 뉴스 → news_issue", () => {
     expect(routeChatIntent("최근 뉴스 있어?", true)).toBe("news_issue");
   });
