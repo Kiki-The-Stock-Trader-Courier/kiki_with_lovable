@@ -1,4 +1,4 @@
-import { User, Wallet, Link2, Settings, ChevronRight, Shield } from "lucide-react";
+import { User, Wallet, Settings, ChevronRight, Shield } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
@@ -43,7 +43,6 @@ const ProfilePage = () => {
       <div className="space-y-2 p-4">
         {[
           { icon: Wallet, label: "키움증권 계좌 연결", desc: "계좌를 연결하고 실제 투자하기" },
-          { icon: Link2, label: "워키포인트 연동", desc: "걸음수 자동 동기화" },
           { icon: Shield, label: "보안 설정", desc: "생체인증, PIN 설정" },
           { icon: Settings, label: "앱 설정", desc: "닉네임 변경, 알림, 반경 및 언어 설정" },
         ].map(({ icon: Icon, label, desc }) => (
