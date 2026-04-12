@@ -1,4 +1,4 @@
-import { User, Wallet, Settings, ChevronRight, Shield } from "lucide-react";
+import { User, Wallet, Settings, ChevronRight, Shield, Camera } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
@@ -13,8 +13,16 @@ const ProfilePage = () => {
       {/* Header */}
       <div className="tab-hero-panel px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl">
         <div className="flex items-center gap-4">
-          <div className="tab-icon-tile flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ring-1 ring-primary/15">
-            <User className="h-8 w-8 text-primary" />
+          <div className="relative shrink-0">
+            <div className="tab-icon-tile flex h-16 w-16 items-center justify-center rounded-2xl ring-1 ring-primary/15">
+              <User className="h-8 w-8 text-primary" />
+            </div>
+            <span
+              className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-[22px] items-center justify-center rounded-full border border-border/70 bg-card shadow-sm"
+              aria-hidden
+            >
+              <Camera className="size-2.5 text-primary" strokeWidth={2.25} />
+            </span>
           </div>
           <div className="min-w-0">
             <h1 className="font-display text-lg font-bold tracking-tight text-foreground">{nickname}</h1>
