@@ -1,5 +1,6 @@
 import type { StockAssistPayload } from "./ddgSearchCore.js";
 import { buildStockDdgQuery, duckDuckGoWebContext } from "./ddgSearchCore.js";
+import { getKrxVolumeStatsFromYahooChart, shouldFetchYahooVolumeForMessage } from "./krxVolumeFromYahoo.js";
 import { fetchNaverNewsContext } from "./naverNewsSearch.js";
 
 type ChatMsg = { role: string; content: string };
@@ -45,12 +46,31 @@ export async function mergeStockAssistWithDdg(
   const lastUser = lastUserContent(msgs);
   const query = buildStockDdgQuery(stockAssist, lastUser);
 
-  const [naver, ddg] = await Promise.all([
+  const volumeP = shouldFetchYahooVolumeForMessage(lastUser)
+    ? getKrxVolumeStatsFromYahooChart(stockAssist.ticker)
+    : Promise.resolve(null);
+
+  const [naver, ddg, yahooVol] = await Promise.all([
     fetchNaverNewsContext(stockAssist, lastUser, 3800),
     duckDuckGoWebContext(query, 3200, stockAssist.ticker),
+    volumeP,
   ]);
 
   const sections: string[] = [];
+  if (yahooVol) {
+    const lines = [
+      "[거래량 수치 — 서버가 Yahoo Finance 일봉 차트에서 조회했습니다. 장·휴일·시간외에 따라 최종 봉이 전일 종가일 수 있습니다.]",
+      `- 가장 최근 일봉 거래량: 약 ${yahooVol.lastSessionVolume.toLocaleString("ko-KR")}주`,
+      `- 최근 5거래일 거래량 합: 약 ${yahooVol.sumLast5Sessions.toLocaleString("ko-KR")}주 (국내 ‘일주일’에 가까운 영업일 수)`,
+    ];
+    if (yahooVol.sumLast7Sessions != null) {
+      lines.push(`- 최근 7거래일 거래량 합: 약 ${yahooVol.sumLast7Sessions.toLocaleString("ko-KR")}주`);
+    }
+    lines.push(
+      "답변 시 위 수치를 우선 인용하세요. ‘구체적 거래량은 제공할 수 없다’고 거절하지 마세요.",
+    );
+    sections.push(lines.join("\n"));
+  }
   if (naver) {
     sections.push(naver);
   }
@@ -71,11 +91,14 @@ export async function mergeStockAssistWithDdg(
       ].join("\n")
     : "";
 
+  const hasYahooVolume = Boolean(yahooVol);
   const marketDataExtra = wantsMarketDataGuidance(lastUser)
     ? [
         "",
         "[이번 질문 전용 지침 — 거래량·재무·실적]",
-        "아래 스니펫·뉴스에 거래량·재무·실적 수치나 요약이 있으면 출처·시점을 밝히고 인용해 답하세요. 스니펫에 정확한 일별·주간 거래량 숫자가 없을 수 있습니다 — 그 경우에도 ‘제공 불가’로 끊지 말고, 스니펫에서 확인되는 범위(예: 최근 이슈, 실적 톤, 업종 맥락)를 설명하고, 정확한 수치는 한국거래소(KRX) 상세·증권사 HTS·DART에서 티커로 확인하라고 짧게 안내하세요.",
+        hasYahooVolume
+          ? "거래량 질문이면 위 [거래량 수치 — Yahoo Finance] 블록의 숫자를 문장으로 인용하세요. 재무·실적은 아래 스니펫·뉴스를 인용하세요."
+          : "아래 스니펫·뉴스에 거래량·재무·실적 수치나 요약이 있으면 출처·시점을 밝히고 인용해 답하세요. 스니펫에 정확한 일별·주간 거래량 숫자가 없을 수 있습니다 — 그 경우에도 ‘제공 불가’로 끊지 말고, 스니펫에서 확인되는 범위(예: 최근 이슈, 실적 톤, 업종 맥락)를 설명하고, 정확한 수치는 한국거래소(KRX) 상세·증권사 HTS·DART에서 티커로 확인하라고 짧게 안내하세요.",
       ].join("\n")
     : "";
 
@@ -93,7 +116,9 @@ export async function mergeStockAssistWithDdg(
     block = [
       "\n---\n[외부 뉴스/검색: NAVER_CLIENT_ID·NAVER_CLIENT_SECRET이 없거나 검색 결과가 비었고, DuckDuckGo도 실패했습니다.",
       wantsMarketDataGuidance(lastUser)
-        ? "거래량·재무 질문입니다. 검색이 비었어도 ‘답변 불가’ 한 문장으로 끝내지 말고, 앱에 있는 시세·등락·업종·한줄 설명으로 말할 수 있는 맥락은 주고, 정확한 수치는 KRX·DART·증권사에서 확인하라고 안내하세요."
+        ? hasYahooVolume
+          ? "거래량 수치는 위 Yahoo 블록을 사용하세요."
+          : "거래량·재무 질문입니다. 검색이 비었어도 ‘답변 불가’ 한 문장으로 끝내지 말고, 앱에 있는 시세·등락·업종·한줄 설명으로 말할 수 있는 맥락은 주고, 정확한 수치는 KRX·DART·증권사에서 확인하라고 안내하세요."
         : wantsStockSpecificInvestmentGuidance(lastUser)
           ? "이 질문은 종목별 투자 유의사항이므로, 일반론 나열 대신 ‘검색 결과 없음’을 밝히고 앱 시세·업종·한줄 설명만 근거로 말할 수 있는 범위에서만 답하고, 나머지는 DART·공시·거래소 확인을 권하세요."
           : "앱에 표시된 시세·설명 위주로 답하고, 공시·뉴스 원문은 DART·거래소·언론 사이트 직접 확인을 권장한다고 짧게 안내하세요.",
