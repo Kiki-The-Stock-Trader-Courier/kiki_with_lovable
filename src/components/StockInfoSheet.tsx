@@ -209,12 +209,9 @@ const StockInfoSheet = ({
                     </span>
                   </>
                 ) : canBuy ? (
-                  <>
+                  <span className="flex flex-1 flex-col items-center justify-center text-center leading-tight">
                     <span>매수하기</span>
-                    <span className="text-[10px] font-normal opacity-90 sm:text-xs">
-                      최대 {maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주 구매 가능
-                    </span>
-                  </>
+                  </span>
                 ) : (
                   <>
                     <span className="text-[10px] font-normal opacity-90 sm:text-xs">

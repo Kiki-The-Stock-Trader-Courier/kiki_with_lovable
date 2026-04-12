@@ -47,7 +47,7 @@ const WalkPage = () => {
       <div className="tab-hero-panel px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl">
         <h1 className="mb-6 flex items-center gap-2 font-display text-xl font-bold tracking-tight text-foreground">
           <span
-            className="inline-block h-5 w-5 shrink-0 bg-primary [mask-image:url(/walk-title-shoe.png)] [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center]"
+            className="inline-block h-5 w-5 shrink-0 bg-primary [mask-image:url(/walk-title-shoe.png)] [mask-size:contain] [mask-repeat:no-repeat] [mask-position:center] [filter:drop-shadow(0.45px_0_0_hsl(var(--primary)))_drop-shadow(-0.45px_0_0_hsl(var(--primary)))_drop-shadow(0_0.45px_0_hsl(var(--primary)))_drop-shadow(0_-0.45px_0_hsl(var(--primary)))]"
             style={{
               WebkitMaskImage: "url(/walk-title-shoe.png)",
               WebkitMaskSize: "contain",
