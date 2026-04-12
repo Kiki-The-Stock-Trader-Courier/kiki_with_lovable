@@ -1,4 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { MOCK_USER_WALK } from "@/data/mockStocks";
 import {
   CASH_PER_STEP_DISPLAY,
@@ -168,7 +178,7 @@ function loadScrapsFromStorage(userId: string | undefined): ScrappedStock[] {
   }
 }
 
-export function useUserData(): UseUserDataResult {
+function useUserDataState(): UseUserDataResult {
   const { session, isAuthenticated } = useAuth();
   const [walk, setWalk] = useState<UserWalk>(MOCK_USER_WALK);
   const [nickname, setNicknameState] = useState("투자자님");
@@ -638,4 +648,20 @@ export function useUserData(): UseUserDataResult {
       isReady,
     ],
   );
+}
+
+const UserDataContext = createContext<UseUserDataResult | null>(null);
+
+/** 지도·걷기·보유 등 모든 화면이 동일한 걸음/포인트 상태를 쓰도록 앱 루트에서 한 번만 감쌉니다. */
+export function UserDataProvider({ children }: { children: ReactNode }) {
+  const value = useUserDataState();
+  return createElement(UserDataContext.Provider, { value }, children);
+}
+
+export function useUserData(): UseUserDataResult {
+  const ctx = useContext(UserDataContext);
+  if (!ctx) {
+    throw new Error("useUserData는 UserDataProvider 안에서만 사용할 수 있습니다.");
+  }
+  return ctx;
 }
