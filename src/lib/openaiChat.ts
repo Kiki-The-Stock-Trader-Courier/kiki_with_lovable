@@ -82,7 +82,7 @@ export async function askGlobalAssistant(history: ChatMessage[]): Promise<string
   const system: OpenAIChatMessage = {
     role: "system",
     content: [
-      "당신은 '캐시워크 주식' 앱의 도우미입니다.",
+      "당신은 '워키포인트' 앱의 도우미입니다.",
       "걸음·캐시·근처 상장사·지도 핀 등을 친절히 설명합니다.",
       "투자 권유는 하지 말고 정보 제공 중심으로 답하세요.",
     ].join("\n"),

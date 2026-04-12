@@ -6,7 +6,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  */
 const config: CapacitorConfig = {
   appId: "kr.cashwalk.stockmap",
-  appName: "캐시워크주식",
+  appName: "워키포인트",
   webDir: "dist",
   server: {
     // Android WebView에서 https 타일·API와 동일한 스킴 권장

@@ -43,14 +43,14 @@ const WalkPage = () => {
   };
   const progress = Math.min((walk.todaySteps / walk.goalSteps) * 100, 100);
   const appShareUrl = "https://universal-layout-main.vercel.app/";
-  const shareText = "캐시워크 주식 앱에서 같이 걸으며 투자해요!";
+  const shareText = "워키포인트 앱에서 같이 걸으며 투자해요!";
 
   const shareToFriend = async () => {
     try {
       // 모바일 브라우저/앱 Web Share 지원 시 기본 공유 시트를 우선 사용
       if (navigator.share) {
         await navigator.share({
-          title: "캐시워크 주식",
+          title: "워키포인트",
           text: shareText,
           url: appShareUrl,
         });

@@ -50,7 +50,7 @@ export function routeChatIntent(lastUserText: string, hasStockAssist: boolean): 
     }
   }
 
-  if (/앱\s*어떻게|사용법|기능|탭|걸음|캐시워크|설정\s*어디|지도\s*어떻게/.test(n)) {
+  if (/앱\s*어떻게|사용법|기능|탭|걸음|워키포인트|캐시워크|설정\s*어디|지도\s*어떻게/.test(n)) {
     return "how_to_use_app";
   }
   if (/^안녕|^반가워|고마워|감사합니다|ㅎㅎ|ㅋㅋ/.test(n) && n.length < 45) {
