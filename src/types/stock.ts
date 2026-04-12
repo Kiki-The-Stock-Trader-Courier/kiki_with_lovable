@@ -49,6 +49,8 @@ export interface ScrappedStock {
   ticker: string;
   name: string;
   sector: string;
+  /** 스크랩 시점 주가(원) — 구버전 데이터에는 없을 수 있음 */
+  price?: number;
   /** ISO 문자열 */
   savedAt: string;
 }

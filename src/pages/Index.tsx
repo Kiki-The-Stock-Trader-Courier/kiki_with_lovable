@@ -373,6 +373,7 @@ const Index = () => {
             ticker: selectedStock.ticker,
             name: selectedStock.name,
             sector: selectedStock.sector,
+            price: selectedStock.price,
           });
         }}
         onBuyStock={buyStock}

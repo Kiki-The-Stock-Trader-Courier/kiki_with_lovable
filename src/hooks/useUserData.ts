@@ -25,7 +25,7 @@ interface UseUserDataResult {
     ok: boolean;
     message: string;
   }>;
-  toggleScrap: (stock: { ticker: string; name: string; sector?: string | null }) => void;
+  toggleScrap: (stock: { ticker: string; name: string; sector?: string | null; price?: number }) => void;
   isScrapped: (ticker: string) => boolean;
   isReady: boolean;
 }
@@ -150,6 +150,7 @@ function loadScrapsFromStorage(userId: string | undefined): ScrappedStock[] {
         ticker: normalizeTicker(s.ticker),
         name: String(s.name).trim() || s.ticker,
         sector: String(s.sector ?? "기타").trim() || "기타",
+        price: typeof s.price === "number" && Number.isFinite(s.price) ? s.price : undefined,
         savedAt: String(s.savedAt ?? new Date().toISOString()),
       }))
       .filter((s) => s.ticker.length > 0);
@@ -501,7 +502,7 @@ export function useUserData(): UseUserDataResult {
     [enqueue, session?.user?.id, walk.cashBalance],
   );
 
-  const toggleScrap = useCallback((stock: { ticker: string; name: string; sector?: string | null }) => {
+  const toggleScrap = useCallback((stock: { ticker: string; name: string; sector?: string | null; price?: number }) => {
     const key = normalizeTicker(stock.ticker);
     if (!key) return;
 
@@ -510,11 +511,14 @@ export function useUserData(): UseUserDataResult {
       if (idx >= 0) {
         return prev.filter((_, i) => i !== idx);
       }
+      const price =
+        typeof stock.price === "number" && Number.isFinite(stock.price) ? stock.price : undefined;
       return [
         {
           ticker: key,
           name: stock.name?.trim() || key,
           sector: stock.sector?.trim() || "기타",
+          price,
           savedAt: new Date().toISOString(),
         },
         ...prev,

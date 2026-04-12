@@ -110,7 +110,7 @@ const WalkPage = () => {
           </div>
         </div>
 
-        {/* 통계: 달성률 · 캐시 — 두 열 가운데 정렬 */}
+        {/* 통계: 달성률 · 포인트 — 두 열 가운데 정렬 */}
         <div className="mt-6 flex max-w-sm mx-auto justify-center gap-16 sm:gap-24">
           <div className="flex min-w-[100px] flex-col items-center text-center">
             <div className="mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
@@ -124,7 +124,7 @@ const WalkPage = () => {
               <Coins className="h-5 w-5 text-cash" />
             </div>
             <p className="text-lg font-bold tabular-nums text-foreground">{walk.cashBalance.toLocaleString()}</p>
-            <p className="text-xs text-muted-foreground">캐시 (원)</p>
+            <p className="text-xs text-muted-foreground">포인트</p>
           </div>
         </div>
       </div>

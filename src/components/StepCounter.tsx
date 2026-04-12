@@ -46,10 +46,9 @@ const StepCounter = ({ walk }: StepCounterProps) => {
           <Coins className="h-5 w-5 text-cash" />
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">캐시</p>
+          <p className="text-xs text-muted-foreground">포인트</p>
           <p className="text-sm font-bold tabular-nums text-foreground">
             {walk.cashBalance.toLocaleString()}
-            <span className="text-xs font-normal text-muted-foreground">원</span>
           </p>
         </div>
       </div>
