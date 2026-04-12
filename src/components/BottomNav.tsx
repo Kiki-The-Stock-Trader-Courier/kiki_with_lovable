@@ -17,16 +17,22 @@ const NAV_ITEMS: NavItem[] = [
   { path: "/profile", label: "내 정보", icon: User },
 ];
 
-const BottomNav = () => {
+interface BottomNavProps {
+  /** 걷기 탭 목표 채팅 시트 등에서 중앙 챗 FAB를 숨길 때 */
+  hideCenterChatFab?: boolean;
+}
+
+const BottomNav = ({ hideCenterChatFab = false }: BottomNavProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const [showChatSheet, setShowChatSheet] = useState(false);
   const showCenterChatFab =
-    location.pathname === "/" ||
-    location.pathname === "/walk" ||
-    location.pathname === "/holdings" ||
-    location.pathname === "/profile";
+    (location.pathname === "/" ||
+      location.pathname === "/walk" ||
+      location.pathname === "/holdings" ||
+      location.pathname === "/profile") &&
+    !hideCenterChatFab;
 
   return (
     <nav

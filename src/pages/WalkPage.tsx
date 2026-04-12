@@ -198,7 +198,7 @@ const WalkPage = () => {
         )}
       </div>
 
-      <BottomNav />
+      <BottomNav hideCenterChatFab={goalChatOpen} />
     </div>
   );
 };
