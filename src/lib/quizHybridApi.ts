@@ -39,15 +39,26 @@ function hybridQuizUrls(): string[] {
   return Array.from(new Set(urls));
 }
 
+export type HybridQuizRequestOptions = {
+  /** 사용자별 최근 질문 스니펫 — 없으면 서버는 기존(지도 종목만) 방식으로 출제 */
+  memoryHints?: string[];
+};
+
 /**
  * 서버 하이브리드 퀴즈: 지도 스냅샷(원 안 종목) + 시세 + LLM 1회
  */
-export async function requestHybridQuiz(snapshot: MapQuizSnapshot): Promise<HybridQuizResponse> {
+export async function requestHybridQuiz(
+  snapshot: MapQuizSnapshot,
+  options?: HybridQuizRequestOptions,
+): Promise<HybridQuizResponse> {
   const body = JSON.stringify({
     centerLat: snapshot.centerLat,
     centerLng: snapshot.centerLng,
     radiusM: snapshot.radiusM,
     stocks: snapshot.stocks,
+    ...(options?.memoryHints && options.memoryHints.length > 0
+      ? { memoryHints: options.memoryHints.slice(0, 20) }
+      : {}),
   });
 
   let lastErr = "요청 실패";

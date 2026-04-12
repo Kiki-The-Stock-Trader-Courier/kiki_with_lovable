@@ -10,8 +10,16 @@ export async function handleChat(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader(
+    "Access-Control-Expose-Headers",
+    "X-Chat-Intent, X-Chat-Model, X-Chat-Router, X-Chat-Intent-Source",
+  );
 
   if (req.method === "OPTIONS") {
+    res.setHeader(
+      "Access-Control-Expose-Headers",
+      "X-Chat-Intent, X-Chat-Model, X-Chat-Router, X-Chat-Intent-Source",
+    );
     res.status(204).end();
     return;
   }

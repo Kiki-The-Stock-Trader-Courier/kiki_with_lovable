@@ -3,6 +3,8 @@ import { Bot, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage, StockPin } from "@/types/stock";
 import { askStockAssistant } from "@/lib/openaiChat";
+import { persistQuizContextExchange } from "@/lib/quizContextMemory";
+import { useAuth } from "@/contexts/AuthContext";
 import { getStockSheetChatReply } from "@/lib/stockSheetChatMock";
 import { upsertStockSheetConversation } from "@/lib/globalChatSheetHistory";
 import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
@@ -44,6 +46,8 @@ function detectScrapIntent(text: string): "add" | "remove" | "status" | null {
 }
 
 export default function StockSheetChat({ stock, isScrapped, onToggleScrap }: StockSheetChatProps) {
+  const { session } = useAuth();
+  const ragUserId = session?.user?.id;
   const [messages, setMessages] = useState<ChatMessage[]>(() => [buildWelcomeMessage(stock)]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -122,7 +126,14 @@ export default function StockSheetChat({ stock, isScrapped, onToggleScrap }: Sto
     setIsLoading(true);
 
     try {
-      const reply = await askStockAssistant(stock, historyAfterUser);
+      const { content: reply, intent } = await askStockAssistant(stock, historyAfterUser);
+      void persistQuizContextExchange({
+        userId: ragUserId,
+        intent,
+        userQuestion: trimmed,
+        assistantAnswer: reply,
+        stock: { name: stock.name, ticker: stock.ticker },
+      });
       setMessages((prev) => [
         ...prev,
         {

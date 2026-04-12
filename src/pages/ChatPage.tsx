@@ -5,6 +5,8 @@ import BottomNav from "@/components/BottomNav";
 import type { ChatMessage } from "@/types/stock";
 import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
 import { askGlobalAssistant } from "@/lib/openaiChat";
+import { fetchQuizContextForSystemPrompt, persistQuizContextExchange } from "@/lib/quizContextMemory";
+import { useAuth } from "@/contexts/AuthContext";
 import { averageLastNDaysStepsRounded, buildAssistantWalkStepsContext } from "@/lib/walkWeeklyStats";
 import { useUserData } from "@/hooks/useUserData";
 
@@ -31,6 +33,8 @@ const ChatPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
   const { walk, setGoalSteps, weeklySteps } = useUserData();
+  const { session } = useAuth();
+  const ragUserId = session?.user?.id;
   const avg3Recent = useMemo(() => averageLastNDaysStepsRounded(weeklySteps, 3), [weeklySteps]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -135,8 +139,16 @@ const ChatPage = () => {
     setIsLoading(true);
 
     try {
-      const reply = await askGlobalAssistant(historyAfterUser, {
-        extraSystemContext: buildAssistantWalkStepsContext(weeklySteps),
+      const walkCtx = buildAssistantWalkStepsContext(weeklySteps);
+      const ragCtx = await fetchQuizContextForSystemPrompt(ragUserId);
+      const { content: reply, intent } = await askGlobalAssistant(historyAfterUser, {
+        extraSystemContext: [walkCtx, ragCtx].filter(Boolean).join("\n\n"),
+      });
+      void persistQuizContextExchange({
+        userId: ragUserId,
+        intent,
+        userQuestion: userMsg.content,
+        assistantAnswer: reply,
       });
       const botMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),

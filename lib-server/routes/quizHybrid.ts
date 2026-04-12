@@ -30,10 +30,11 @@ type QuizQuestion = {
   difficulty?: number;
 };
 
+/** 하이브리드 퀴즈: 일반 사용자가 맞히기 쉬운 난이도(3~6)로 고정 */
 function normalizeDifficulty(raw: unknown): number {
   const n = Math.round(Number(raw));
-  if (!Number.isFinite(n)) return 5;
-  return Math.min(10, Math.max(1, n));
+  if (!Number.isFinite(n)) return 4;
+  return Math.min(6, Math.max(3, n));
 }
 
 function normalizeTicker(raw: string): string | null {
@@ -98,6 +99,8 @@ export async function handleQuizHybrid(req: VercelRequest, res: VercelResponse) 
     centerLng?: number;
     radiusM?: number;
     stocks?: StockIn[];
+    /** 클라이언트가 수집한 사용자 관심 주제(질문 스니펫) — 비어 있으면 기존 출제 방식만 사용 */
+    memoryHints?: string[];
   };
   try {
     body = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
@@ -156,11 +159,17 @@ export async function handleQuizHybrid(req: VercelRequest, res: VercelResponse) 
     return `- ${r.ticker} ${r.name} (업종:${r.sector}) ${px} ${ch}`.trim();
   });
 
+  const hintLines = Array.isArray(body.memoryHints)
+    ? body.memoryHints.map((h) => String(h).trim()).filter((h) => h.length > 0)
+    : [];
+
   const system = [
     "당신은 한국 상장사 퀴즈 출제자입니다.",
     "아래 목록에 있는 종목코드(6자리)와 회사명만 사용하세요. 목록에 없는 회사명·티커를 만들어내지 마세요.",
     "객관식 4지선다. 한국어로만 작성.",
-    "각 문항에 difficulty 필수: 정수 1~10 (1=아주 쉬움, 10=어려움). 문항마다 난이도를 다르게 해도 됩니다.",
+    "난이도: 일반 사용자가 지문만 보고도 답할 수 있을 정도로 출제하세요. 너무 어려운 암기·세부 재무수치·업계 마니아만 아는 문제는 금지.",
+    "각 문항 difficulty는 반드시 정수 3~6만 사용 (3=쉬움, 6=조금 생각). 1~2나 7~10은 쓰지 마세요.",
+    "사용자 관심 힌트(memory_hints)가 있으면, 그 주제와 연결될 수 있으면 1문항 정도 반영해도 됩니다. 힌트가 비어 있거나 관련 없으면 allowed_companies 데이터만으로 출제하면 됩니다.",
     "각 문항의 choices는 정확히 4개, key는 영문 대문자 A,B,C,D 고정.",
     "각 선택지에는 반드시 해당하는 ticker(6자리 문자열)를 넣으세요. 보기 텍스트는 짧게.",
     "correctKey는 A,B,C,D 중 하나.",
@@ -172,6 +181,7 @@ export async function handleQuizHybrid(req: VercelRequest, res: VercelResponse) 
     task: "퀴즈 생성",
     map_hint: `중심: ${body.centerLat}, ${body.centerLng}, 반경약 ${body.radiusM ?? 1000}m`,
     allowed_companies: contextLines,
+    memory_hints: hintLines.length > 0 ? hintLines : [],
     schema: {
       intro: "한두 문장 인사 + 퀴즈 설명",
       questions: [
@@ -180,7 +190,7 @@ export async function handleQuizHybrid(req: VercelRequest, res: VercelResponse) 
           prompt: "문제 본문",
           choices: [{ key: "A", text: "보기", ticker: "123456" }],
           correctKey: "A",
-          difficulty: 5,
+          difficulty: 4,
           feedbackWrong: "오답 시 짧은 힌트(선택)",
         },
       ],

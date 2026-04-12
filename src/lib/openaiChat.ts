@@ -15,10 +15,16 @@ export type StockAssistPayload = {
   sector?: string;
 };
 
+/** 서버 의도 라우터(CHAT_INTENT_ROUTER)가 켜져 있으면 분류값, 레거시·미노출 시 null */
+export type ChatCompletionWithMeta = {
+  content: string;
+  intent: string | null;
+};
+
 export async function postChatCompletion(
   messages: OpenAIChatMessage[],
   options?: { maxTokens?: number; stockAssist?: StockAssistPayload },
-): Promise<string> {
+): Promise<ChatCompletionWithMeta> {
   const res = await fetch(chatApiUrl(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -44,10 +50,15 @@ export async function postChatCompletion(
 
   const text = data.choices?.[0]?.message?.content?.trim();
   if (!text) throw new Error("Empty response from OpenAI");
-  return text;
+
+  const rawIntent = res.headers.get("x-chat-intent") ?? res.headers.get("X-Chat-Intent");
+  const intent =
+    rawIntent && rawIntent !== "legacy" && rawIntent.length > 0 ? rawIntent : null;
+
+  return { content: text, intent };
 }
 
-export async function askStockAssistant(stock: StockPin, history: ChatMessage[]): Promise<string> {
+export async function askStockAssistant(stock: StockPin, history: ChatMessage[]): Promise<ChatCompletionWithMeta> {
   const system: OpenAIChatMessage = {
     role: "system",
     content: [
@@ -83,7 +94,7 @@ export async function askStockAssistant(stock: StockPin, history: ChatMessage[])
 export async function askGlobalAssistant(
   history: ChatMessage[],
   options?: { extraSystemContext?: string },
-): Promise<string> {
+): Promise<ChatCompletionWithMeta> {
   const parts = [
     "당신은 '워키포인트' 앱의 도우미입니다.",
     "걸음·캐시·근처 상장사·지도 핀 등을 친절히 설명합니다.",

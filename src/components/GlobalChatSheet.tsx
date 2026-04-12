@@ -20,6 +20,12 @@ import { averageLastNDaysStepsRounded, buildAssistantWalkStepsContext } from "@/
 import { useUserData } from "@/hooks/useUserData";
 import { useMapQuizSnapshot } from "@/contexts/MapQuizContext";
 import { requestHybridQuiz, type HybridQuizQuestion } from "@/lib/quizHybridApi";
+import {
+  buildQuizHintsFromQuizContext,
+  fetchQuizContextForSystemPrompt,
+  persistQuizContextExchange,
+} from "@/lib/quizContextMemory";
+import { useAuth } from "@/contexts/AuthContext";
 import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
 
 const QUICK_ACTIONS = [
@@ -65,6 +71,8 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
   const [awaitingGoalChoice, setAwaitingGoalChoice] = useState(false);
   const [animatedWelcomeId, setAnimatedWelcomeId] = useState<string | null>(null);
   const { walk, setGoalSteps, addQuizCash, weeklySteps } = useUserData();
+  const { session } = useAuth();
+  const ragUserId = session?.user?.id;
   const avg3Recent = useMemo(() => averageLastNDaysStepsRounded(weeklySteps, 3), [weeklySteps]);
   const { snapshot: mapQuizSnapshot } = useMapQuizSnapshot();
   const [quizSession, setQuizSession] = useState<{ intro: string; questions: HybridQuizQuestion[] } | null>(
@@ -256,9 +264,9 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
         const correct = pick?.key === q.correctKey;
         let reply = correct ? "정답이에요! 👏" : (q.feedbackWrong?.trim() || "아쉽어요!");
         if (correct) {
-          const level = Math.min(10, Math.max(1, Math.round(Number(q.difficulty) || 5)));
+          const level = Math.min(6, Math.max(3, Math.round(Number(q.difficulty) || 4)));
           addQuizCash(level);
-          reply += `\n\n+${level.toLocaleString()}원 캐시 적립! (문제 난이도 ${level}/10)`;
+          reply += `\n\n+${level.toLocaleString()}원 캐시 적립! (문제 난이도 ${level}/6)`;
         }
         if (!correct) {
           const right = oc.find((c) => c.key === q.correctKey);
@@ -293,7 +301,11 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
       setIsLoading(true);
       setAwaitingGoalChoice(false);
       try {
-        const data = await requestHybridQuiz(mapQuizSnapshot);
+        const hints = await buildQuizHintsFromQuizContext(ragUserId);
+        const data = await requestHybridQuiz(
+          mapQuizSnapshot,
+          hints.length > 0 ? { memoryHints: hints } : undefined,
+        );
         setQuizSession({ intro: data.intro, questions: data.questions });
         setQuizIndex(0);
         appendAssistantMessage(
@@ -336,7 +348,14 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     if (stockPin) {
       setIsLoading(true);
       try {
-        const reply = await askStockAssistant(stockPin, historyAfterUser);
+        const { content: reply, intent } = await askStockAssistant(stockPin, historyAfterUser);
+        void persistQuizContextExchange({
+          userId: ragUserId,
+          intent,
+          userQuestion: `[${stockPin.name}] ${userMsg.content}`,
+          assistantAnswer: reply,
+          stock: { name: stockPin.name, ticker: stockPin.ticker },
+        });
         const replyId = (Date.now() + 1).toString();
         setConversations((prev) =>
           prev.map((c) => {
@@ -369,8 +388,16 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
 
     setIsLoading(true);
     try {
-      const reply = await askGlobalAssistant(historyAfterUser, {
-        extraSystemContext: buildAssistantWalkStepsContext(weeklySteps),
+      const walkCtx = buildAssistantWalkStepsContext(weeklySteps);
+      const ragCtx = await fetchQuizContextForSystemPrompt(ragUserId);
+      const { content: reply, intent } = await askGlobalAssistant(historyAfterUser, {
+        extraSystemContext: [walkCtx, ragCtx].filter(Boolean).join("\n\n"),
+      });
+      void persistQuizContextExchange({
+        userId: ragUserId,
+        intent,
+        userQuestion: userMsg.content,
+        assistantAnswer: reply,
       });
       appendAssistantMessage(reply);
     } catch (err) {

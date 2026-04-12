@@ -14,6 +14,10 @@ function openaiChatProxy(openaiKey: string | undefined): Plugin {
     configureServer(server) {
       server.middlewares.use("/api/chat", (req, res, next) => {
         if (req.method === "OPTIONS") {
+          res.setHeader(
+            "Access-Control-Expose-Headers",
+            "X-Chat-Intent, X-Chat-Model, X-Chat-Router, X-Chat-Intent-Source",
+          );
           res.statusCode = 204;
           res.end();
           return;
@@ -44,9 +48,16 @@ function openaiChatProxy(openaiKey: string | undefined): Plugin {
             process.env.OPENAI_API_KEY = openaiKey;
             try {
               const result = await runChatPipeline(json);
+              res.setHeader(
+                "Access-Control-Expose-Headers",
+                "X-Chat-Intent, X-Chat-Model, X-Chat-Router, X-Chat-Intent-Source",
+              );
               res.setHeader("X-Chat-Intent", result.meta.intent);
               res.setHeader("X-Chat-Model", result.meta.model);
               res.setHeader("X-Chat-Router", result.meta.routerEnabled ? "on" : "off");
+              if (result.meta.intentSource) {
+                res.setHeader("X-Chat-Intent-Source", result.meta.intentSource);
+              }
               if (result.kind === "fixed") {
                 res.statusCode = 200;
                 res.setHeader("Content-Type", "application/json");
