@@ -10,28 +10,63 @@ export interface StoredGlobalConversation {
   updatedAt: number;
 }
 
-export function makeTitleFromInput(input: string): string {
-  const compact = input.replace(/\s+/g, " ").trim();
-  return compact.length > 22 ? `${compact.slice(0, 22)}…` : compact;
+const FILLER_TAIL =
+  /(알려줘|알려주세요|해줘|해주세요|부탁해|부탁드립니다|좀 알려줘|좀|요|물어봐|물어봐요|알려줄래|알려줄래요|해줄래|해줄래요)\s*$/u;
+const FILLER_HEAD = /^(그리고|근데|그럼|있잖아|저|나)\s+/u;
+
+function trivialUserReply(text: string): boolean {
+  const t = text.replace(/\s+/g, "").trim();
+  if (!t) return true;
+  if (/^[1-4]$/.test(t)) return true;
+  if (/^(그만|종료|중지|스톱|stop)$/i.test(t)) return true;
+  return false;
 }
 
-export function summarizeConversationTitle(messages: ChatMessage[]): string {
-  const userMessages = messages.filter((m) => m.role === "user").map((m) => m.content.trim()).filter(Boolean);
-  if (userMessages.length === 0) return "New chat";
-
-  const latest = userMessages[userMessages.length - 1]
+/** 사용자 문장에서 제목용 핵심만 남깁니다. */
+function cleanUserLineForTitle(raw: string): string {
+  let s = raw.replace(/\s+/g, " ").trim();
+  s = s.replace(FILLER_HEAD, "").trim();
+  s = s.replace(/\s*[!?.,]+$/u, "").trim();
+  s = s.replace(FILLER_TAIL, "").trim();
+  s = s
+    .replace(/[^\p{L}\p{N}\s?!.,:]/gu, "")
     .replace(/\s+/g, " ")
-    .replace(/[^\p{L}\p{N}\s?!.,]/gu, "")
     .trim();
+  return s;
+}
 
-  const softened = latest.replace(
-    /(알려줘|알려주세요|해줘|해주세요|부탁해|부탁드립니다|좀 알려줘|좀|요)\s*$/u,
-    "",
-  );
+export function makeTitleFromInput(input: string, maxLen = 34): string {
+  const compact = input.replace(/\s+/g, " ").trim();
+  if (!compact) return "";
+  return compact.length > maxLen ? `${compact.slice(0, Math.max(1, maxLen - 1))}…` : compact;
+}
 
-  const normalized = softened.length > 0 ? softened : latest;
-  if (normalized.length > 0) return makeTitleFromInput(normalized);
-  return "New chat";
+/**
+ * 최근 사용자 발화부터 최대 3개까지 핵심만 이어 붙여 제목으로 씁니다 (최신이 앞).
+ */
+export function summarizeConversationTitle(messages: ChatMessage[]): string {
+  const userTexts = messages
+    .filter((m) => m.role === "user")
+    .map((m) => m.content.trim())
+    .filter(Boolean);
+  if (userTexts.length === 0) return "New chat";
+
+  const parts: string[] = [];
+  for (let i = userTexts.length - 1; i >= 0 && parts.length < 3; i--) {
+    const raw = userTexts[i];
+    if (trivialUserReply(raw)) continue;
+    const c = cleanUserLineForTitle(raw);
+    if (!c) continue;
+    if (parts.includes(c)) continue;
+    parts.push(c);
+  }
+
+  if (parts.length === 0) {
+    const last = cleanUserLineForTitle(userTexts[userTexts.length - 1] ?? "");
+    return last.length > 0 ? makeTitleFromInput(last) : "New chat";
+  }
+
+  return makeTitleFromInput(parts.join(" · "), 36);
 }
 
 export function createConversation(): StoredGlobalConversation {
@@ -77,8 +112,10 @@ export function upsertStockSheetConversation(
 
   const convId = `stock-sheet-${String(stock.ticker).trim()}`;
   const titleBase = summarizeConversationTitle(messages);
-  const title =
-    titleBase && titleBase !== "New chat" ? titleBase : `${stock.name}(${stock.ticker})`;
+  const summaryPart = titleBase && titleBase !== "New chat" ? titleBase : "대화";
+  const prefix = `${stock.name}:`;
+  const combined = `${prefix} ${summaryPart}`;
+  const title = makeTitleFromInput(combined, 40);
 
   const list = readGlobalChatConversationsFromStorage() ?? [];
 
@@ -86,7 +123,7 @@ export function upsertStockSheetConversation(
 
   const nextConv: StoredGlobalConversation = {
     id: convId,
-    title: title.length > 0 ? title : `${stock.name}(${stock.ticker})`,
+    title: title.length > 0 ? title : `${stock.name}:`,
     messages: serialized,
     updatedAt: Date.now(),
   };
