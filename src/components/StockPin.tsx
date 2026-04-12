@@ -84,9 +84,9 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
   return sectorIconInner(stock.sector, color);
 }
 
-const createPinIcon = (stock: StockPinType, _isOwned: boolean, _isOutOfRadius: boolean) => {
-  /** 종목 핀 본체·포인터 통일 색상 */
-  const color = "#690ACF";
+const createPinIcon = (stock: StockPinType, isOwned: boolean, _isOutOfRadius: boolean) => {
+  /** 보유 #593D63 유지, 미보유 #690ACF */
+  const color = isOwned ? "#593D63" : "#690ACF";
   const inner = logoOrSectorInner(stock, color);
 
   return L.divIcon({
