@@ -6,7 +6,7 @@ const HoldingsPage = () => {
   const { holdings, scraps } = useUserData();
   return (
     <div className="app-page-shell mx-auto min-h-[100dvh] w-full max-w-lg pb-24" data-testid="holdings-screen">
-      <div className="bg-card px-5 pb-5 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl sm:shadow-sm">
+      <div className="tab-hero-panel px-5 pb-5 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl">
         <h1 className="mb-2 flex items-center gap-2 font-display text-xl font-bold tracking-tight text-foreground">
           <BriefcaseBusiness className="h-5 w-5 text-primary" />
           보유 종목
@@ -16,7 +16,7 @@ const HoldingsPage = () => {
 
       <div className="px-4 pb-2 pt-3">
         {holdings.length === 0 ? (
-          <div className="rounded-xl border border-border/60 bg-card p-6 text-center text-sm text-muted-foreground shadow-sm">
+          <div className="tab-card-surface rounded-xl p-6 text-center text-sm text-muted-foreground">
             보유 종목이 없습니다. 내 계좌 데이터가 연동되면 여기에 개인 종목이 표시됩니다.
           </div>
         ) : (
@@ -28,7 +28,7 @@ const HoldingsPage = () => {
               return (
                 <div
                   key={h.ticker}
-                  className="flex items-center justify-between rounded-xl border border-border/60 bg-card p-4 shadow-sm"
+                  className="tab-card-surface flex items-center justify-between rounded-xl p-4"
                 >
                   <div>
                     <p className="text-sm font-semibold text-foreground">{h.name}</p>
@@ -49,7 +49,7 @@ const HoldingsPage = () => {
         )}
 
         {/* 요청사항: 보유 종목 탭에서 보유 종목 아래 스크랩 목록 표시 */}
-        <div className="mt-6 rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+        <div className="tab-card-surface mt-6 rounded-xl p-4">
           <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
             <Bookmark className="h-4 w-4 text-primary" />
             스크랩한 종목
@@ -63,7 +63,7 @@ const HoldingsPage = () => {
               {scraps.map((s) => (
                 <div
                   key={s.ticker}
-                  className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/20 px-3 py-2"
+                  className="tab-subtle-row flex items-center justify-between rounded-lg px-3 py-2"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">{s.name}</p>

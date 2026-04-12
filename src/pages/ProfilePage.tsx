@@ -11,9 +11,9 @@ const ProfilePage = () => {
   return (
     <div className="app-page-shell mx-auto min-h-[100dvh] w-full max-w-lg pb-24" data-testid="profile-screen">
       {/* Header */}
-      <div className="bg-card px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl sm:shadow-sm">
+      <div className="tab-hero-panel px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl">
         <div className="flex items-center gap-4">
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/10">
+          <div className="tab-icon-tile flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl ring-1 ring-primary/15">
             <User className="h-8 w-8 text-primary" />
           </div>
           <div className="min-w-0">
@@ -24,13 +24,13 @@ const ProfilePage = () => {
 
         {/* Summary cards */}
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-border/50 bg-muted/40 p-4">
+          <div className="tab-stat-tile rounded-xl p-4">
             <p className="text-xs text-muted-foreground">보유 캐시</p>
             <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
               {walk.cashBalance.toLocaleString()}원
             </p>
           </div>
-          <div className="rounded-xl border border-border/50 bg-muted/40 p-4">
+          <div className="tab-stat-tile rounded-xl p-4">
             <p className="text-xs text-muted-foreground">투자 평가금</p>
             <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
               {totalValue.toLocaleString()}원
@@ -50,11 +50,11 @@ const ProfilePage = () => {
           <button
             key={label}
             type="button"
-            className="flex w-full min-h-[56px] items-center gap-4 rounded-xl border border-border/60 bg-card p-4 text-left shadow-sm transition-colors hover:bg-muted/40 active:bg-muted/60"
+            className="tab-settings-row flex w-full min-h-[56px] items-center gap-4 rounded-xl p-4 text-left"
             aria-label={label}
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
-              <Icon className="h-5 w-5 text-foreground" />
+            <div className="tab-icon-tile flex h-10 w-10 shrink-0 items-center justify-center rounded-xl">
+              <Icon className="h-5 w-5 text-primary" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-semibold text-foreground">{label}</p>

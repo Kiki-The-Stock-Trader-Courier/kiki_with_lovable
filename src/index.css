@@ -84,14 +84,63 @@
 }
 
 @layer components {
-  /* 지도 외 탭 페이지 — 밝은 라벤더·블러시 메시 (맵 .map-screen-shell 과 톤만 맞춤) */
+  /**
+   * 탭 페이지 배경 — 컬러차트(라벤더 #a371bf · 마젠타 #db4c94 · 코랄 #f2866c) 느낌의 밝은 메시
+   */
   .app-page-shell {
+    background:
+      radial-gradient(120% 85% at 100% 0%, hsl(320 52% 95.5% / 0.42) 0%, transparent 52%),
+      radial-gradient(95% 75% at 0% 100%, hsl(16 90% 94% / 0.38) 0%, transparent 48%),
+      linear-gradient(168deg, hsl(265 50% 98.6%) 0%, hsl(308 38% 98.2%) 48%, hsl(22 82% 98.5%) 100%);
+  }
+
+  /* 상단 히어로(걷기·프로필·보유) — 카드형 그라데이션 + 소프트 섀도 */
+  .tab-hero-panel {
     background: linear-gradient(
-      168deg,
-      hsl(270 52% 98.4%) 0%,
-      hsl(312 36% 98.1%) 46%,
-      hsl(22 78% 98.5%) 100%
+      185deg,
+      hsl(0 0% 100%) 0%,
+      hsl(295 45% 99.1%) 42%,
+      hsl(28 72% 98.6%) 100%
     );
+    border-bottom: 1px solid hsl(285 24% 89% / 0.85);
+    box-shadow: 0 20px 50px hsl(300 26% 52% / 0.09);
+  }
+
+  .tab-stat-tile {
+    background: linear-gradient(145deg, hsl(275 48% 99.2%) 0%, hsl(328 38% 98.4%) 100%);
+    border: 1px solid hsl(285 28% 88% / 0.95);
+    box-shadow: 0 4px 18px hsl(300 24% 50% / 0.07);
+  }
+
+  .tab-card-surface {
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.97) 0%, hsl(288 32% 99% / 0.99) 100%);
+    border: 1px solid hsl(285 24% 88% / 0.92);
+    box-shadow: 0 4px 18px hsl(300 22% 48% / 0.08);
+  }
+
+  .tab-settings-row {
+    background: linear-gradient(180deg, hsl(0 0% 100% / 0.94) 0%, hsl(282 36% 99% / 0.97) 100%);
+    border: 1px solid hsl(285 22% 88% / 0.88);
+    box-shadow: 0 2px 14px hsl(300 20% 50% / 0.06);
+  }
+
+  .tab-settings-row:hover {
+    background: linear-gradient(180deg, hsl(312 42% 98.6%) 0%, hsl(22 78% 98.4%) 100%);
+  }
+
+  .tab-settings-row:active {
+    background: linear-gradient(180deg, hsl(275 30% 97%) 0%, hsl(305 32% 97.5%) 100%);
+  }
+
+  .tab-subtle-row {
+    background: hsl(275 32% 97% / 0.92);
+    border: 1px solid hsl(285 20% 90% / 0.75);
+  }
+
+  .tab-icon-tile {
+    background: linear-gradient(145deg, hsl(310 45% 96.5%) 0%, hsl(265 40% 97.5%) 55%, hsl(20 85% 97%) 100%);
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.65);
+    border: 1px solid hsl(285 26% 88% / 0.7);
   }
 
   /**
@@ -164,12 +213,10 @@
 }
 
 .map-screen-shell {
-  background: linear-gradient(
-    168deg,
-    hsl(268 55% 98%) 0%,
-    hsl(320 42% 97.5%) 42%,
-    hsl(18 85% 98%) 100%
-  );
+  background:
+    radial-gradient(120% 85% at 100% 0%, hsl(320 52% 95.5% / 0.38) 0%, transparent 52%),
+    radial-gradient(95% 75% at 0% 100%, hsl(16 90% 94% / 0.34) 0%, transparent 48%),
+    linear-gradient(168deg, hsl(265 50% 98.4%) 0%, hsl(308 38% 97.8%) 48%, hsl(22 82% 98.2%) 100%);
 }
 
 .map-canvas {

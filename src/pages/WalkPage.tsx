@@ -44,7 +44,7 @@ const WalkPage = () => {
       data-testid="walk-screen"
     >
       {/* Header */}
-      <div className="bg-card px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl sm:shadow-sm">
+      <div className="tab-hero-panel px-5 pb-6 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:rounded-b-2xl">
         <h1 className="mb-6 font-display text-xl font-bold tracking-tight text-foreground">오늘의 걷기</h1>
 
         {/* Circular progress */}
@@ -116,7 +116,7 @@ const WalkPage = () => {
             친구에게 공유
           </button>
         </div>
-        <div className="rounded-xl border border-border/60 bg-card p-4 shadow-sm">
+        <div className="tab-card-surface rounded-xl p-4">
           <div className="flex h-40 items-end justify-between gap-2">
             {weeklySteps.map((item) => {
               const max = Math.max(1, ...weeklySteps.map((v) => v.steps));
