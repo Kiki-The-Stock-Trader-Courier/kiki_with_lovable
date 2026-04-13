@@ -84,7 +84,7 @@ const StockInfoSheet = ({
     setSheetQuote(null);
     setQuoteError(false);
 
-    void (async () => {
+    const loadQuote = async () => {
       try {
         const qs = await fetchYahooQuotes([t]);
         if (cancelled) return;
@@ -118,10 +118,16 @@ const StockInfoSheet = ({
           }
         }
       }
-    })();
+    };
+
+    void loadQuote();
+    const timer = window.setInterval(() => {
+      void loadQuote();
+    }, 180000);
 
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
   }, [stock, retryToken]);
 
