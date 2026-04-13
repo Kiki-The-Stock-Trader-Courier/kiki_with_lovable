@@ -3,6 +3,7 @@ import { BriefcaseBusiness, Bookmark } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useUserData } from "@/hooks/useUserData";
 import { MOCK_STOCKS } from "@/data/mockStocks";
+import { getPortfolioSummary } from "@/lib/portfolioSummary";
 import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
 import type { ScrappedStock } from "@/types/stock";
 
@@ -60,20 +61,7 @@ const HoldingsPage = () => {
     };
   }, [scrapTickerKey]);
 
-  /** 전 종목 합산: 카드별 원금(평균×수량)·평가손익·평가액(원금+평가손익) */
-  const portfolioSummary = useMemo(() => {
-    let totalPrincipal = 0;
-    let totalPnl = 0;
-    for (const h of holdings) {
-      totalPrincipal += h.avgPrice * h.shares;
-      totalPnl += (h.currentPrice - h.avgPrice) * h.shares;
-    }
-    return {
-      totalPrincipal,
-      totalPnl,
-      totalMarket: totalPrincipal + totalPnl,
-    };
-  }, [holdings]);
+  const portfolioSummary = useMemo(() => getPortfolioSummary(holdings), [holdings]);
 
   const resolveScrapPrice = (s: ScrappedStock): number | null => {
     const k = normalizeKrxTickerKey(s.ticker);
