@@ -35,7 +35,7 @@ import { resolveStockPinFromMapMessage } from "@/lib/globalChatStockResolve";
 import { buildGlobalChatMarketContext } from "@/lib/chatMarketContext";
 
 const QUICK_ACTIONS = [
-  "근처 삼성전자 정보 알려줘",
+  "삼성전자에 대해 알려줘",
   "오늘의 주식 퀴즈!",
   "걸음 목표 업데이트해줘",
 ];
