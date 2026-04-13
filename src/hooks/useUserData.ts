@@ -45,7 +45,7 @@ interface UseUserDataResult {
   setGoalSteps: (goal: number) => void;
   setNickname: (nickname: string) => void;
   addSteps: (steps: number) => void;
-  /** 걷기 포인트 수령: 코인 버튼 — 100걸음 단위로 잔고에 반영 */
+  /** 걷기 포인트 수령: 코인 버튼 탭 1회당 1포인트(100걸음 구간 1개)만 잔고에 반영 */
   claimWalkPoints: () => void;
   /** 주식 퀴즈 정답 등 — 난이도별 1~10원 적립 */
   addQuizCash: (won: number) => void;
@@ -463,16 +463,18 @@ function useUserDataState(): UseUserDataResult {
     [enqueue, session?.user?.id, walk.goalSteps],
   );
 
+  /** 코인 탭 1회당 수령 포인트 수(100걸음 = 1포인트 단위를 1개씩만 소모) */
   const claimWalkPoints = useCallback(() => {
     let claimedPoints = 0;
     flushSync(() => {
       setWalk((prev) => {
-        claimedPoints = claimablePointsFromSteps(prev.todaySteps, prev.stepsClaimedForCashToday);
-        if (claimedPoints <= 0) return prev;
+        const available = claimablePointsFromSteps(prev.todaySteps, prev.stepsClaimedForCashToday);
+        if (available <= 0) return prev;
+        claimedPoints = 1;
         return {
           ...prev,
-          cashBalance: Math.round((prev.cashBalance + claimedPoints * WON_PER_POINT) * 10) / 10,
-          stepsClaimedForCashToday: prev.stepsClaimedForCashToday + claimedPoints * STEPS_PER_POINT,
+          cashBalance: Math.round((prev.cashBalance + WON_PER_POINT) * 10) / 10,
+          stepsClaimedForCashToday: prev.stepsClaimedForCashToday + STEPS_PER_POINT,
         };
       });
     });
@@ -494,7 +496,7 @@ function useUserDataState(): UseUserDataResult {
       const sc = Math.max(0, Math.round(day?.steps_claimed_for_cash ?? 0));
       const pts = claimablePointsFromSteps(st, sc);
       if (pts <= 0) return;
-      const nextClaimed = sc + pts * STEPS_PER_POINT;
+      const nextClaimed = sc + STEPS_PER_POINT;
       const goalStepsRow = Math.max(1000, Math.round(day?.goal_steps ?? 5000));
       const { data: profile } = await supabase
         .from("user_profiles")
@@ -512,7 +514,7 @@ function useUserDataState(): UseUserDataResult {
         },
         { onConflict: "user_id,walk_date" },
       );
-      await supabase.from("user_profiles").update({ cash_balance: bal + pts * WON_PER_POINT }).eq("user_id", userId);
+      await supabase.from("user_profiles").update({ cash_balance: bal + WON_PER_POINT }).eq("user_id", userId);
     });
   }, [enqueue, session?.user?.id]);
 

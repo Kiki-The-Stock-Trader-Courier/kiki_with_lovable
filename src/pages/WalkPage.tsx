@@ -37,7 +37,7 @@ const WalkPage = () => {
     [walk.todaySteps, walk.stepsClaimedForCashToday],
   );
 
-  /** 수령만 수행 — 화면 전환 없음. 지도 상단 StepCounter 등과 동일 `walk.cashBalance`가 갱신됩니다. */
+  /** 탭 1회당 1포인트 수령 — `walk.cashBalance`·지도 상단 StepCounter 동일 상태 반영 */
   const onCashCoinClick = () => {
     claimWalkPoints();
   };
@@ -118,7 +118,7 @@ const WalkPage = () => {
               type="button"
               onClick={onCashCoinClick}
               className="absolute left-[64px] top-[113px] z-10 flex size-9 translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-gradient-to-b from-primary via-[#593d63] to-[#3d2845] text-[15px] font-bold leading-none text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.38),inset_0_-3px_6px_rgba(0,0,0,0.22),0_4px_10px_rgba(105,10,207,0.3)] ring-1 ring-[#593d63]/25 transition-transform active:scale-95"
-              aria-label="지금 받을 수 있는 걷기 포인트 수령"
+              aria-label="걷기 포인트 1포인트 수령 (남은 횟수는 배지 숫자)"
             >
               <i
                 className="pointer-events-none absolute -right-0.5 -top-0.5 z-20 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-[#FF3B30] px-0.5 text-[9px] font-bold leading-none text-white not-italic shadow-[0_1px_2px_rgba(0,0,0,0.22)] ring-1 ring-white"
