@@ -6,6 +6,7 @@ import type { StockPin } from "@/types/stock";
 import { MOCK_STOCKS } from "@/data/mockStocks";
 import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
 import { SECTOR_QUEST_REWARD_WON, SECTOR_QUEST_TARGET } from "@/lib/sectorQuest";
+import { toast } from "sonner";
 
 interface StockInfoSheetProps {
   stock: StockPin | null;
@@ -67,6 +68,9 @@ const StockInfoSheet = ({
 }: StockInfoSheetProps) => {
   const [liveQuote, setLiveQuote] = useState<{ price: number; changePercent: number } | null>(null);
   const [sheetHeightVh, setSheetHeightVh] = useState(76);
+  const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
+  const [buyQtyInput, setBuyQtyInput] = useState("");
+  const [isBuying, setIsBuying] = useState(false);
   const dragRef = useRef<{ startY: number; startHeightVh: number } | null>(null);
 
   useEffect(() => {
@@ -144,6 +148,44 @@ const StockInfoSheet = ({
   /** 캐시 < 1주 가격일 때 안내용 (기존과 동일) */
   const affordableShares = maxAffordableShares;
 
+  const openBuyModal = () => {
+    if (!hasPrice || !canBuy || maxAffordableShares < MIN_AFFORDABLE_SHARES) return;
+    setBuyQtyInput(defaultBuyQtyPrompt(maxAffordableShares));
+    setIsBuyModalOpen(true);
+  };
+
+  const handleConfirmBuy = () => {
+    const cleaned = String(buyQtyInput).replace(/,/g, "").replace(/\s/g, "").trim();
+    const qty = parseFloat(cleaned);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      toast.error("올바른 수량을 입력해 주세요. (예: 1, 0.5, 0.229)");
+      return;
+    }
+    if (qty > maxAffordableShares + 1e-8) {
+      toast.error(`최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주까지 매수할 수 있습니다.`);
+      return;
+    }
+    setIsBuying(true);
+    void (async () => {
+      try {
+        const result = await onBuyStock({
+          ticker: stock.ticker,
+          name: stock.name,
+          price: safePrice,
+          shares: qty,
+        });
+        if (result.ok) {
+          toast.success(result.message);
+          setIsBuyModalOpen(false);
+        } else {
+          toast.error(result.message);
+        }
+      } finally {
+        setIsBuying(false);
+      }
+    })();
+  };
+
   return (
     <div className="animate-fade-in fixed inset-0 z-[1400]" data-testid="stock-info-sheet">
       {/* Backdrop */}
@@ -192,35 +234,7 @@ const StockInfoSheet = ({
               size="sm"
               className="h-auto max-w-[9.5rem] shrink-0 rounded-xl px-2.5 py-2 text-xs font-bold shadow-sm sm:max-w-none sm:px-3 sm:text-sm"
               disabled={!hasPrice || !canBuy}
-              onClick={() => {
-                if (!hasPrice || !canBuy || maxAffordableShares < MIN_AFFORDABLE_SHARES) return;
-                const raw = window.prompt(
-                  `몇 주를 매수할까요?\n(최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주, 소수 주 가능)`,
-                  defaultBuyQtyPrompt(maxAffordableShares),
-                );
-                if (raw == null) return;
-                const cleaned = String(raw).replace(/,/g, "").replace(/\s/g, "").trim();
-                const qty = parseFloat(cleaned);
-                if (!Number.isFinite(qty) || qty <= 0) {
-                  window.alert("올바른 수량을 입력해 주세요. (예: 1, 0.5, 0.229)");
-                  return;
-                }
-                if (qty > maxAffordableShares + 1e-8) {
-                  window.alert(
-                    `최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주까지 매수할 수 있습니다.`,
-                  );
-                  return;
-                }
-                void (async () => {
-                  const result = await onBuyStock({
-                    ticker: stock.ticker,
-                    name: stock.name,
-                    price: safePrice,
-                    shares: qty,
-                  });
-                  window.alert(result.message);
-                })();
-              }}
+              onClick={openBuyModal}
               data-testid="buy-stock-button"
               aria-label={
                 !hasPrice
@@ -345,6 +359,42 @@ const StockInfoSheet = ({
         />
         </div>
       </div>
+      {isBuyModalOpen ? (
+        <div className="fixed inset-0 z-[1501] flex items-center justify-center bg-black/45 px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border/50 bg-background p-4 shadow-2xl">
+            <h3 className="text-base font-bold text-foreground">매수 수량 입력</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              최대 {maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주까지 입력할 수 있어요.
+            </p>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={buyQtyInput}
+              onChange={(e) => setBuyQtyInput(e.target.value)}
+              className="mt-3 h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              placeholder="예: 0.25"
+              aria-label="매수 수량"
+            />
+            <div className="mt-3 flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsBuyModalOpen(false)}
+                disabled={isBuying}
+              >
+                취소
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirmBuy}
+                disabled={isBuying}
+              >
+                {isBuying ? "처리 중..." : "매수 확인"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 };
