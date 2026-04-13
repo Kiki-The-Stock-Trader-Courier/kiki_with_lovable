@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { PanelLeft, Plus, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { ChatMessage } from "@/types/stock";
@@ -45,6 +45,7 @@ const WELCOME_TEXT =
 
 interface GlobalChatSheetProps {
   onClose: () => void;
+  onResizeHandlePointerDown?: (e: ReactPointerEvent<HTMLButtonElement>) => void;
 }
 
 function buildInitialMessage(): ChatMessage {
@@ -68,7 +69,15 @@ function formatQuizBlock(intro: string | null, q: HybridQuizQuestion, idx: numbe
   return `${head}【문제 ${idx + 1}/${total}】\n${q.prompt}\n\n${lines.join("\n")}\n\n답은 1~4 숫자로 보내 주세요.`;
 }
 
-export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
+const RESIZE_HANDLE_IMAGE =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='96' height='20' viewBox='0 0 96 20' fill='none'>
+      <rect x='20' y='7' width='56' height='6' rx='3' fill='#8E8E96' fill-opacity='0.58'/>
+    </svg>`,
+  );
+
+export default function GlobalChatSheet({ onClose, onResizeHandlePointerDown }: GlobalChatSheetProps) {
   const [conversations, setConversations] = useState<StoredGlobalConversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string>("");
   const [showHistory, setShowHistory] = useState(false);
@@ -449,7 +458,19 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
 
   return (
     <div className="animate-slide-up relative flex h-full flex-col rounded-t-3xl bg-background shadow-2xl">
-      <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-muted-foreground/30" />
+      <button
+        type="button"
+        onPointerDown={onResizeHandlePointerDown}
+        className="mx-auto mt-1 flex h-7 w-24 cursor-ns-resize items-center justify-center rounded-full touch-none"
+        aria-label="챗봇 창 높이 조절"
+      >
+        <img
+          src={RESIZE_HANDLE_IMAGE}
+          alt=""
+          className="pointer-events-none h-5 w-24 select-none"
+          draggable={false}
+        />
+      </button>
       <header className="flex items-center justify-between border-b border-border/80 px-4 py-2.5">
         <div className="flex items-center gap-2">
           <button

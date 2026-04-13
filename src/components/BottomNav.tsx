@@ -1,5 +1,5 @@
 import { Map, Footprints, BriefcaseBusiness, User, MessageCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import GlobalChatSheet from "@/components/GlobalChatSheet";
@@ -27,12 +27,37 @@ const BottomNav = ({ hideCenterChatFab = false }: BottomNavProps) => {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
   const [showChatSheet, setShowChatSheet] = useState(false);
+  const [sheetHeightVh, setSheetHeightVh] = useState(50);
+  const dragRef = useRef<{ startY: number; startHeightVh: number } | null>(null);
   const showCenterChatFab =
     (location.pathname === "/" ||
       location.pathname === "/walk" ||
       location.pathname === "/holdings" ||
       location.pathname === "/profile") &&
     !hideCenterChatFab;
+
+  useEffect(() => {
+    const onMove = (ev: PointerEvent) => {
+      if (!dragRef.current) return;
+      const deltaY = ev.clientY - dragRef.current.startY;
+      const deltaVh = (deltaY / window.innerHeight) * 100;
+      const next = dragRef.current.startHeightVh - deltaVh;
+      setSheetHeightVh(Math.min(88, Math.max(35, next)));
+    };
+    const onUp = () => {
+      dragRef.current = null;
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, []);
+
+  const handleResizeStart = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    dragRef.current = { startY: e.clientY, startHeightVh: sheetHeightVh };
+  };
 
   return (
     <nav
@@ -87,8 +112,14 @@ const BottomNav = ({ hideCenterChatFab = false }: BottomNavProps) => {
             onClick={() => setShowChatSheet(false)}
             aria-label="챗봇 닫기 배경"
           />
-          <div className="fixed inset-x-0 bottom-0 left-1/2 z-[1500] h-[50dvh] w-full max-w-lg -translate-x-1/2">
-            <GlobalChatSheet onClose={() => setShowChatSheet(false)} />
+          <div
+            className="fixed inset-x-0 bottom-0 left-1/2 z-[1500] w-full max-w-lg -translate-x-1/2"
+            style={{ height: `${sheetHeightVh}dvh` }}
+          >
+            <GlobalChatSheet
+              onClose={() => setShowChatSheet(false)}
+              onResizeHandlePointerDown={handleResizeStart}
+            />
           </div>
         </>
       )}
