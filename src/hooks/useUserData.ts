@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { flushSync } from "react-dom";
 import { MOCK_USER_WALK } from "@/data/mockStocks";
 import {
   CASH_PER_STEP_DISPLAY,
@@ -464,14 +465,16 @@ function useUserDataState(): UseUserDataResult {
 
   const claimWalkPoints = useCallback(() => {
     let claimedPoints = 0;
-    setWalk((prev) => {
-      claimedPoints = claimablePointsFromSteps(prev.todaySteps, prev.stepsClaimedForCashToday);
-      if (claimedPoints <= 0) return prev;
-      return {
-        ...prev,
-        cashBalance: Math.round((prev.cashBalance + claimedPoints * WON_PER_POINT) * 10) / 10,
-        stepsClaimedForCashToday: prev.stepsClaimedForCashToday + claimedPoints * STEPS_PER_POINT,
-      };
+    flushSync(() => {
+      setWalk((prev) => {
+        claimedPoints = claimablePointsFromSteps(prev.todaySteps, prev.stepsClaimedForCashToday);
+        if (claimedPoints <= 0) return prev;
+        return {
+          ...prev,
+          cashBalance: Math.round((prev.cashBalance + claimedPoints * WON_PER_POINT) * 10) / 10,
+          stepsClaimedForCashToday: prev.stepsClaimedForCashToday + claimedPoints * STEPS_PER_POINT,
+        };
+      });
     });
     if (claimedPoints <= 0 || !supabase || !session?.user?.id) return;
     const userId = session.user.id;
@@ -518,10 +521,13 @@ function useUserDataState(): UseUserDataResult {
       const add = Math.min(10, Math.max(1, Math.round(Number(won) || 0)));
       if (add < 1) return;
 
-      setWalk((prev) => ({
-        ...prev,
-        cashBalance: Math.round((prev.cashBalance + add) * 10) / 10,
-      }));
+      /** 채팅 시트 등 동일 핸들러에서 연속 setState 시에도 지도·탭의 포인트 표시가 즉시 그려지도록 동기 커밋 */
+      flushSync(() => {
+        setWalk((prev) => ({
+          ...prev,
+          cashBalance: Math.round((prev.cashBalance + add) * 10) / 10,
+        }));
+      });
 
       if (!supabase || !session?.user?.id) return;
       const userId = session.user.id;
@@ -544,10 +550,12 @@ function useUserDataState(): UseUserDataResult {
       const add = Math.max(0, Math.round(Number(won) || 0));
       if (add <= 0) return;
 
-      setWalk((prev) => ({
-        ...prev,
-        cashBalance: Math.round((prev.cashBalance + add) * 10) / 10,
-      }));
+      flushSync(() => {
+        setWalk((prev) => ({
+          ...prev,
+          cashBalance: Math.round((prev.cashBalance + add) * 10) / 10,
+        }));
+      });
 
       if (!supabase || !session?.user?.id) return;
       const userId = session.user.id;

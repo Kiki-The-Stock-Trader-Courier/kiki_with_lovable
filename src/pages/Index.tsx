@@ -315,7 +315,7 @@ const Index = () => {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[1200] p-4 pt-[calc(env(safe-area-inset-top,0px)+12px)]">
         <div className="pointer-events-auto mx-auto w-full max-w-lg">
           {isAuthenticated ? (
-            <StepCounter walk={walk} />
+            <StepCounter />
           ) : (
             <button
               type="button"

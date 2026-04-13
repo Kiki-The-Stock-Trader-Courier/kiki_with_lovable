@@ -1,11 +1,9 @@
 import { Footprints, Coins } from "lucide-react";
-import type { UserWalk } from "@/types/stock";
+import { useUserData } from "@/hooks/useUserData";
 
-interface StepCounterProps {
-  walk: UserWalk;
-}
-
-const StepCounter = ({ walk }: StepCounterProps) => {
+/** 지도 상단 배너 — `UserData`의 `walk`를 직접 구독해 퀴즈·퀘스트 등으로 캐시가 바뀌면 즉시 반영 */
+const StepCounter = () => {
+  const { walk } = useUserData();
   const progress = Math.min((walk.todaySteps / walk.goalSteps) * 100, 100);
 
   return (

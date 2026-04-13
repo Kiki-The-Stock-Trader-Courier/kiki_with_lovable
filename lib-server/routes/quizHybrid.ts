@@ -50,6 +50,30 @@ function sendJson(res: VercelResponse, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
+/**
+ * response_format: json_object 이어도 모델이 가끔 ```json ... ``` 로 감싸거나 앞에 한 줄을 붙입니다.
+ * 그대로 JSON.parse 하면 특정 요청/유저(힌트 길이 등)에서만 파싱 실패 → 502 가 납니다.
+ */
+function parseQuizPayloadFromMessageContent(raw: string): { intro?: string; questions?: QuizQuestion[] } {
+  const trimmed = raw.trim();
+  const parse = (s: string) => JSON.parse(s) as { intro?: string; questions?: QuizQuestion[] };
+
+  try {
+    return parse(trimmed);
+  } catch {
+    const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced) {
+      return parse(fenced[1].trim());
+    }
+    const start = trimmed.indexOf("{");
+    const end = trimmed.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      return parse(trimmed.slice(start, end + 1));
+    }
+    throw new Error("quiz JSON not found in model output");
+  }
+}
+
 function validateQuestions(
   questions: QuizQuestion[],
   allowed: Set<string>,
@@ -206,93 +230,112 @@ export async function handleQuizHybrid(req: VercelRequest, res: VercelResponse) 
     },
   };
 
-  let rawText: string;
+  const client = getOpenAIClient();
+  const allowedSet = new Set(deduped.map((r) => r.ticker));
+  let lastFailure = "";
+
   try {
-    const client = getOpenAIClient();
-    const completion = await client.chat.completions.create(
-      {
-        model: "gpt-4o-mini",
-        temperature: 0.4,
-        max_tokens: 1800,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: system },
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const userContent =
+        `다음 데이터만 사용해 퀴즈 JSON을 만드세요.\n${JSON.stringify(userPayload)}` +
+        (attempt > 0
+          ? `\n\n[재생성] 이전 출력이 처리에 실패했습니다: ${lastFailure}\n` +
+            "마크다운·코드펜스 없이 JSON 객체 한 개만 출력하세요. " +
+            "choices[].ticker는 allowed_companies에 있는 6자리 티커만 사용하세요."
+          : "");
+
+      let content: string | undefined;
+      try {
+        const completion = await client.chat.completions.create(
           {
-            role: "user",
-            content: `다음 데이터만 사용해 퀴즈 JSON을 만드세요.\n${JSON.stringify(userPayload)}`,
+            model: "gpt-4o-mini",
+            temperature: 0.4,
+            max_tokens: 1800,
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: system },
+              { role: "user", content: userContent },
+            ] as OpenAI.ChatCompletionMessageParam[],
           },
-        ] as OpenAI.ChatCompletionMessageParam[],
-      },
-      {
-        langsmithExtra: {
-          name: "quiz-hybrid",
-          metadata: { route: "api/quiz/hybrid", companyCount: String(deduped.length) },
-          tags: ["quiz", "hybrid"],
+          {
+            langsmithExtra: {
+              name: "quiz-hybrid",
+              metadata: {
+                route: "api/quiz/hybrid",
+                companyCount: String(deduped.length),
+                attempt: String(attempt),
+              },
+              tags: ["quiz", "hybrid"],
+            },
+          },
+        );
+        content = completion.choices[0]?.message?.content ?? undefined;
+      } catch (e) {
+        console.error("[api/quiz/hybrid] OpenAI:", e);
+        sendJson(res, 502, {
+          ok: false,
+          error: "퀴즈 생성 API 오류",
+          detail: e instanceof Error ? e.message : String(e),
+        });
+        return;
+      }
+
+      if (typeof content !== "string" || !content.trim()) {
+        lastFailure = "모델 응답 본문이 비었습니다.";
+        continue;
+      }
+
+      let intro: string | undefined;
+      let questions: QuizQuestion[] | undefined;
+      try {
+        const inner = parseQuizPayloadFromMessageContent(content);
+        intro = inner.intro;
+        questions = inner.questions;
+      } catch (e) {
+        console.error("[api/quiz/hybrid] parse:", e);
+        lastFailure = e instanceof Error ? e.message : "퀴즈 JSON 파싱 실패";
+        continue;
+      }
+
+      if (!intro || !Array.isArray(questions) || questions.length === 0) {
+        lastFailure = "intro 또는 questions 형식 오류";
+        continue;
+      }
+
+      const sliced = questions.slice(0, 3);
+      const check = validateQuestions(sliced, allowedSet);
+      if (!check.ok) {
+        lastFailure = check.reason;
+        continue;
+      }
+
+      const withDifficulty = sliced.map((q) => ({
+        ...q,
+        difficulty: normalizeDifficulty((q as QuizQuestion).difficulty),
+      }));
+
+      sendJson(res, 200, {
+        ok: true,
+        intro,
+        questions: withDifficulty,
+        meta: {
+          hybrid: true,
+          companyCount: deduped.length,
+          quoteCount: quotes.length,
+          centerLat: body.centerLat,
+          centerLng: body.centerLng,
+          radiusM: body.radiusM ?? 1000,
         },
-      },
-    );
-    rawText = JSON.stringify(completion);
-  } catch (e) {
-    console.error("[api/quiz/hybrid] OpenAI:", e);
+      });
+      return;
+    }
+
     sendJson(res, 502, {
       ok: false,
-      error: "퀴즈 생성 API 오류",
-      detail: e instanceof Error ? e.message : String(e),
+      error: "퀴즈를 안정적으로 생성하지 못했습니다.",
+      detail: lastFailure || "알 수 없음",
     });
-    return;
   } finally {
     await awaitLangSmithPendingTraces();
   }
-
-  let intro: string | undefined;
-  let questions: QuizQuestion[] | undefined;
-  try {
-    const outer = JSON.parse(rawText) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const content = outer.choices?.[0]?.message?.content;
-    if (typeof content !== "string" || !content.trim()) {
-      sendJson(res, 502, { ok: false, error: "OpenAI 응답에 본문이 없습니다." });
-      return;
-    }
-    const inner = JSON.parse(content) as { intro?: string; questions?: QuizQuestion[] };
-    intro = inner.intro;
-    questions = inner.questions;
-  } catch (e) {
-    console.error("[api/quiz/hybrid] parse:", e);
-    sendJson(res, 502, { ok: false, error: "퀴즈 JSON 파싱 실패" });
-    return;
-  }
-
-  if (!intro || !Array.isArray(questions) || questions.length === 0) {
-    sendJson(res, 502, { ok: false, error: "퀴즈 형식이 올바르지 않습니다." });
-    return;
-  }
-
-  const allowedSet = new Set(deduped.map((r) => r.ticker));
-  const sliced = questions.slice(0, 3);
-  const check = validateQuestions(sliced, allowedSet);
-  if (!check.ok) {
-    sendJson(res, 502, { ok: false, error: `검증 실패: ${check.reason}` });
-    return;
-  }
-
-  const withDifficulty = sliced.map((q) => ({
-    ...q,
-    difficulty: normalizeDifficulty((q as QuizQuestion).difficulty),
-  }));
-
-  sendJson(res, 200, {
-    ok: true,
-    intro,
-    questions: withDifficulty,
-    meta: {
-      hybrid: true,
-      companyCount: deduped.length,
-      quoteCount: quotes.length,
-      centerLat: body.centerLat,
-      centerLng: body.centerLng,
-      radiusM: body.radiusM ?? 1000,
-    },
-  });
 }
