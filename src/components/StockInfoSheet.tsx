@@ -29,11 +29,52 @@ interface StockInfoSheetProps {
   sectorQuest?: { count: number; target: number; rewardClaimed: boolean } | null;
 }
 
-/** 매수 입력란 기본값: 1주 미만이면 전액(소수 주), 이상이면 1주 */
+/** 매수 수량 입력: 소수점 이하 최대 자릿수 */
+const SHARE_INPUT_DECIMALS = 4;
+/** 주문 금액(가격×수량)이 이 값 이하이면 주문 불가 — useUserData.buyStock의 원 단위 반올림과 동일 규칙으로 비교 */
+const MIN_ORDER_AMOUNT_WON = 1000;
+
+function stripTrailingZerosFromDecimalString(s: string): string {
+  if (!s.includes(".")) return s;
+  return s.replace(/0+$/, "").replace(/\.$/, "");
+}
+
+/** 매수 입력란 기본값: 1주 미만이면 전액(소수 주, 소수점 4자리까지), 이상이면 1주 */
 function defaultBuyQtyPrompt(maxShares: number): string {
   if (maxShares <= 1e-9) return "0";
-  if (maxShares < 1) return maxShares.toFixed(6).replace(/\.?0+$/, "");
+  if (maxShares < 1) {
+    const r = Math.floor(maxShares * 10 ** SHARE_INPUT_DECIMALS) / 10 ** SHARE_INPUT_DECIMALS;
+    return stripTrailingZerosFromDecimalString(r.toFixed(SHARE_INPUT_DECIMALS));
+  }
   return "1";
+}
+
+/**
+ * 수량 입력값을 숫자·소수점 하나·소수점 이하 SHARE_INPUT_DECIMALS 자리까지만 허용하도록 제한
+ * (붙여넣기·모바일 키보드에서도 동일 규칙 적용)
+ */
+function sanitizeShareQtyInput(raw: string): string {
+  const t = raw.replace(/,/g, "").replace(/\s/g, "");
+  let out = "";
+  let dotSeen = false;
+  let fracLen = 0;
+  for (const ch of t) {
+    if (ch >= "0" && ch <= "9") {
+      if (dotSeen) {
+        if (fracLen >= SHARE_INPUT_DECIMALS) continue;
+        fracLen += 1;
+      }
+      out += ch;
+    } else if (ch === "." && !dotSeen) {
+      out += ch;
+      dotSeen = true;
+    }
+  }
+  return out;
+}
+
+function roundShareQtyToInputDecimals(qty: number): number {
+  return Math.round(qty * 10 ** SHARE_INPUT_DECIMALS) / 10 ** SHARE_INPUT_DECIMALS;
 }
 
 /** 시트가 열리면 부모 state를 기다리지 않고 즉시 /api/quotes 호출 → 체감 지연 감소 */
@@ -156,13 +197,22 @@ const StockInfoSheet = ({
 
   const handleConfirmBuy = () => {
     const cleaned = String(buyQtyInput).replace(/,/g, "").replace(/\s/g, "").trim();
-    const qty = parseFloat(cleaned);
+    const qtyParsed = parseFloat(cleaned);
+    const qty = roundShareQtyToInputDecimals(qtyParsed);
     if (!Number.isFinite(qty) || qty <= 0) {
-      toast.error("올바른 수량을 입력해 주세요. (예: 1, 0.5, 0.229)");
+      toast.error("올바른 수량을 입력해 주세요. (예: 1, 0.5, 0.1234)");
       return;
     }
     if (qty > maxAffordableShares + 1e-8) {
-      toast.error(`최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주까지 매수할 수 있습니다.`);
+      toast.error(
+        `최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: SHARE_INPUT_DECIMALS })}주까지 매수할 수 있습니다.`,
+      );
+      return;
+    }
+    /** buyStock과 동일: 총액 0.1원 단위 반올림 */
+    const orderTotalWon = Math.round(safePrice * qty * 10) / 10;
+    if (orderTotalWon <= MIN_ORDER_AMOUNT_WON) {
+      toast.error("최소 주문금액 1000원 이하는 주문이 불가능합니다.");
       return;
     }
     setIsBuying(true);
@@ -242,7 +292,7 @@ const StockInfoSheet = ({
                   : !withinMapRadius
                     ? "지도 반경 밖 종목은 캐시 매수 불가"
                     : canBuy
-                      ? `${stock.name} 캐시로 매수, 최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주`
+                      ? `${stock.name} 캐시로 매수, 최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: SHARE_INPUT_DECIMALS })}주`
                       : `보유 ${cashBalance.toLocaleString()}원, 구매 가능 ${affordableShares.toFixed(4)}주`
               }
             >
@@ -271,7 +321,7 @@ const StockInfoSheet = ({
                     <span className="text-[10px] font-normal opacity-90 sm:text-xs">
                       {cashBalance < MIN_CASH_TO_BUY_WON
                         ? "캐시 1원 이상일 때 매수"
-                        : `구매 가능 ${affordableShares.toFixed(6)}주 (0.0001주 미만)`}
+                        : `구매 가능 ${affordableShares.toFixed(SHARE_INPUT_DECIMALS)}주 (0.0001주 미만)`}
                     </span>
                   </>
                 )}
@@ -364,15 +414,16 @@ const StockInfoSheet = ({
           <div className="w-full max-w-sm rounded-2xl border border-border/50 bg-background p-4 shadow-2xl">
             <h3 className="text-base font-bold text-foreground">매수 수량 입력</h3>
             <p className="mt-1 text-xs text-muted-foreground">
-              최대 {maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주까지 입력할 수 있어요.
+              최대 {maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: SHARE_INPUT_DECIMALS })}주까지,
+              소수점 {SHARE_INPUT_DECIMALS}자리까지 입력할 수 있어요.
             </p>
             <input
               type="text"
               inputMode="decimal"
               value={buyQtyInput}
-              onChange={(e) => setBuyQtyInput(e.target.value)}
+              onChange={(e) => setBuyQtyInput(sanitizeShareQtyInput(e.target.value))}
               className="mt-3 h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              placeholder="예: 0.25"
+              placeholder="예: 0.1234"
               aria-label="매수 수량"
             />
             <div className="mt-3 flex items-center justify-end gap-2">
