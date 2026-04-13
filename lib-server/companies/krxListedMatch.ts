@@ -446,7 +446,7 @@ const RULES: Rule[] = [
     ticker: "041510",
     defaultLabel: "에스엠",
     terms: sortTermsLongFirst(["SM엔터", "SM Entertainment", "에스엠"]),
-    sector: "유통",
+    sector: "엔터",
   },
   {
     ticker: "035900",
