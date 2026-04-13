@@ -69,21 +69,57 @@ export function collectTickersFromChatMessage(
   return Array.from(out).slice(0, MAX_TICKERS);
 }
 
-/** 주가·시세·지표 질문으로 보일 때만 네이버 종목 검색 시도 (퀴즈 등 오탐 방지) */
+/** 주가·시세·지표 키워드 */
 export function looksLikeStockPriceQuestion(text: string): boolean {
   const t = text.trim();
   if (/퀴즈|quiz|문제\s*\d|오늘의\s*주식\s*퀴즈/i.test(t)) return false;
   return /주가|시세|현재가|호가|체결|거래량|거래대금|\bPER\b|\bPBR\b|ROE|시가총액|얼마|전일대비|등락률|52주/i.test(t);
 }
 
-/**
- * 네이버 자동완성에 넘길 회사명 후보.
- * 예: "삼성전자 주가 알려줘" → "삼성전자"
- */
-export function extractCompanySearchQueryForLookup(userText: string): string | null {
-  const raw = userText.replace(/\s+/g, " ").trim();
-  if (!looksLikeStockPriceQuestion(raw)) return null;
+/** 종목·투자·기업 일반 질문 (주가라는 말이 없어도 검색 시도) */
+export function looksLikeStockOrCompanyTopic(text: string): boolean {
+  const t = text.trim();
+  if (shouldAvoidStockLookup(t)) return false;
+  return /주식|종목|기업|회사|코스피|코스닥|상장|실적|배당|PER|PBR|EPS|ROE|ROI|매수|매도|투자|차트|전망|호가|거래량|시가총액|등락|전일|공시|어닝|재무|밸류|시세|주가|청약|공모|배당금|액면분할|무상증자|분석|해설|의견/i.test(
+    t,
+  );
+}
 
+function shouldAvoidStockLookup(t: string): boolean {
+  const s = t.trim();
+  if (/오늘의\s*주식\s*퀴즈|주식\s*퀴즈\s*!|퀴즈\s*시작|문제\s*\d|quiz/i.test(s)) return true;
+  if (/걸음\s*목표|목표\s*\d{3,5}\s*보|평균으로\s*바꿔|7000보|만\s*보/i.test(s)) return true;
+  if (/^(?:안녕|반가|고마워|감사|미안해|하이|hi|hello)[\s!?.]*$/i.test(s)) return true;
+  return false;
+}
+
+const LOOKUP_DENY_WORDS = new Set([
+  "오늘",
+  "내일",
+  "어제",
+  "지금",
+  "여기",
+  "저기",
+  "그게",
+  "뭐",
+  "왜",
+  "어떻게",
+  "안녕",
+  "반가워",
+  "고마워",
+  "감사",
+  "미안",
+  "하이",
+  "hello",
+  "키키",
+  "워키",
+  "퀴즈",
+  "그만",
+  "날씨",
+  "몇시",
+]);
+
+function tryExtractPriceAnchoredQuery(raw: string): string | null {
   let m = raw.match(
     /([\uac00-\ud7a3A-Za-z][\uac00-\ud7a3A-Za-z0-9·\s]{1,38}?)\s*(?:의|은|는|이|가)?\s*(?:주가|시세|현재가|주식\s*가격)/,
   );
@@ -108,6 +144,87 @@ export function extractCompanySearchQueryForLookup(userText: string): string | n
   const useTokens = koreanTokens.length > 0 ? koreanTokens : tokens;
   if (useTokens.length === 0) return null;
   return cleanupEntityName(useTokens.slice(0, 4).join(" "));
+}
+
+/** 문장 앞쪽 한글 토큰(조사 제거) — "카카오가 요즘 어때" → 카카오 */
+function extractLeadingHangulCompanyToken(raw: string): string | null {
+  const t = raw.trim().split(/[\s,]+/)[0];
+  if (!t) return null;
+  const word = t.replace(/(은|는|이|가|을|를|의|와|과|도|만|에서|으로)$/u, "");
+  if (word.length < 2 || word.length > 12) return null;
+  if (!/^[\uac00-\ud7a3]+$/.test(word)) return null;
+  if (LOOKUP_DENY_WORDS.has(word)) return null;
+  return word;
+}
+
+function tryLooseSearchQuery(raw: string): string | null {
+  const cleaned = raw
+    .replace(/\b(?:알려줘|알려주세요|해줘|주세요|궁금|부탁|좀|제발|도와|말해|설명|정보|대해|대해서)\b/gi, " ")
+    .replace(/[?!.,]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (cleaned.length < 2 || cleaned.length > 42) return null;
+
+  const parts = cleaned.split(/\s+/).filter(Boolean);
+  for (const p of parts) {
+    const token = p.replace(/(은|는|이|가|을|를|의)$/u, "");
+    if (token.length < 2 || token.length > 14) continue;
+    if (!/[\uac00-\ud7a3]{2,}/.test(token)) continue;
+    if (LOOKUP_DENY_WORDS.has(token)) continue;
+    return token;
+  }
+  return null;
+}
+
+function isLikelyStandaloneCompanyName(raw: string): boolean {
+  const t = raw.trim();
+  if (t.length < 2 || t.length > 20) return false;
+  if (shouldAvoidStockLookup(t)) return false;
+  if (!/^[\uac00-\ud7a3·\s]+$/u.test(t)) return false;
+  return /[\uac00-\ud7a3]{2,}/.test(t) && !/\s{2,}/.test(t);
+}
+
+/**
+ * 네이버 증권 자동완성에 넘길 검색어 한 가지.
+ * — 종목코드/지도/데모에 없을 때 호출. 주가 키워드 없이도 기업명·투자 맥락이면 검색합니다.
+ */
+export function resolveNaverSearchQuery(userText: string): string | null {
+  const raw = userText.replace(/\s+/g, " ").trim();
+  if (!raw || shouldAvoidStockLookup(raw)) return null;
+
+  if (looksLikeStockPriceQuestion(raw)) {
+    const q = tryExtractPriceAnchoredQuery(raw);
+    if (q) return q;
+  }
+
+  if (looksLikeStockOrCompanyTopic(raw)) {
+    const q = tryExtractPriceAnchoredQuery(raw);
+    if (q) return q;
+    const lead = extractLeadingHangulCompanyToken(raw);
+    if (lead) return lead;
+    const loose = tryLooseSearchQuery(raw);
+    if (loose) return loose;
+  }
+
+  if (isLikelyStandaloneCompanyName(raw)) {
+    return cleanupEntityName(raw.trim());
+  }
+
+  if (raw.length <= 36 && /[\uac00-\ud7a3]{2,}/.test(raw)) {
+    const loose = tryLooseSearchQuery(raw);
+    if (loose && !LOOKUP_DENY_WORDS.has(loose)) return loose;
+    const lead = extractLeadingHangulCompanyToken(raw);
+    if (lead) return lead;
+  }
+
+  return null;
+}
+
+/**
+ * @deprecated 이름 유지 — 내부적으로 resolveNaverSearchQuery 와 동일
+ */
+export function extractCompanySearchQueryForLookup(userText: string): string | null {
+  return resolveNaverSearchQuery(userText);
 }
 
 function cleanupEntityName(s: string): string | null {
@@ -195,7 +312,7 @@ export async function buildGlobalChatMarketContext(
   let lookupNote = "";
 
   if (tickers.length === 0) {
-    const searchQ = extractCompanySearchQueryForLookup(userMessage);
+    const searchQ = resolveNaverSearchQuery(userMessage);
     if (searchQ) {
       const hit = await fetchStockLookupByQuery(searchQ);
       if (hit?.ok) {
