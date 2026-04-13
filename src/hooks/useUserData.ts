@@ -666,8 +666,16 @@ function useUserDataState(): UseUserDataResult {
           .from("user_profiles")
           .select("cash_balance")
           .eq("user_id", userId)
-          .single<{ cash_balance: number | null }>();
-        const nextCash = Math.max(0, Number(profile?.cash_balance ?? 0) - total);
+          .maybeSingle<{ cash_balance: number | null }>();
+        /**
+         * 방어 로직:
+         * - profile 조회값이 없을 때(권한/일시 오류 등) 0으로 간주하면
+         *   실제 잔고가 있어도 cash_balance가 0으로 덮어써질 수 있음.
+         * - 조회 실패 시에는 현재 메모리 잔고(walk.cashBalance)를 기준으로 차감.
+         */
+        const dbCash = Number(profile?.cash_balance);
+        const baseCash = Number.isFinite(dbCash) ? dbCash : walk.cashBalance;
+        const nextCash = Math.max(0, Math.round((baseCash - total) * 10) / 10);
         await supabase.from("user_profiles").update({ cash_balance: nextCash }).eq("user_id", userId);
       });
 
