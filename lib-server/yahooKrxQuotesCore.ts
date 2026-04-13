@@ -3,10 +3,28 @@
  * Vercel `api/quotes` 와 Vite 로컬 미들웨어에서 공통 사용.
  */
 
+/** Yahoo v7 quote + 클라이언트 챗 컨텍스트용 보조 지표(없을 수 있음) */
 export interface KrxLiveQuote {
   ticker: string;
   price: number;
   changePercent: number;
+  regularMarketVolume?: number;
+  /** Yahoo: averageDailyVolume3Month 등 */
+  averageVolume3Month?: number;
+  regularMarketPreviousClose?: number;
+  regularMarketOpen?: number;
+  marketCap?: number;
+  trailingPE?: number;
+  forwardPE?: number;
+  priceToBook?: number;
+  fiftyTwoWeekHigh?: number;
+  fiftyTwoWeekLow?: number;
+  /** 비율(예: 0.02 = 2%) */
+  dividendYield?: number;
+  /** Yahoo가 제공 시 (일부 종목만) */
+  returnOnEquity?: number;
+  /** 52주 대비 등락률(%) — Yahoo가 주면 인용 */
+  fiftyTwoWeekChangePercent?: number;
 }
 
 interface YahooQuoteRow {
@@ -18,6 +36,20 @@ interface YahooQuoteRow {
   ask?: number;
   regularMarketPreviousClose?: number;
   regularMarketChangePercent?: number;
+  regularMarketVolume?: number;
+  averageDailyVolume3Month?: number;
+  averageDailyVolume10Day?: number;
+  regularMarketOpen?: number;
+  marketCap?: number;
+  trailingPE?: number;
+  forwardPE?: number;
+  priceToBook?: number;
+  fiftyTwoWeekHigh?: number;
+  fiftyTwoWeekLow?: number;
+  dividendYield?: number;
+  trailingAnnualDividendYield?: number;
+  returnOnEquity?: number;
+  fiftyTwoWeekChangePercent?: number;
 }
 
 /** Yahoo가 서버 fetch 에서 가격 필드를 비우는 경우 → 호가 중간·전일 종가 등으로 보강 */
@@ -103,6 +135,9 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
     return m;
   };
 
+  const numOk = (n: unknown): n is number =>
+    typeof n === "number" && Number.isFinite(n);
+
   const rowToQuote = (row: YahooQuoteRow, symbolToTicker: Map<string, string>): KrxLiveQuote | null => {
     const symU = (row.symbol ?? "").toUpperCase();
     const ticker = symbolToTicker.get(symU);
@@ -116,7 +151,41 @@ export async function getKrxQuotesFromYahoo(tickersInput: string[]): Promise<Krx
       changePercent = prev && prev > 0 ? ((price - prev) / prev) * 100 : 0;
     }
 
-    return { ticker, price, changePercent: Number(changePercent.toFixed(2)) };
+    const base: KrxLiveQuote = {
+      ticker,
+      price,
+      changePercent: Number(changePercent.toFixed(2)),
+    };
+
+    if (numOk(row.regularMarketVolume) && row.regularMarketVolume >= 0) {
+      base.regularMarketVolume = Math.round(row.regularMarketVolume);
+    }
+    const avg3 = row.averageDailyVolume3Month ?? row.averageDailyVolume10Day;
+    if (numOk(avg3) && avg3 >= 0) {
+      base.averageVolume3Month = Math.round(avg3);
+    }
+    if (numOk(row.regularMarketPreviousClose) && row.regularMarketPreviousClose > 0) {
+      base.regularMarketPreviousClose = row.regularMarketPreviousClose;
+    }
+    if (numOk(row.regularMarketOpen) && row.regularMarketOpen > 0) {
+      base.regularMarketOpen = row.regularMarketOpen;
+    }
+    if (numOk(row.marketCap) && row.marketCap >= 0) {
+      base.marketCap = row.marketCap;
+    }
+    if (numOk(row.trailingPE)) base.trailingPE = row.trailingPE;
+    if (numOk(row.forwardPE)) base.forwardPE = row.forwardPE;
+    if (numOk(row.priceToBook)) base.priceToBook = row.priceToBook;
+    if (numOk(row.fiftyTwoWeekHigh)) base.fiftyTwoWeekHigh = row.fiftyTwoWeekHigh;
+    if (numOk(row.fiftyTwoWeekLow)) base.fiftyTwoWeekLow = row.fiftyTwoWeekLow;
+    const divY = row.dividendYield ?? row.trailingAnnualDividendYield;
+    if (numOk(divY)) base.dividendYield = divY;
+    if (numOk(row.returnOnEquity)) base.returnOnEquity = row.returnOnEquity;
+    if (numOk(row.fiftyTwoWeekChangePercent)) {
+      base.fiftyTwoWeekChangePercent = Number(row.fiftyTwoWeekChangePercent.toFixed(2));
+    }
+
+    return base;
   };
 
   const fetchYahooBatch = async (symbols: string[]): Promise<YahooQuoteRow[]> => {

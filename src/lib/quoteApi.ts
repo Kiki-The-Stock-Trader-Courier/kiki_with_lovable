@@ -4,6 +4,19 @@ export interface LiveQuote {
   ticker: string;
   price: number;
   changePercent: number;
+  regularMarketVolume?: number;
+  averageVolume3Month?: number;
+  regularMarketPreviousClose?: number;
+  regularMarketOpen?: number;
+  marketCap?: number;
+  trailingPE?: number;
+  forwardPE?: number;
+  priceToBook?: number;
+  fiftyTwoWeekHigh?: number;
+  fiftyTwoWeekLow?: number;
+  dividendYield?: number;
+  returnOnEquity?: number;
+  fiftyTwoWeekChangePercent?: number;
 }
 
 /** 지도 핀·시트와 동일 규칙으로 6자리 종목코드 (앞자리 0·접미사 .KS 등 처리) */

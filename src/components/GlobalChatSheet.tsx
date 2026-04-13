@@ -28,6 +28,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { ChatAssistantMarkdown } from "@/components/ChatAssistantMarkdown";
 import { resolveStockPinFromMapMessage } from "@/lib/globalChatStockResolve";
+import { buildGlobalChatMarketContext } from "@/lib/chatMarketContext";
 
 const QUICK_ACTIONS = [
   "근처 삼성전자 정보 알려줘",
@@ -418,8 +419,9 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     try {
       const walkCtx = buildAssistantWalkStepsContext(weeklySteps);
       const ragCtx = await fetchQuizContextForSystemPrompt(ragUserId);
+      const marketCtx = await buildGlobalChatMarketContext(userMsg.content, mapQuizSnapshot?.stocks);
       const { content: reply, intent } = await askGlobalAssistant(historyAfterUser, {
-        extraSystemContext: [walkCtx, ragCtx].filter(Boolean).join("\n\n"),
+        extraSystemContext: [walkCtx, ragCtx, marketCtx].filter(Boolean).join("\n\n"),
       });
       void persistQuizContextExchange({
         userId: ragUserId,

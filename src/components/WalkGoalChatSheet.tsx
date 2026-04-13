@@ -14,6 +14,7 @@ import {
   formatLastNDaysWalkLines,
 } from "@/lib/walkWeeklyStats";
 import { useUserData } from "@/hooks/useUserData";
+import { buildGlobalChatMarketContext } from "@/lib/chatMarketContext";
 
 const QUICK_ACTIONS = [
   "현재 목표 걸음 수는?",
@@ -211,8 +212,9 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
 
       const walkCtx = buildAssistantWalkStepsContext(weeklySteps);
       const ragCtx = await fetchQuizContextForSystemPrompt(ragUserId);
+      const marketCtx = await buildGlobalChatMarketContext(userMsg.content, mapQuizOptional?.snapshot?.stocks);
       const { content: reply, intent } = await askGlobalAssistant(historyAfterUser, {
-        extraSystemContext: [walkCtx, ragCtx].filter(Boolean).join("\n\n"),
+        extraSystemContext: [walkCtx, ragCtx, marketCtx].filter(Boolean).join("\n\n"),
       });
       void persistQuizContextExchange({
         userId: ragUserId,

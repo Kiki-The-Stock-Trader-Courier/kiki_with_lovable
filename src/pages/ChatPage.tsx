@@ -11,6 +11,7 @@ import { fetchQuizContextForSystemPrompt, persistQuizContextExchange } from "@/l
 import { useAuth } from "@/contexts/AuthContext";
 import { averageLastNDaysStepsRounded, buildAssistantWalkStepsContext } from "@/lib/walkWeeklyStats";
 import { useUserData } from "@/hooks/useUserData";
+import { buildGlobalChatMarketContext } from "@/lib/chatMarketContext";
 
 const QUICK_ACTIONS = [
   "근처 삼성전자 정보 알려줘",
@@ -167,8 +168,9 @@ const ChatPage = () => {
 
       const walkCtx = buildAssistantWalkStepsContext(weeklySteps);
       const ragCtx = await fetchQuizContextForSystemPrompt(ragUserId);
+      const marketCtx = await buildGlobalChatMarketContext(userMsg.content, mapQuizOptional?.snapshot?.stocks);
       const { content: reply, intent } = await askGlobalAssistant(historyAfterUser, {
-        extraSystemContext: [walkCtx, ragCtx].filter(Boolean).join("\n\n"),
+        extraSystemContext: [walkCtx, ragCtx, marketCtx].filter(Boolean).join("\n\n"),
       });
       void persistQuizContextExchange({
         userId: ragUserId,
