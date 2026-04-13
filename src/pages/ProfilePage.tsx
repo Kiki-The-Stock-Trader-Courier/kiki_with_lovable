@@ -33,16 +33,8 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Summary: 상단 투자 평가금 = 보유 합산 평가액 · 하단 워키 ⟫ 키움(70%) 카드 */}
+        {/* Summary: 하단 2개 카드(워키 포인트 / 투자 평가금) */}
         <div className="mt-6 flex min-w-0 flex-col gap-3">
-          <div className="tab-stat-tile w-full min-w-0 rounded-xl p-4">
-            <div className="flex min-w-0 flex-row flex-wrap items-center justify-start gap-2 sm:gap-3">
-              <p className="shrink-0 text-xs text-muted-foreground">투자 평가금</p>
-              <p className="min-w-0 font-display text-lg font-bold tabular-nums text-foreground">
-                {portfolioSummary.totalMarket.toLocaleString("ko-KR")}원
-              </p>
-            </div>
-          </div>
           <div className="flex min-w-0 items-stretch justify-between gap-3">
             <div className="tab-stat-tile min-w-0 flex-1 basis-0 rounded-xl p-4">
               <p className="text-xs text-muted-foreground">워키 포인트</p>
