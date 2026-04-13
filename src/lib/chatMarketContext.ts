@@ -88,7 +88,24 @@ export function looksLikeStockOrCompanyTopic(text: string): boolean {
 function shouldAvoidStockLookup(t: string): boolean {
   const s = t.trim();
   if (/오늘의\s*주식\s*퀴즈|주식\s*퀴즈\s*!|퀴즈\s*시작|문제\s*\d|quiz/i.test(s)) return true;
-  if (/걸음\s*목표|목표\s*\d{3,5}\s*보|평균으로\s*바꿔|7000보|만\s*보/i.test(s)) return true;
+  /** 걸음·목표·달성 등 앱 걷기 도메인 — 종목 검색·시세 블록이 붙으면 답이 이상해짐 */
+  if (
+    /걸음\s*목표|목표\s*걸음|목표\s*\d{3,5}\s*보|평균으로\s*바꿔|7000보|만\s*보|걸음\s*수|하루\s*걸음|오늘\s*걸음|평균\s*걸음/i.test(
+      s,
+    )
+  ) {
+    return true;
+  }
+  /** '목표 걸음 … 달성 … 좋은 점' 류만 (실적 달성·주가 문장은 제외) */
+  if (
+    /(?:목표\s*걸음|걸음\s*목표).{0,40}(?:달성|좋은\s*점|장점|효과|이유)/i.test(s) ||
+    /(?:달성|좋은\s*점|장점).{0,40}(?:목표\s*걸음|걸음\s*목표)/i.test(s)
+  ) {
+    return true;
+  }
+  if (/걸음\s*달성|목표\s*달성\s*(?:하면|시|후|때)/i.test(s) && !/주식|종목|주가|시세|\d{4,6}/.test(s)) {
+    return true;
+  }
   if (/^(?:안녕|반가|고마워|감사|미안해|하이|hi|hello)[\s!?.]*$/i.test(s)) return true;
   return false;
 }
@@ -117,6 +134,10 @@ const LOOKUP_DENY_WORDS = new Set([
   "그만",
   "날씨",
   "몇시",
+  /** 걷기/목표 문장 첫 토큰이 종목으로 오인되는 것 방지 */
+  "목표",
+  "걸음",
+  "달성",
 ]);
 
 function tryExtractPriceAnchoredQuery(raw: string): string | null {
