@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { TrendingUp, TrendingDown, X, ShoppingCart, Building2, Tag, RefreshCw, Bookmark, BookmarkCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StockSheetChat from "@/components/StockSheetChat";
@@ -38,6 +38,15 @@ function defaultBuyQtyPrompt(maxShares: number): string {
 /** 최소 1원 이상·너무 작은 소수 주(0.00001주 등) 매수 버튼 비활성 */
 const MIN_CASH_TO_BUY_WON = 1;
 const MIN_AFFORDABLE_SHARES = 1e-4;
+const STOCK_SHEET_MIN_HEIGHT_VH = 45;
+const STOCK_SHEET_MAX_HEIGHT_VH = 92;
+const RESIZE_HANDLE_IMAGE =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='96' height='20' viewBox='0 0 96 20' fill='none'>
+      <rect x='20' y='7' width='56' height='6' rx='3' fill='#8E8E96' fill-opacity='0.58'/>
+    </svg>`,
+  );
 
 const StockInfoSheet = ({
   stock,
@@ -52,8 +61,10 @@ const StockInfoSheet = ({
 }: StockInfoSheetProps) => {
   const [sheetQuote, setSheetQuote] = useState<{ price: number; changePercent: number } | null>(null);
   const [quoteError, setQuoteError] = useState(false);
+  const [sheetHeightVh, setSheetHeightVh] = useState(76);
   /** 시세 재요청 (다시 시도 버튼) */
   const [retryToken, setRetryToken] = useState(0);
+  const dragRef = useRef<{ startY: number; startHeightVh: number } | null>(null);
 
   useEffect(() => {
     if (!stock) {
@@ -114,6 +125,29 @@ const StockInfoSheet = ({
     };
   }, [stock, retryToken]);
 
+  useEffect(() => {
+    const onPointerMove = (ev: PointerEvent) => {
+      if (!dragRef.current) return;
+      const deltaY = ev.clientY - dragRef.current.startY;
+      const deltaVh = (deltaY / window.innerHeight) * 100;
+      const nextHeight = dragRef.current.startHeightVh - deltaVh;
+      setSheetHeightVh(Math.min(STOCK_SHEET_MAX_HEIGHT_VH, Math.max(STOCK_SHEET_MIN_HEIGHT_VH, nextHeight)));
+    };
+    const onPointerUp = () => {
+      dragRef.current = null;
+    };
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, []);
+
+  const handleResizeStart = (e: ReactPointerEvent<HTMLButtonElement>) => {
+    dragRef.current = { startY: e.clientY, startHeightVh: sheetHeightVh };
+  };
+
   if (!stock) return null;
 
   const price = sheetQuote && sheetQuote.price > 0 ? sheetQuote.price : stock.price;
@@ -140,10 +174,25 @@ const StockInfoSheet = ({
       />
 
       {/* Sheet */}
-      <div className="animate-slide-up absolute inset-x-0 bottom-0 max-h-[92dvh] overflow-y-auto rounded-t-2xl border border-border/50 bg-chat-sheet shadow-sheet">
+      <div
+        className="animate-slide-up absolute inset-x-0 bottom-0 overflow-y-auto rounded-t-2xl border border-border/50 bg-chat-sheet shadow-sheet"
+        style={{ height: `${sheetHeightVh}dvh`, maxHeight: "92dvh" }}
+      >
         <div className="p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
-        {/* Handle */}
-        <div className="mx-auto mb-4 h-1 w-10 shrink-0 rounded-full bg-muted" />
+        {/* Handle: 상단 드래그로 시트 높이 조절 */}
+        <button
+          type="button"
+          onPointerDown={handleResizeStart}
+          className="mx-auto mb-3 mt-[-0.25rem] flex h-7 w-24 cursor-ns-resize items-center justify-center rounded-full touch-none"
+          aria-label="종목 상세 창 높이 조절"
+        >
+          <img
+            src={RESIZE_HANDLE_IMAGE}
+            alt=""
+            className="pointer-events-none h-5 w-24 select-none"
+            draggable={false}
+          />
+        </button>
 
         {/* Header: 종목명 + 매수/캐시 부족 + 액션(닫기/스크랩) */}
         <div className="mb-4 flex items-center justify-between gap-2">
