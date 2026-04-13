@@ -3,6 +3,7 @@ import { TrendingUp, TrendingDown, X, ShoppingCart, Building2, Tag, Bookmark, Bo
 import { Button } from "@/components/ui/button";
 import StockSheetChat from "@/components/StockSheetChat";
 import type { StockPin } from "@/types/stock";
+import { MOCK_STOCKS } from "@/data/mockStocks";
 import { SECTOR_QUEST_REWARD_WON, SECTOR_QUEST_TARGET } from "@/lib/sectorQuest";
 
 interface StockInfoSheetProps {
@@ -47,6 +48,11 @@ const RESIZE_HANDLE_IMAGE =
     </svg>`,
   );
 
+function normalizeTickerDigits(raw: string): string {
+  const digits = String(raw).replace(/\D/g, "");
+  return digits.length <= 6 ? digits.padStart(6, "0") : digits.slice(-6);
+}
+
 const StockInfoSheet = ({
   stock,
   onClose,
@@ -86,8 +92,11 @@ const StockInfoSheet = ({
 
   if (!stock) return null;
 
-  // 요청사항: 시세 문구 대신 숫자를 즉시 표시(유효하지 않은 값은 0으로 보정)
-  const safePrice = Number.isFinite(stock.price) ? Math.max(0, Math.round(stock.price)) : 0;
+  // 요청사항: 0원이 나오지 않도록 현재 종목 주가(없으면 목업 주가)로 보정
+  const directPrice = Number.isFinite(stock.price) ? Math.round(stock.price) : 0;
+  const fallbackMockPrice =
+    MOCK_STOCKS.find((s) => normalizeTickerDigits(s.ticker) === normalizeTickerDigits(stock.ticker))?.price ?? 0;
+  const safePrice = directPrice > 0 ? directPrice : fallbackMockPrice;
   const safeChangePct = Number.isFinite(stock.changePercent) ? stock.changePercent : 0;
   const isUp = safeChangePct >= 0;
   const hasPrice = safePrice > 0;
