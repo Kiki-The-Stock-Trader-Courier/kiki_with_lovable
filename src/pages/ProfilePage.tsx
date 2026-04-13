@@ -10,8 +10,6 @@ const ProfilePage = () => {
   const { walk, nickname, holdings } = useUserData();
   /** 보유 종목 탭 히어로와 동일: 합산 평가액 */
   const portfolioSummary = useMemo(() => getPortfolioSummary(holdings), [holdings]);
-  /** 하단 키움 포인트 타일: 워키 포인트(보유 캐시)의 70% */
-  const kiwoomEvalFromWalk = Math.round(walk.cashBalance * 0.7);
 
   return (
     <div className="app-page-shell mx-auto min-h-[100dvh] w-full max-w-lg pb-24" data-testid="profile-screen">
@@ -53,9 +51,9 @@ const ProfilePage = () => {
               </p>
             </div>
             <div className="tab-stat-tile min-w-0 flex-1 basis-0 rounded-xl p-4">
-              <p className="text-xs font-medium text-foreground">키움 포인트</p>
+              <p className="text-xs font-medium text-foreground">투자 평가금</p>
               <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
-                {kiwoomEvalFromWalk.toLocaleString()}
+                {portfolioSummary.totalMarket.toLocaleString("ko-KR")}원
               </p>
             </div>
           </div>
