@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import StockSheetChat from "@/components/StockSheetChat";
 import type { StockPin } from "@/types/stock";
 import { MOCK_STOCKS } from "@/data/mockStocks";
+import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
 import { SECTOR_QUEST_REWARD_WON, SECTOR_QUEST_TARGET } from "@/lib/sectorQuest";
 
 interface StockInfoSheetProps {
@@ -64,8 +65,42 @@ const StockInfoSheet = ({
   isOwned = false,
   sectorQuest = null,
 }: StockInfoSheetProps) => {
+  const [liveQuote, setLiveQuote] = useState<{ price: number; changePercent: number } | null>(null);
   const [sheetHeightVh, setSheetHeightVh] = useState(76);
   const dragRef = useRef<{ startY: number; startHeightVh: number } | null>(null);
+
+  useEffect(() => {
+    if (!stock) {
+      setLiveQuote(null);
+      return;
+    }
+    const key = normalizeKrxTickerKey(stock.ticker);
+    if (!key) {
+      setLiveQuote(null);
+      return;
+    }
+    let canceled = false;
+    const loadQuote = async () => {
+      try {
+        const qs = await fetchYahooQuotes([key]);
+        if (canceled) return;
+        const q = qs[0];
+        if (q && q.price > 0) {
+          setLiveQuote({ price: Math.round(q.price), changePercent: q.changePercent });
+        }
+      } catch {
+        // 네트워크 실패 시 마지막 표시값 유지
+      }
+    };
+    void loadQuote();
+    const timer = window.setInterval(() => {
+      void loadQuote();
+    }, 12000);
+    return () => {
+      canceled = true;
+      window.clearInterval(timer);
+    };
+  }, [stock?.ticker]);
 
   useEffect(() => {
     const onPointerMove = (ev: PointerEvent) => {
@@ -93,11 +128,11 @@ const StockInfoSheet = ({
   if (!stock) return null;
 
   // 요청사항: 0원이 나오지 않도록 현재 종목 주가(없으면 목업 주가)로 보정
-  const directPrice = Number.isFinite(stock.price) ? Math.round(stock.price) : 0;
+  const directPrice = Number.isFinite(liveQuote?.price) ? Math.round(liveQuote!.price) : Math.round(stock.price);
   const fallbackMockPrice =
     MOCK_STOCKS.find((s) => normalizeTickerDigits(s.ticker) === normalizeTickerDigits(stock.ticker))?.price ?? 0;
   const safePrice = directPrice > 0 ? directPrice : fallbackMockPrice;
-  const safeChangePct = Number.isFinite(stock.changePercent) ? stock.changePercent : 0;
+  const safeChangePct = Number.isFinite(liveQuote?.changePercent) ? liveQuote!.changePercent : stock.changePercent;
   const isUp = safeChangePct >= 0;
   const hasPrice = safePrice > 0;
   /** 보유 캐시로 살 수 있는 최대 주식 수량(소수 주 포함) */
