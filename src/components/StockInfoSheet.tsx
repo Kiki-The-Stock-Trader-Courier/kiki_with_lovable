@@ -36,8 +36,8 @@ function defaultBuyQtyPrompt(maxShares: number): string {
 }
 
 /** 시트가 열리면 부모 state를 기다리지 않고 즉시 /api/quotes 호출 → 체감 지연 감소 */
-/** 최소 1,000원 이상·너무 작은 소수 주(0.00001주 등) 매수 버튼 비활성 */
-const MIN_CASH_TO_BUY_WON = 1000;
+/** 최소 1원 이상·너무 작은 소수 주(0.00001주 등) 매수 버튼 비활성 */
+const MIN_CASH_TO_BUY_WON = 1;
 const MIN_AFFORDABLE_SHARES = 1e-4;
 const STOCK_SHEET_MIN_HEIGHT_VH = 45;
 const STOCK_SHEET_MAX_HEIGHT_VH = 92;
@@ -229,9 +229,7 @@ const StockInfoSheet = ({
                     ? "지도 반경 밖 종목은 캐시 매수 불가"
                     : canBuy
                       ? `${stock.name} 캐시로 매수, 최대 ${maxAffordableShares.toLocaleString("ko-KR", { maximumFractionDigits: 6 })}주`
-                      : cashBalance < MIN_CASH_TO_BUY_WON
-                        ? `보유 ${cashBalance.toLocaleString()}원, 최소 매수 가능 금액은 ${MIN_CASH_TO_BUY_WON.toLocaleString()}원`
-                        : `보유 ${cashBalance.toLocaleString()}원, 구매 가능 ${affordableShares.toFixed(4)}주`
+                      : `보유 ${cashBalance.toLocaleString()}원, 구매 가능 ${affordableShares.toFixed(4)}주`
               }
             >
               <ShoppingCart className="mr-1 h-4 w-4 shrink-0 sm:mr-1.5 sm:h-4 sm:w-4" />
@@ -258,7 +256,7 @@ const StockInfoSheet = ({
                     </span>
                     <span className="text-[10px] font-normal opacity-90 sm:text-xs">
                       {cashBalance < MIN_CASH_TO_BUY_WON
-                        ? "최소 매수 가능 금액은 1,000원"
+                        ? "캐시 1원 이상일 때 매수"
                         : `구매 가능 ${affordableShares.toFixed(6)}주 (0.0001주 미만)`}
                     </span>
                   </>
