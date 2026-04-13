@@ -54,3 +54,26 @@ export function buildAssistantWalkStepsContext(weekly: WeeklyStepPointLike[]): s
     `최근 7일 요약(걷기 화면 막대그래프와 동일, 요일:걸음): ${weekLine}`,
   ].join("\n");
 }
+
+/**
+ * 「걸음 목표 달성하면 뭐가 좋아?」류 — 주식·시세 맥락과 섞이지 않도록 시스템 힌트만 추가
+ */
+export function buildWalkGoalIntentHint(userMessage: string): string {
+  const t = userMessage.replace(/\s+/g, " ").trim();
+  if (!t) return "";
+
+  const walkTheme =
+    /걸음\s*목표|목표\s*걸음|걷기\s*목표|일일\s*걸음|만\s*보|하루\s*걸음|오늘\s*걸음|목표\s*\d+\s*보/i.test(
+      t,
+    );
+  const benefitOrMotivation =
+    /달성|도달|채우|맞추|좋아|좋은\s*점|장점|효과|이유|왜|뭐가|어떤|어때|이득|필요|꼭|해야|도움|변화/i.test(t);
+
+  if (!walkTheme || !benefitOrMotivation) return "";
+
+  return [
+    "[질문 의도 — 걷기·목표 걸음 달성의 이점]",
+    "사용자는 주식·종목·주가를 묻는 것이 아니라, 앱에서 설정한 일일/목표 걸음을 채웠을 때의 이로움(건강·활동·습관·앱 내 워키 포인트·캐시 적립 등)을 묻습니다.",
+    "종목명·시세·투자·차트를 언급하지 마세요. 걷기의 일반적 건강 이점과 이 앱의 걸음→포인트 구조를 자연스럽게 연결해 답하고, 의학적 진단은 하지 말며 필요하면 전문의 상담을 권하세요.",
+  ].join("\n");
+}

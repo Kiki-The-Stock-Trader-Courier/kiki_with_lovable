@@ -16,7 +16,11 @@ import {
   summarizeStockSheetConversationTitle,
   type StoredGlobalConversation,
 } from "@/lib/globalChatSheetHistory";
-import { averageLastNDaysStepsRounded, buildAssistantWalkStepsContext } from "@/lib/walkWeeklyStats";
+import {
+  averageLastNDaysStepsRounded,
+  buildAssistantWalkStepsContext,
+  buildWalkGoalIntentHint,
+} from "@/lib/walkWeeklyStats";
 import { useUserData } from "@/hooks/useUserData";
 import { useMapQuizSnapshot } from "@/contexts/MapQuizContext";
 import { requestHybridQuiz, type HybridQuizQuestion } from "@/lib/quizHybridApi";
@@ -418,10 +422,11 @@ export default function GlobalChatSheet({ onClose }: GlobalChatSheetProps) {
     setIsLoading(true);
     try {
       const walkCtx = buildAssistantWalkStepsContext(weeklySteps);
+      const walkGoalHint = buildWalkGoalIntentHint(userMsg.content);
       const ragCtx = await fetchQuizContextForSystemPrompt(ragUserId);
       const marketCtx = await buildGlobalChatMarketContext(userMsg.content, mapQuizSnapshot?.stocks);
       const { content: reply, intent } = await askGlobalAssistant(historyAfterUser, {
-        extraSystemContext: [walkCtx, ragCtx, marketCtx].filter(Boolean).join("\n\n"),
+        extraSystemContext: [walkCtx, walkGoalHint, ragCtx, marketCtx].filter(Boolean).join("\n\n"),
       });
       void persistQuizContextExchange({
         userId: ragUserId,

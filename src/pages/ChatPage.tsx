@@ -9,7 +9,11 @@ import { resolveStockPinFromMapMessage } from "@/lib/globalChatStockResolve";
 import { useMapQuizSnapshotOptional } from "@/contexts/MapQuizContext";
 import { fetchQuizContextForSystemPrompt, persistQuizContextExchange } from "@/lib/quizContextMemory";
 import { useAuth } from "@/contexts/AuthContext";
-import { averageLastNDaysStepsRounded, buildAssistantWalkStepsContext } from "@/lib/walkWeeklyStats";
+import {
+  averageLastNDaysStepsRounded,
+  buildAssistantWalkStepsContext,
+  buildWalkGoalIntentHint,
+} from "@/lib/walkWeeklyStats";
 import { useUserData } from "@/hooks/useUserData";
 import { buildGlobalChatMarketContext } from "@/lib/chatMarketContext";
 
@@ -167,10 +171,11 @@ const ChatPage = () => {
       }
 
       const walkCtx = buildAssistantWalkStepsContext(weeklySteps);
+      const walkGoalHint = buildWalkGoalIntentHint(userMsg.content);
       const ragCtx = await fetchQuizContextForSystemPrompt(ragUserId);
       const marketCtx = await buildGlobalChatMarketContext(userMsg.content, mapQuizOptional?.snapshot?.stocks);
       const { content: reply, intent } = await askGlobalAssistant(historyAfterUser, {
-        extraSystemContext: [walkCtx, ragCtx, marketCtx].filter(Boolean).join("\n\n"),
+        extraSystemContext: [walkCtx, walkGoalHint, ragCtx, marketCtx].filter(Boolean).join("\n\n"),
       });
       void persistQuizContextExchange({
         userId: ragUserId,

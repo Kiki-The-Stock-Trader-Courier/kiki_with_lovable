@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   averageLastNDaysStepsRounded,
   buildAssistantWalkStepsContext,
+  buildWalkGoalIntentHint,
   formatLastNDaysWalkLines,
 } from "@/lib/walkWeeklyStats";
 import { useUserData } from "@/hooks/useUserData";
@@ -211,10 +212,11 @@ export default function WalkGoalChatSheet({ onClose }: WalkGoalChatSheetProps) {
       }
 
       const walkCtx = buildAssistantWalkStepsContext(weeklySteps);
+      const walkGoalHint = buildWalkGoalIntentHint(userMsg.content);
       const ragCtx = await fetchQuizContextForSystemPrompt(ragUserId);
       const marketCtx = await buildGlobalChatMarketContext(userMsg.content, mapQuizOptional?.snapshot?.stocks);
       const { content: reply, intent } = await askGlobalAssistant(historyAfterUser, {
-        extraSystemContext: [walkCtx, ragCtx, marketCtx].filter(Boolean).join("\n\n"),
+        extraSystemContext: [walkCtx, walkGoalHint, ragCtx, marketCtx].filter(Boolean).join("\n\n"),
       });
       void persistQuizContextExchange({
         userId: ragUserId,
