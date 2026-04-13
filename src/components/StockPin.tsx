@@ -6,8 +6,6 @@ interface StockPinProps {
   stock: StockPinType;
   /** 사용자 보유 종목이면 핀 색상을 다르게 표시 */
   isOwned?: boolean;
-  /** 지도 중심 반경 밖이면 회색으로 표시 */
-  isOutOfRadius?: boolean;
   onSelect: (stock: StockPinType) => void;
 }
 
@@ -88,7 +86,7 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
 const PIN_COLOR_OWNED = "#690ACF";
 const PIN_COLOR_NON_OWNED = "#CCB9E0";
 
-const createPinIcon = (stock: StockPinType, isOwned: boolean, _isOutOfRadius: boolean) => {
+const createPinIcon = (stock: StockPinType, isOwned: boolean) => {
   const color = isOwned === true ? PIN_COLOR_OWNED : PIN_COLOR_NON_OWNED;
   const inner = logoOrSectorInner(stock, color);
 
@@ -108,12 +106,12 @@ const createPinIcon = (stock: StockPinType, isOwned: boolean, _isOutOfRadius: bo
   });
 };
 
-const StockPinMarker = ({ stock, isOwned = false, isOutOfRadius = false, onSelect }: StockPinProps) => {
+const StockPinMarker = ({ stock, isOwned = false, onSelect }: StockPinProps) => {
   return (
     <Marker
       key={stock.id}
       position={[stock.lat, stock.lng]}
-      icon={createPinIcon(stock, isOwned, isOutOfRadius)}
+      icon={createPinIcon(stock, isOwned)}
       eventHandlers={{
         click: () => onSelect(stock),
       }}

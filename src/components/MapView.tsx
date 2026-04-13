@@ -143,6 +143,13 @@ const MapView = ({
   userLocationStatus = "pending",
   userRecenterTarget = null,
 }: MapViewProps) => {
+  /** 보라색 원(`radius` m) 안에 들어온 기업만 핀 표시 — 이동 시 원과의 거리가 바뀌면 마커가 나타나거나 사라짐 */
+  const stocksVisibleInRadius = useMemo(
+    () =>
+      stocks.filter((s) => distanceMeters(center.lat, center.lng, s.lat, s.lng) <= radius),
+    [stocks, center.lat, center.lng, radius],
+  );
+
   /** 내 위치 핀 — 종목 핀과 구분되는 티얼 마커 */
   const userLocationIcon = useMemo(
     () =>
@@ -238,17 +245,15 @@ const MapView = ({
           </>
         )}
 
-        {/* 주식 핀 — 동일 좌표에 여러 종목이 있으면 마커가 겹칠 수 있음 */}
-        {stocks.map((stock) => {
+        {/* 주식 핀 — 원 밖 종목은 렌더하지 않음 (위 stocksVisibleInRadius) */}
+        {stocksVisibleInRadius.map((stock) => {
           const tickerKey = normalizeKrxTickerKey(stock.ticker);
           const isOwned = tickerKey ? ownedTickerSet?.has(tickerKey) ?? false : false;
-          const isOutOfRadius = distanceMeters(center.lat, center.lng, stock.lat, stock.lng) > radius;
           return (
             <StockPinMarker
               key={stock.id}
               stock={stock}
               isOwned={isOwned}
-              isOutOfRadius={isOutOfRadius}
               onSelect={onSelectStock}
             />
           );
