@@ -86,13 +86,13 @@ const StockInfoSheet = ({
 
   if (!stock) return null;
 
-  // 요청사항: 종목 시트 현재가는 실시간 재조회 없이 선택 시점 값을 고정 표시
-  const price = stock.price;
-  const changePct = stock.changePercent;
-  const isUp = changePct >= 0;
-  const hasPrice = price > 0;
+  // 요청사항: 시세 문구 대신 숫자를 즉시 표시(유효하지 않은 값은 0으로 보정)
+  const safePrice = Number.isFinite(stock.price) ? Math.max(0, Math.round(stock.price)) : 0;
+  const safeChangePct = Number.isFinite(stock.changePercent) ? stock.changePercent : 0;
+  const isUp = safeChangePct >= 0;
+  const hasPrice = safePrice > 0;
   /** 보유 캐시로 살 수 있는 최대 주식 수량(소수 주 포함) */
-  const maxAffordableShares = hasPrice ? cashBalance / price : 0;
+  const maxAffordableShares = hasPrice ? cashBalance / safePrice : 0;
   const withinMapRadius = mapRadiusPurchaseAllowed;
   const hasMeaningfulSize =
     cashBalance >= MIN_CASH_TO_BUY_WON && maxAffordableShares >= MIN_AFFORDABLE_SHARES;
@@ -171,7 +171,7 @@ const StockInfoSheet = ({
                   const result = await onBuyStock({
                     ticker: stock.ticker,
                     name: stock.name,
-                    price,
+                    price: safePrice,
                     shares: qty,
                   });
                   window.alert(result.message);
@@ -191,10 +191,9 @@ const StockInfoSheet = ({
               <ShoppingCart className="mr-1 h-4 w-4 shrink-0 sm:mr-1.5 sm:h-4 sm:w-4" />
               <span className="flex min-w-0 flex-col items-start gap-0.5 text-left leading-tight">
                 {!hasPrice ? (
-                  <>
+                  <span className="flex flex-1 flex-col items-center justify-center text-center leading-tight">
                     <span>매수하기</span>
-                    <span className="text-[10px] font-normal opacity-90 sm:text-xs">시세 확인 중</span>
-                  </>
+                  </span>
                 ) : !withinMapRadius ? (
                   <>
                     <span>매수 불가</span>
@@ -253,22 +252,16 @@ const StockInfoSheet = ({
         <div className="mb-4 rounded-xl bg-muted/50 p-4">
           <p className="mb-1 text-sm text-muted-foreground">현재가</p>
           <div className="flex flex-wrap items-baseline gap-2">
-            {hasPrice ? (
-              <>
-                <span className="text-2xl font-bold text-foreground">{price.toLocaleString()}원</span>
-                <span
-                  className={`flex items-center gap-1 text-sm font-semibold ${
-                    isUp ? "text-destructive" : "text-accent"
-                  }`}
-                >
-                  {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                  {isUp ? "+" : ""}
-                  {Number.isFinite(changePct) ? changePct.toFixed(2) : "0.00"}%
-                </span>
-              </>
-            ) : (
-              <span className="text-lg font-medium text-muted-foreground">시세 정보 없음</span>
-            )}
+            <span className="text-2xl font-bold text-foreground">{safePrice.toLocaleString()}원</span>
+            <span
+              className={`flex items-center gap-1 text-sm font-semibold ${
+                isUp ? "text-destructive" : "text-accent"
+              }`}
+            >
+              {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+              {isUp ? "+" : ""}
+              {safeChangePct.toFixed(2)}%
+            </span>
           </div>
         </div>
 
@@ -302,7 +295,7 @@ const StockInfoSheet = ({
         </div>
 
         <StockSheetChat
-          stock={{ ...stock, price, changePercent: changePct }}
+          stock={{ ...stock, price: safePrice, changePercent: safeChangePct }}
           isScrapped={isScrapped}
           onToggleScrap={onToggleScrap}
         />
