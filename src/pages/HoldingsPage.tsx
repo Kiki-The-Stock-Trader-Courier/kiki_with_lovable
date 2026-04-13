@@ -7,7 +7,9 @@ import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
 import type { ScrappedStock } from "@/types/stock";
 
 const HoldingsPage = () => {
-  const { holdings, scraps } = useUserData();
+  const { holdings, scraps, walk } = useUserData();
+  /** 프로필 탭과 동일: 워키 포인트(보유 캐시)의 70%를 투자 평가금으로 표시 */
+  const kiwoomEvalFromWalk = Math.round(walk.cashBalance * 0.7);
   const [scrapQuotes, setScrapQuotes] = useState<Record<string, number>>({});
 
   const mockPriceByTicker = useMemo(() => {
@@ -94,6 +96,16 @@ const HoldingsPage = () => {
           보유 종목
         </h1>
         <p className="text-sm text-muted-foreground">현재 보유한 종목과 손익 현황</p>
+        <div className="mt-6 flex min-w-0 flex-col gap-3">
+          <div className="tab-stat-tile w-full min-w-0 rounded-xl p-4">
+            <div className="flex min-w-0 flex-row flex-wrap items-center justify-start gap-2 sm:gap-3">
+              <p className="shrink-0 text-xs text-muted-foreground">투자 평가금</p>
+              <p className="min-w-0 font-display text-lg font-bold tabular-nums text-foreground">
+                {kiwoomEvalFromWalk.toLocaleString("ko-KR")}원
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="px-4 pb-2 pt-3">
