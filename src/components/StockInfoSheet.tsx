@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { TrendingUp, TrendingDown, X, ShoppingCart, Building2, Tag, RefreshCw, Bookmark, BookmarkCheck } from "lucide-react";
+import { TrendingUp, TrendingDown, X, ShoppingCart, Building2, Tag, Bookmark, BookmarkCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import StockSheetChat from "@/components/StockSheetChat";
 import type { StockPin } from "@/types/stock";
-import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
 import { SECTOR_QUEST_REWARD_WON, SECTOR_QUEST_TARGET } from "@/lib/sectorQuest";
 
 interface StockInfoSheetProps {
@@ -59,77 +58,8 @@ const StockInfoSheet = ({
   isOwned = false,
   sectorQuest = null,
 }: StockInfoSheetProps) => {
-  const [sheetQuote, setSheetQuote] = useState<{ price: number; changePercent: number } | null>(null);
-  const [quoteError, setQuoteError] = useState(false);
   const [sheetHeightVh, setSheetHeightVh] = useState(76);
-  /** 시세 재요청 (다시 시도 버튼) */
-  const [retryToken, setRetryToken] = useState(0);
   const dragRef = useRef<{ startY: number; startHeightVh: number } | null>(null);
-
-  useEffect(() => {
-    if (!stock) {
-      setSheetQuote(null);
-      setQuoteError(false);
-      return;
-    }
-
-    const t = normalizeKrxTickerKey(String(stock.ticker));
-    if (!t) {
-      setSheetQuote(null);
-      setQuoteError(true);
-      return;
-    }
-
-    let cancelled = false;
-    setSheetQuote(null);
-    setQuoteError(false);
-
-    const loadQuote = async () => {
-      try {
-        const qs = await fetchYahooQuotes([t]);
-        if (cancelled) return;
-        if (qs[0]) {
-          setSheetQuote({
-            price: Math.round(qs[0].price),
-            changePercent: qs[0].changePercent,
-          });
-          setQuoteError(false);
-        } else if (stock.price > 0) {
-          /** API·Yahoo 빈 응답: 지도에서 이미 받은 시세로 표시 (완전 실패 UX 방지) */
-          setSheetQuote({
-            price: Math.round(stock.price),
-            changePercent: stock.changePercent,
-          });
-          setQuoteError(false);
-        } else {
-          setQuoteError(true);
-        }
-      } catch {
-        if (!cancelled) {
-          if (stock.price > 0) {
-            setSheetQuote({
-              price: Math.round(stock.price),
-              changePercent: stock.changePercent,
-            });
-            setQuoteError(false);
-          } else {
-            setSheetQuote(null);
-            setQuoteError(true);
-          }
-        }
-      }
-    };
-
-    void loadQuote();
-    const timer = window.setInterval(() => {
-      void loadQuote();
-    }, 180000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [stock, retryToken]);
 
   useEffect(() => {
     const onPointerMove = (ev: PointerEvent) => {
@@ -156,8 +86,9 @@ const StockInfoSheet = ({
 
   if (!stock) return null;
 
-  const price = sheetQuote && sheetQuote.price > 0 ? sheetQuote.price : stock.price;
-  const changePct = sheetQuote ? sheetQuote.changePercent : stock.changePercent;
+  // 요청사항: 종목 시트 현재가는 실시간 재조회 없이 선택 시점 값을 고정 표시
+  const price = stock.price;
+  const changePct = stock.changePercent;
   const isUp = changePct >= 0;
   const hasPrice = price > 0;
   /** 보유 캐시로 살 수 있는 최대 주식 수량(소수 주 포함) */
@@ -335,24 +266,8 @@ const StockInfoSheet = ({
                   {Number.isFinite(changePct) ? changePct.toFixed(2) : "0.00"}%
                 </span>
               </>
-            ) : quoteError ? (
-              <div className="flex w-full flex-col gap-2">
-                <span className="text-sm text-muted-foreground">
-                  시세를 불러오지 못했습니다. 네트워크 또는 API 제한일 수 있습니다.
-                </span>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  className="w-fit gap-1.5"
-                  onClick={() => setRetryToken((k) => k + 1)}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  다시 시도
-                </Button>
-              </div>
             ) : (
-              <span className="text-lg font-medium text-muted-foreground">시세 불러오는 중…</span>
+              <span className="text-lg font-medium text-muted-foreground">시세 정보 없음</span>
             )}
           </div>
         </div>
