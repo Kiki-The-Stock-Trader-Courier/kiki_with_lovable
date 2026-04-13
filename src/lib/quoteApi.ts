@@ -1,5 +1,8 @@
 import { Capacitor } from "@capacitor/core";
 
+/** 클라이언트 시세 폴링 주기(밀리초) — 지도·종목 시트·보유 화면 공통 */
+export const QUOTE_POLL_INTERVAL_MS = 60_000;
+
 export interface LiveQuote {
   ticker: string;
   price: number;

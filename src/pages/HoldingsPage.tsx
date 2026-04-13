@@ -4,7 +4,7 @@ import BottomNav from "@/components/BottomNav";
 import { useUserData } from "@/hooks/useUserData";
 import { MOCK_STOCKS } from "@/data/mockStocks";
 import { getPortfolioSummary } from "@/lib/portfolioSummary";
-import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
+import { fetchYahooQuotes, normalizeKrxTickerKey, QUOTE_POLL_INTERVAL_MS } from "@/lib/quoteApi";
 import type { ScrappedStock } from "@/types/stock";
 
 const HoldingsPage = () => {
@@ -54,7 +54,7 @@ const HoldingsPage = () => {
     };
 
     void load();
-    const timer = setInterval(load, 12_000);
+    const timer = setInterval(load, QUOTE_POLL_INTERVAL_MS);
     return () => {
       canceled = true;
       clearInterval(timer);

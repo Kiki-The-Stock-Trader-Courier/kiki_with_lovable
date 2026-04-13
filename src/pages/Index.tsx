@@ -12,7 +12,7 @@ import { Capacitor } from "@capacitor/core";
 import { StepTracker } from "@/plugins/stepTracker";
 import { fetchNearbyCompanies } from "@/lib/companyApi";
 import { distanceMeters } from "@/lib/geoDistance";
-import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
+import { fetchYahooQuotes, normalizeKrxTickerKey, QUOTE_POLL_INTERVAL_MS } from "@/lib/quoteApi";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
@@ -170,7 +170,7 @@ const Index = () => {
 
     /** 지도 종목이 로드된 직후에도 바로 시세 요청 */
     void refreshQuotes();
-    const timer = setInterval(refreshQuotes, 12_000);
+    const timer = setInterval(refreshQuotes, QUOTE_POLL_INTERVAL_MS);
 
     return () => {
       canceled = true;

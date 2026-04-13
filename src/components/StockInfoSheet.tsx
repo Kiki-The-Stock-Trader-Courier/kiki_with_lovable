@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import StockSheetChat from "@/components/StockSheetChat";
 import type { StockPin } from "@/types/stock";
 import { MOCK_STOCKS } from "@/data/mockStocks";
-import { fetchYahooQuotes, normalizeKrxTickerKey } from "@/lib/quoteApi";
+import { fetchYahooQuotes, normalizeKrxTickerKey, QUOTE_POLL_INTERVAL_MS } from "@/lib/quoteApi";
 import { SECTOR_QUEST_REWARD_WON, SECTOR_QUEST_TARGET } from "@/lib/sectorQuest";
 import { toast } from "sonner";
 
@@ -99,7 +99,7 @@ const StockInfoSheet = ({
     void loadQuote();
     const timer = window.setInterval(() => {
       void loadQuote();
-    }, 12000);
+    }, QUOTE_POLL_INTERVAL_MS);
     return () => {
       canceled = true;
       window.clearInterval(timer);
