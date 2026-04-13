@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { User, Wallet, Settings, ChevronRight, ChevronsRight, Shield, Camera } from "lucide-react";
+import { User, Wallet, Settings, ChevronRight, Shield, Camera } from "lucide-react";
 import BottomNav from "@/components/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUserData } from "@/hooks/useUserData";
@@ -52,10 +52,7 @@ const ProfilePage = () => {
                 {walk.cashBalance.toLocaleString()}
               </p>
             </div>
-            <div className="flex shrink-0 items-center justify-center self-center px-0.5" aria-hidden>
-              <ChevronsRight className="h-5 w-5 text-muted-foreground" strokeWidth={2} />
-            </div>
-            <div className="tab-stat-tile min-w-0 flex-[1.15] basis-0 rounded-xl p-4">
+            <div className="tab-stat-tile min-w-0 flex-1 basis-0 rounded-xl p-4">
               <p className="text-xs font-medium text-foreground">키움 포인트</p>
               <p className="mt-1 font-display text-lg font-bold tabular-nums text-foreground">
                 {kiwoomEvalFromWalk.toLocaleString()}
