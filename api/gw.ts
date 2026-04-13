@@ -9,6 +9,7 @@ import { handleQuizHybrid } from "../lib-server/routes/quizHybrid.js";
 import { handleCompaniesNearby } from "../lib-server/companies/nearby.js";
 import { handleCompaniesSync } from "../lib-server/companies/sync.js";
 import { handleCompaniesBackfillTickers } from "../lib-server/companies/backfill-tickers.js";
+import { handleStockLookup } from "../lib-server/routes/stockLookup.js";
 
 function routeKey(req: VercelRequest): string {
   const q = req.query?.__r;
@@ -32,6 +33,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return handleCompaniesSync(req, res);
       case "companiesBackfillTickers":
         return handleCompaniesBackfillTickers(req, res);
+      case "stockLookup":
+        return handleStockLookup(req, res);
       default:
         res.statusCode = 404;
         res.setHeader("Content-Type", "application/json; charset=utf-8");

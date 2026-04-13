@@ -12,6 +12,7 @@
     { "source": "/api/companies/nearby", "destination": "/api/gw?__r=companiesNearby" },
     { "source": "/api/companies/sync", "destination": "/api/gw?__r=companiesSync" },
     { "source": "/api/companies/backfill-tickers", "destination": "/api/gw?__r=companiesBackfillTickers" },
+    { "source": "/api/stock/lookup", "destination": "/api/gw?__r=stockLookup" },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"

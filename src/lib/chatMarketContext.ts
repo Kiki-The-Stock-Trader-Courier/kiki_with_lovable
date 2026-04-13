@@ -1,6 +1,7 @@
 import type { MapQuizStockSnapshot } from "@/contexts/MapQuizContext";
 import { MOCK_STOCKS } from "@/data/mockStocks";
 import { fetchYahooQuotes, normalizeKrxTickerKey, type LiveQuote } from "@/lib/quoteApi";
+import { fetchStockLookupByQuery } from "@/lib/stockLookupApi";
 
 const MAX_TICKERS = 8;
 
@@ -68,6 +69,56 @@ export function collectTickersFromChatMessage(
   return Array.from(out).slice(0, MAX_TICKERS);
 }
 
+/** 주가·시세·지표 질문으로 보일 때만 네이버 종목 검색 시도 (퀴즈 등 오탐 방지) */
+export function looksLikeStockPriceQuestion(text: string): boolean {
+  const t = text.trim();
+  if (/퀴즈|quiz|문제\s*\d|오늘의\s*주식\s*퀴즈/i.test(t)) return false;
+  return /주가|시세|현재가|호가|체결|거래량|거래대금|\bPER\b|\bPBR\b|ROE|시가총액|얼마|전일대비|등락률|52주/i.test(t);
+}
+
+/**
+ * 네이버 자동완성에 넘길 회사명 후보.
+ * 예: "삼성전자 주가 알려줘" → "삼성전자"
+ */
+export function extractCompanySearchQueryForLookup(userText: string): string | null {
+  const raw = userText.replace(/\s+/g, " ").trim();
+  if (!looksLikeStockPriceQuestion(raw)) return null;
+
+  let m = raw.match(
+    /([\uac00-\ud7a3A-Za-z][\uac00-\ud7a3A-Za-z0-9·\s]{1,38}?)\s*(?:의|은|는|이|가)?\s*(?:주가|시세|현재가|주식\s*가격)/,
+  );
+  if (m) return cleanupEntityName(m[1]);
+
+  m = raw.match(
+    /(?:주가|시세|현재가)\s*(?:은|는|가)?\s*[?:]?\s*(?:에\s*대해\s*)?([\uac00-\ud7a3A-Za-z][\uac00-\ud7a3A-Za-z0-9·\s]{1,38})/,
+  );
+  if (m) return cleanupEntityName(m[1]);
+
+  const stripped = raw
+    .replace(/^(?:그|저|이|해당|잘|좀)\s+/u, "")
+    .replace(
+      /\b(?:알려줘|알려주세요|알려줄래|말해줘|말해|궁금|해줘|주세요|나요|까요|인가요|요)\b/gi,
+      " ",
+    )
+    .replace(/\b(?:주가|시세|현재가|얼마)\b/gi, " ")
+    .replace(/[?!.,]/g, " ")
+    .trim();
+  const tokens = stripped.split(/\s+/).filter((t) => t.length >= 2);
+  const koreanTokens = tokens.filter((t) => /[\uac00-\ud7a3]/.test(t));
+  const useTokens = koreanTokens.length > 0 ? koreanTokens : tokens;
+  if (useTokens.length === 0) return null;
+  return cleanupEntityName(useTokens.slice(0, 4).join(" "));
+}
+
+function cleanupEntityName(s: string): string | null {
+  const t = s
+    .replace(/\s+/g, " ")
+    .replace(/\b(?:주식|종목)\b/g, "")
+    .trim();
+  if (t.length < 2 || t.length > 40) return null;
+  return t;
+}
+
 function formatMarketCapKrw(n?: number): string | undefined {
   if (n == null || !Number.isFinite(n) || n <= 0) return undefined;
   if (n >= 1e12) return `${(n / 1e12).toFixed(2)}조원`;
@@ -133,28 +184,48 @@ function formatOneQuote(q: LiveQuote): string {
 
 /**
  * 글로벌 챗 시스템 프롬프트에 붙일 [시장 데이터] 블록.
- * 티커가 없으면 빈 문자열.
+ * 종목코드·지도·데모 목록에 없어도, 주가 의도 + 회사명이면 네이버 검색으로 티커를 붙인 뒤 Yahoo 시세를 조회합니다.
  */
 export async function buildGlobalChatMarketContext(
   userMessage: string,
   mapStocks: MapQuizStockSnapshot[] | undefined | null,
 ): Promise<string> {
-  const tickers = collectTickersFromChatMessage(userMessage, mapStocks);
+  const fromText = collectTickersFromChatMessage(userMessage, mapStocks);
+  let tickers = [...fromText];
+  let lookupNote = "";
+
+  if (tickers.length === 0) {
+    const searchQ = extractCompanySearchQueryForLookup(userMessage);
+    if (searchQ) {
+      const hit = await fetchStockLookupByQuery(searchQ);
+      if (hit?.ok) {
+        tickers = [hit.ticker];
+        lookupNote = `[종목 매칭 — 네이버 증권 자동완성] 검색어 «${hit.query}» → ${hit.name} (${hit.ticker})${hit.market ? `, ${hit.market}` : ""}`;
+      }
+    }
+  }
+
   if (tickers.length === 0) return "";
 
   const quotes = await fetchYahooQuotes(tickers);
   if (quotes.length === 0) {
     return [
       "[시장 데이터]",
+      lookupNote,
       `요청 티커: ${tickers.join(", ")} — 시세 API 응답이 비었습니다. 장 운영 시간·심볼(코스피/코스닥)을 확인해 주세요.`,
-    ].join("\n");
+    ]
+      .filter(Boolean)
+      .join("\n");
   }
 
   const body = quotes.map(formatOneQuote).join("\n");
   return [
-    "[시장 데이터 — 서버가 Yahoo Finance 등에서 조회한 스냅샷입니다. 장마감·시간외·공휴일이면 전일 종가에 가깝게 보일 수 있습니다.]",
+    "[시장 데이터 — Yahoo Finance 등에서 조회한 스냅샷입니다. 장마감·시간외·공휴일이면 전일 종가에 가깝게 보일 수 있습니다.]",
+    lookupNote,
     body,
     "",
     "위 수치를 우선 인용해 주가·등락·거래량·PER·PBR·ROE·52주 범위·배당 등을 설명하세요. 블록에 없는 지표는 추측하지 말고, 있는 범위 안에서만 답하세요. ‘ROI’ 질문이면 위의 52주 최저 대비 수익률·등락률 등을 참고해 설명할 수 있습니다.",
-  ].join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }

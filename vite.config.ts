@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { getKrxQuotesFromYahoo, parseTickersQuery } from "./lib-server/yahooKrxQuotesCore";
+import { searchKrxTickerByKeyword } from "./lib-server/stockLookupNaver";
 import { awaitLangSmithPendingTraces } from "./lib-server/openaiClient";
 import { runChatPipeline } from "./lib-server/chat/pipeline";
 
@@ -131,6 +132,54 @@ function quotesApiLocalPlugin(enabled: boolean): Plugin {
   };
 }
 
+/** 로컬에서 /api/stock/lookup (네이버 종목명 → 티커) */
+function stockLookupApiLocalPlugin(enabled: boolean): Plugin {
+  if (!enabled) {
+    return { name: "stock-lookup-api-local-skip", configureServer() {} };
+  }
+  return {
+    name: "stock-lookup-api-local",
+    configureServer(server) {
+      server.middlewares.use(async (req, res, next) => {
+        if (req.method !== "GET") return next();
+        const url = req.url ?? "";
+        if (!url.startsWith("/api/stock/lookup")) return next();
+        try {
+          const u = new URL(url, "http://localhost");
+          const q = u.searchParams.get("q")?.replace(/\s+/g, " ").trim() ?? "";
+          if (q.length < 2) {
+            res.statusCode = 400;
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ ok: false, error: "q min length 2" }));
+            return;
+          }
+          const hit = await searchKrxTickerByKeyword(q);
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("Content-Type", "application/json");
+          if (!hit) {
+            res.end(JSON.stringify({ ok: false, query: q }));
+            return;
+          }
+          res.end(
+            JSON.stringify({
+              ok: true,
+              query: q,
+              ticker: hit.ticker,
+              name: hit.name,
+              market: hit.market ?? null,
+            }),
+          );
+        } catch (e) {
+          res.statusCode = 500;
+          res.setHeader("Content-Type", "application/json");
+          res.end(JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) }));
+        }
+      });
+    },
+  };
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
@@ -179,6 +228,7 @@ export default defineConfig(({ mode }) => {
       mode === "development" && componentTagger(),
       openaiChatProxy(openaiKey),
       quotesApiLocalPlugin(mode === "development" && !devApiProxy),
+      stockLookupApiLocalPlugin(mode === "development" && !devApiProxy),
     ].filter(Boolean) as Plugin[],
     resolve: {
       alias: {
