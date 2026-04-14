@@ -86,25 +86,39 @@ function logoOrSectorInner(stock: StockPinType, color: string): string {
 const PIN_COLOR_OWNED = "#690ACF";
 const PIN_COLOR_NON_OWNED = "#CCB9E0";
 
-const createPinIcon = (stock: StockPinType, isOwned: boolean) => {
+/** 겹침 마커용 배지(2 이상일 때만) */
+function stackBadgeHtml(count: number): string {
+  const n = count > 99 ? "99+" : String(count);
+  return `<span class="stock-pin-stack-badge" style="position:absolute;top:-2px;right:-6px;min-width:20px;height:20px;padding:0 5px;border-radius:9999px;background:#690ACF;color:#fff;font-size:11px;font-weight:700;line-height:20px;text-align:center;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25);font-family:system-ui,sans-serif;">${n}</span>`;
+}
+
+/**
+ * Leaflet divIcon — `stackCount` ≥ 2 이면 우상단에 겹침 개수 표시
+ */
+export function createPinIcon(stock: StockPinType, isOwned: boolean, stackCount?: number) {
   const color = isOwned === true ? PIN_COLOR_OWNED : PIN_COLOR_NON_OWNED;
   const inner = logoOrSectorInner(stock, color);
+  const showBadge = stackCount != null && stackCount >= 2;
+  const badge = showBadge ? stackBadgeHtml(stackCount!) : "";
+  const wrapStart = showBadge ? `<div class="stock-pin-wrap" style="position:relative;width:34px;height:42px;">` : "";
+  const wrapEnd = showBadge ? `${badge}</div>` : "";
 
-  return L.divIcon({
-    className: "stock-pin-icon",
-    html: `
+  const svg = `
       <svg width="34" height="42" viewBox="0 0 34 42" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
         <rect x="5" y="2" width="24" height="24" rx="8" fill="${color}"/>
         <path d="M17 40L10.8 26h12.4L17 40z" fill="${color}"/>
         <circle cx="17" cy="14" r="8.5" fill="white" opacity="0.98"/>
         ${inner}
-      </svg>
-    `,
+      </svg>`;
+
+  return L.divIcon({
+    className: "stock-pin-icon" + (badge ? " stock-pin-icon--stacked" : ""),
+    html: wrapStart + svg + wrapEnd,
     iconSize: [34, 42],
     iconAnchor: [17, 40],
     popupAnchor: [0, -42],
   });
-};
+}
 
 const StockPinMarker = ({ stock, isOwned = false, onSelect }: StockPinProps) => {
   return (

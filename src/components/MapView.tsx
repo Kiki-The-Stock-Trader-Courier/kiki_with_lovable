@@ -2,9 +2,11 @@ import { MapContainer, TileLayer, Circle, CircleMarker, Marker, useMap } from "r
 import L from "leaflet";
 import { useEffect, useMemo, useRef } from "react";
 import StockPinMarker from "./StockPin";
+import StackedStockPinMarker from "./StackedStockPinMarker";
 import type { StockPin } from "@/types/stock";
 import { normalizeKrxTickerKey } from "@/lib/quoteApi";
 import { distanceMeters } from "@/lib/geoDistance";
+import { groupStocksByOverlappingCoords } from "@/lib/mapStockGroups";
 
 /** 부모에서 넘기는 위치 상태(대기/성공/거부 등) — 첫 고정 시 1회만 뷰 맞춤 */
 export type UserMapLocationStatus = "pending" | "ok" | "denied" | "unsupported";
@@ -158,6 +160,12 @@ const MapView = ({
     [stocks, center.lat, center.lng, pinCutoffM],
   );
 
+  /** 동일 좌표(≈1m) 겹침 → 한 핀에 개수 배지 + 팝업 목록 */
+  const stockGroups = useMemo(
+    () => groupStocksByOverlappingCoords(stocksVisibleInRadius),
+    [stocksVisibleInRadius],
+  );
+
   /** 내 위치 핀 — 종목 핀과 구분되는 티얼 마커 */
   const userLocationIcon = useMemo(
     () =>
@@ -253,15 +261,30 @@ const MapView = ({
           </>
         )}
 
-        {/* 주식 핀 — pinCutoffM 밖은 미표시(강조 원보다 넓게 잡아 API·GPS 오차 대응) */}
-        {stocksVisibleInRadius.map((stock) => {
-          const tickerKey = normalizeKrxTickerKey(stock.ticker);
-          const isOwned = tickerKey ? ownedTickerSet?.has(tickerKey) ?? false : false;
+        {/* 주식 핀 — 겹침 좌표는 개수 배지 + 팝업에서 선택 */}
+        {stockGroups.map((group) => {
+          if (group.length === 1) {
+            const stock = group[0]!;
+            const tickerKey = normalizeKrxTickerKey(stock.ticker);
+            const isOwned = tickerKey ? ownedTickerSet?.has(tickerKey) ?? false : false;
+            return (
+              <StockPinMarker
+                key={stock.id}
+                stock={stock}
+                isOwned={isOwned}
+                onSelect={onSelectStock}
+              />
+            );
+          }
+          const clusterKey = group
+            .map((s) => s.id)
+            .sort()
+            .join("|");
           return (
-            <StockPinMarker
-              key={stock.id}
-              stock={stock}
-              isOwned={isOwned}
+            <StackedStockPinMarker
+              key={clusterKey}
+              stocks={group}
+              ownedTickerSet={ownedTickerSet}
               onSelect={onSelectStock}
             />
           );
