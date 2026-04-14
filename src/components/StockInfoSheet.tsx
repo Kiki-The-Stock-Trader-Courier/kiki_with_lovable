@@ -147,6 +147,14 @@ const StockInfoSheet = ({
     };
   }, [stock?.ticker]);
 
+  /** 지도 시세 폴링이 먼저 채운 stock.price를 시트에 반영(API 단독 호출이 비었을 때 대비) */
+  useEffect(() => {
+    if (!stock || stock.price <= 0) return;
+    setLiveQuote((prev) =>
+      prev && prev.price > 0 ? prev : { price: Math.round(stock.price), changePercent: stock.changePercent },
+    );
+  }, [stock?.ticker, stock.price, stock.changePercent]);
+
   useEffect(() => {
     const onPointerMove = (ev: PointerEvent) => {
       if (!dragRef.current) return;
