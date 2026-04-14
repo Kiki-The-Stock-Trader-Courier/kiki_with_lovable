@@ -296,6 +296,7 @@ const Index = () => {
       <MapView
         center={center}
         radius={DEFAULT_RADIUS_M}
+        pinRadiusM={MAP_QUERY_RADIUS_M}
         stocks={stocks}
         ownedTickerSet={ownedTickerSet}
         onSelectStock={(stock) => {

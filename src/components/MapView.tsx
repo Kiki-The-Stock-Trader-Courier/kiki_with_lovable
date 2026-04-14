@@ -11,7 +11,13 @@ export type UserMapLocationStatus = "pending" | "ok" | "denied" | "unsupported";
 
 interface MapViewProps {
   center: { lat: number; lng: number };
+  /** 보라색 강조 원 반경(미터) — 캐시 매수 등 게임 규칙과 동일 기준 */
   radius: number;
+  /**
+   * 종목 핀을 그릴 최대 거리(미터). 미주입 시 `radius * 3` (API `fetchNearbyCompanies` 기본과 맞춤).
+   * 강조 원보다 좁게만 그리면 GPS·POI 좌표 오차로 바로 옆 건물(예: 키움 TP타워) 핀이 안 보일 수 있음.
+   */
+  pinRadiusM?: number;
   stocks: StockPin[];
   /** 보유 종목 티커(6자리) 집합 — 핀 색상 구분용 */
   ownedTickerSet?: Set<string>;
@@ -135,6 +141,7 @@ function InvalidateWhenStocksChange({ count }: { count: number }) {
 const MapView = ({
   center,
   radius,
+  pinRadiusM,
   stocks,
   ownedTickerSet,
   onSelectStock,
@@ -143,11 +150,12 @@ const MapView = ({
   userLocationStatus = "pending",
   userRecenterTarget = null,
 }: MapViewProps) => {
-  /** 보라색 원(`radius` m) 안에 들어온 기업만 핀 표시 — 이동 시 원과의 거리가 바뀌면 마커가 나타나거나 사라짐 */
+  /** API가 주변 종목을 불러오는 반경과 맞춰 핀 표시 (기본: 강조 원의 3배) */
+  const pinCutoffM = pinRadiusM ?? radius * 3;
   const stocksVisibleInRadius = useMemo(
     () =>
-      stocks.filter((s) => distanceMeters(center.lat, center.lng, s.lat, s.lng) <= radius),
-    [stocks, center.lat, center.lng, radius],
+      stocks.filter((s) => distanceMeters(center.lat, center.lng, s.lat, s.lng) <= pinCutoffM),
+    [stocks, center.lat, center.lng, pinCutoffM],
   );
 
   /** 내 위치 핀 — 종목 핀과 구분되는 티얼 마커 */
@@ -245,7 +253,7 @@ const MapView = ({
           </>
         )}
 
-        {/* 주식 핀 — 원 밖 종목은 렌더하지 않음 (위 stocksVisibleInRadius) */}
+        {/* 주식 핀 — pinCutoffM 밖은 미표시(강조 원보다 넓게 잡아 API·GPS 오차 대응) */}
         {stocksVisibleInRadius.map((stock) => {
           const tickerKey = normalizeKrxTickerKey(stock.ticker);
           const isOwned = tickerKey ? ownedTickerSet?.has(tickerKey) ?? false : false;
