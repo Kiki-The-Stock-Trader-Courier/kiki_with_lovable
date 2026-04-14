@@ -13,13 +13,8 @@ export type UserMapLocationStatus = "pending" | "ok" | "denied" | "unsupported";
 
 interface MapViewProps {
   center: { lat: number; lng: number };
-  /** 보라색 강조 원 반경(미터) — 캐시 매수 등 게임 규칙과 동일 기준 */
+  /** 보라색 강조 원 반경(미터) — 종목 핀은 이 원 안에 들어온 것만 표시 */
   radius: number;
-  /**
-   * 종목 핀을 그릴 최대 거리(미터). 미주입 시 `radius * 3` (API `fetchNearbyCompanies` 기본과 맞춤).
-   * 강조 원보다 좁게만 그리면 GPS·POI 좌표 오차로 바로 옆 건물(예: 키움 TP타워) 핀이 안 보일 수 있음.
-   */
-  pinRadiusM?: number;
   stocks: StockPin[];
   /** 보유 종목 티커(6자리) 집합 — 핀 색상 구분용 */
   ownedTickerSet?: Set<string>;
@@ -143,7 +138,6 @@ function InvalidateWhenStocksChange({ count }: { count: number }) {
 const MapView = ({
   center,
   radius,
-  pinRadiusM,
   stocks,
   ownedTickerSet,
   onSelectStock,
@@ -152,12 +146,11 @@ const MapView = ({
   userLocationStatus = "pending",
   userRecenterTarget = null,
 }: MapViewProps) => {
-  /** API가 주변 종목을 불러오는 반경과 맞춰 핀 표시 (기본: 강조 원의 3배) */
-  const pinCutoffM = pinRadiusM ?? radius * 3;
+  /** 강조 원 밖 종목은 핀 미표시 (부모는 더 넓게 fetch할 수 있음) */
   const stocksVisibleInRadius = useMemo(
     () =>
-      stocks.filter((s) => distanceMeters(center.lat, center.lng, s.lat, s.lng) <= pinCutoffM),
-    [stocks, center.lat, center.lng, pinCutoffM],
+      stocks.filter((s) => distanceMeters(center.lat, center.lng, s.lat, s.lng) <= radius),
+    [stocks, center.lat, center.lng, radius],
   );
 
   /** 동일 좌표(≈1m) 겹침 → 한 핀에 개수 배지 + 팝업 목록 */
@@ -261,7 +254,7 @@ const MapView = ({
           </>
         )}
 
-        {/* 주식 핀 — 겹침 좌표는 개수 배지 + 팝업에서 선택 */}
+        {/* 주식 핀 — 보라색 원(`radius`) 안만, 겹침 좌표는 배지+팝업 */}
         {stockGroups.map((group) => {
           if (group.length === 1) {
             const stock = group[0]!;
