@@ -15,6 +15,20 @@ export const MOCK_STOCKS: StockPin[] = [
   { id: "10", ticker: "028260", name: "삼성물산", lat: 37.8785, lng: 127.7380, price: 127500, changePercent: -0.6, sector: "건설", description: "삼성그룹 건설·패션 사업", isSponsored: true, logoUrl: logoUrlFromDomain("samsungcnt.com") },
   { id: "11", ticker: "207940", name: "삼성바이오", lat: 37.8840, lng: 127.7275, price: 790000, changePercent: 1.1, sector: "바이오", description: "바이오의약품 CMO 세계 1위", isSponsored: false, logoUrl: logoUrlFromDomain("samsungbiologics.com") },
   { id: "12", ticker: "003550", name: "LG", lat: 37.8755, lng: 127.7305, price: 78400, changePercent: 0.4, sector: "지주", description: "LG그룹 지주회사", isSponsored: true, logoUrl: logoUrlFromDomain("lg.com") },
+  /** 여의도 기본 지도 중심 근처 — nearby_companies 시드와 동일 티커(039490), 채팅에서 종목명 매칭용 */
+  {
+    id: "seed-kiwoom-039490",
+    ticker: "039490",
+    name: "키움증권",
+    lat: 37.52632,
+    lng: 126.92088,
+    price: 0,
+    changePercent: 0,
+    sector: "금융",
+    description: "온라인 증권·WM 등 금융투자업",
+    isSponsored: false,
+    logoUrl: logoUrlFromDomain("kiwoom.com"),
+  },
 ];
 
 export const MOCK_USER_WALK: UserWalk = {
